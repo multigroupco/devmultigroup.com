@@ -1,0 +1,31 @@
+---
+import { COMPANIES } from "@/lib/site";
+
+interface Props {
+  reverse?: boolean;
+}
+const { reverse = false } = Astro.props;
+const logos = [...COMPANIES, ...COMPANIES];
+---
+
+<div class="overflow-hidden mask-fade-x">
+  <div
+    class:list={[
+      "flex items-center gap-12 md:gap-16 w-max py-2 hover:[animation-play-state:paused]",
+      reverse ? "animate-marquee-rev" : "animate-marquee",
+    ]}
+  >
+    {
+      logos.map((c) => (
+        <img
+          src={c.logo}
+          alt={c.name}
+          width="120"
+          height="32"
+          loading="lazy"
+          class="h-7 md:h-8 w-auto object-contain opacity-50 hover:opacity-100 transition-opacity shrink-0"
+        />
+      ))
+    }
+  </div>
+</div>

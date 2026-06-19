@@ -1,0 +1,81 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import EventCard from "@/components/EventCard.astro";
+import Icon from "@/components/Icon.astro";
+import { getEnv } from "@/lib/runtime";
+import { listEvents } from "@/lib/content";
+import { GATHIN } from "@/lib/site";
+import type { Community } from "@/lib/types";
+
+const env = getEnv(Astro.locals);
+const cParam = (Astro.url.searchParams.get("c") || "all") as Community | "all";
+const community = cParam === "multigroup" || cParam === "multiacademy" ? cParam : "all";
+
+const [upcoming, past] = await Promise.all([
+  listEvents(env, { community, when: "upcoming", limit: 30 }),
+  listEvents(env, { community, when: "past", limit: 48 }),
+]);
+
+const tabs: { key: Community | "all"; label: string }[] = [
+  { key: "all", label: "Tümü" },
+  { key: "multigroup", label: "MultiGroup" },
+  { key: "multiacademy", label: "Akademi" },
+];
+const tabHref = (k: string) => (k === "all" ? "/events" : `/events?c=${k}`);
+---
+
+<BaseLayout
+  title="Etkinlikler"
+  description="Developer MultiGroup'tan buluşmalar, konferanslar, atölyeler ve bootcamp'ler — geçmiş ve yaklaşan."
+  canonicalPath="/events"
+>
+  <section class="container-x pt-14 pb-8">
+    <h1 class="text-4xl md:text-5xl font-semibold">Etkinlikler</h1>
+    <p class="text-ink-dim mt-4 max-w-2xl leading-relaxed">
+      Koridor sohbetlerinden tıklım tıklım konferanslara kadar — topluluk burada
+      buluşuyor. Kayıtlar Gathin üzerinden yapılıyor.
+    </p>
+
+    <div class="flex flex-wrap items-center gap-2 mt-8">
+      {
+        tabs.map((t) => (
+          <a href={tabHref(t.key)} class:list={["chip !text-sm !px-3.5 !py-1.5", community === t.key ? "text-ink-text border-line-strong bg-white/5" : "hover:text-ink-text"]}>
+            {t.label}
+          </a>
+        ))
+      }
+      <a href={GATHIN.multigroup} target="_blank" rel="noopener noreferrer" class="chip !text-sm !px-3.5 !py-1.5 ml-auto hover:text-ink-text">
+        Etkinliklere katıl <Icon name="arrow-up-right" size={13} />
+      </a>
+    </div>
+  </section>
+
+  {
+    upcoming.length > 0 && (
+      <section class="container-x py-6">
+        <h2 class="font-display text-xl font-semibold mb-5 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-magenta animate-pulse" /> Yaklaşan
+        </h2>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {upcoming.map((e) => <EventCard event={e} />)}
+        </div>
+      </section>
+    )
+  }
+
+  <section class="container-x py-6">
+    <h2 class="font-display text-xl font-semibold mb-5 text-ink-dim">Geçmiş etkinlikler</h2>
+    {
+      past.length > 0 ? (
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {past.map((e) => <EventCard event={e} />)}
+        </div>
+      ) : (
+        <div class="card p-10 text-center text-ink-dim">
+          <Icon name="calendar" size={28} class="mx-auto mb-3 opacity-50" />
+          Burada henüz etkinlik yok — yakında tekrar uğra.
+        </div>
+      )
+    }
+  </section>
+</BaseLayout>

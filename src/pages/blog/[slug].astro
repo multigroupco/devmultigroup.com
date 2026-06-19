@@ -1,0 +1,161 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Icon from "@/components/Icon.astro";
+import PostCard from "@/components/PostCard.astro";
+import { getEnv } from "@/lib/runtime";
+import { getPost, listPosts } from "@/lib/content";
+import { renderMarkdown } from "@/lib/markdown";
+import { formatDate, iso } from "@/lib/format";
+import { categoryAccent, accentHex, imageSrc, categoryLabel } from "@/lib/ui";
+import { csv } from "@/lib/db";
+import { BRAND } from "@/lib/site";
+
+const env = getEnv(Astro.locals);
+const { slug } = Astro.params;
+const post = slug ? await getPost(env, slug) : null;
+if (!post) Astro.response.status = 404;
+
+const hex = post ? accentHex(categoryAccent(post.category)) : "#ededef";
+const cover = post ? imageSrc(post.cover_image) : "";
+const authorAvatar = post ? imageSrc(post.author_avatar) : "";
+const body = post ? renderMarkdown(post.body_md) : "";
+const tags = post ? csv(post.tags) : [];
+
+const related = post
+  ? (await listPosts(env, { limit: 4, category: post.category })).filter((p) => p.id !== post.id).slice(0, 3)
+  : [];
+
+const datePublished = post ? iso(post.published_at ?? post.created_at) : "";
+const dateModified = post ? iso(post.updated_at) : "";
+const absAuthorAvatar = authorAvatar
+  ? authorAvatar.startsWith("http")
+    ? authorAvatar
+    : BRAND.url + authorAvatar
+  : "";
+// A named human author is a Person (E-E-A-T); fall back to the Organization only
+// when no author is set. The brand stays the publisher either way.
+const authorLd = post?.author
+  ? {
+      "@type": "Person",
+      name: post.author,
+      ...(post.author_title ? { jobTitle: post.author_title } : {}),
+      ...(post.author_url?.startsWith("http") ? { url: post.author_url, sameAs: [post.author_url] } : {}),
+      ...(absAuthorAvatar ? { image: absAuthorAvatar } : {}),
+      worksFor: { "@type": "Organization", name: BRAND.name, url: BRAND.url },
+    }
+  : { "@type": "Organization", name: BRAND.name, url: BRAND.url };
+
+const articleImage = post
+  ? cover
+    ? cover.startsWith("http")
+      ? cover
+      : BRAND.url + cover
+    : `${BRAND.url}/api/og?title=${encodeURIComponent(post.title)}&eyebrow=${encodeURIComponent("BLOG")}`
+  : "";
+
+const articleLd = post
+  ? {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      headline: post.title,
+      description: post.seo_description || post.excerpt,
+      ...(datePublished ? { datePublished } : {}),
+      ...(dateModified ? { dateModified } : {}),
+      author: authorLd,
+      publisher: {
+        "@type": "Organization",
+        name: BRAND.name,
+        logo: { "@type": "ImageObject", url: `${BRAND.url}/dmg-logo.webp` },
+      },
+      image: [articleImage],
+      mainEntityOfPage: `${BRAND.url}/blog/${post.slug}`,
+      inLanguage: "tr",
+      articleSection: categoryLabel(post.category),
+      ...(tags.length ? { keywords: tags.join(", ") } : {}),
+    }
+  : undefined;
+---
+
+{
+  !post ? (
+    <BaseLayout title="Yazı bulunamadı" noindex hideBanner>
+      <section class="container-x py-16 text-center">
+        <h1 class="text-3xl font-semibold">O yazıyı bulamadık.</h1>
+        <a href="/blog" class="btn btn-primary mt-7">Blog'a dön</a>
+      </section>
+    </BaseLayout>
+  ) : (
+    <BaseLayout
+      title={post.seo_title || post.title}
+      description={post.seo_description || post.excerpt}
+      canonicalPath={`/blog/${post.slug}`}
+      image={cover || undefined}
+      type="article"
+      publishedTime={iso(post.published_at ?? post.created_at)}
+      modifiedTime={iso(post.updated_at)}
+      jsonLd={articleLd}
+      breadcrumbs={[
+        { name: "Blog", item: `${BRAND.url}/blog` },
+        { name: post.title, item: `${BRAND.url}/blog/${post.slug}` },
+      ]}
+    >
+      <article class="container-x pt-10 pb-6 max-w-3xl">
+        <a href="/blog" class="inline-flex items-center gap-1.5 text-sm text-ink-dim hover:text-ink-text mb-7">
+          <Icon name="arrow-right" size={15} class="rotate-180" /> Tüm yazılar
+        </a>
+        <h1 class="text-3xl md:text-5xl font-semibold leading-tight">{post.title}</h1>
+        <div class="flex items-center gap-3 mt-6">
+          {authorAvatar && <img src={authorAvatar} alt={post.author} width="40" height="40" class="w-10 h-10 rounded-full object-cover ring-1 ring-line shrink-0" />}
+          <div class="text-sm min-w-0">
+            <div class="text-ink-text font-medium truncate">
+              {post.author}
+              {post.author_title && <span class="text-ink-faint font-normal"> · {post.author_title}</span>}
+            </div>
+            <div class="text-ink-faint text-xs mt-0.5">
+              {formatDate(post.published_at ?? post.created_at)} · {categoryLabel(post.category)} · {post.reading_minutes} dk okuma
+            </div>
+          </div>
+        </div>
+
+        {cover && (
+          <img src={cover} alt={post.title} loading="eager" decoding="async" class="w-full h-auto rounded-2xl border border-line mt-8 bg-ink-900" />
+        )}
+
+        {body && <div class="prose-dmg mt-9" set:html={body} />}
+
+        {post.author && (
+          <div class="card p-5 flex items-center gap-4 mt-12">
+            {authorAvatar && <img src={authorAvatar} alt={post.author} width="56" height="56" class="w-14 h-14 rounded-full object-cover ring-1 ring-line shrink-0" />}
+            <div class="min-w-0">
+              <p class="text-[0.7rem] text-ink-faint uppercase tracking-[0.14em] mb-1">Yazar</p>
+              <p class="font-display font-semibold leading-tight">{post.author}</p>
+              {post.author_title && <p class="text-ink-dim text-sm mt-0.5">{post.author_title}</p>}
+            </div>
+            {post.author_url && (
+              <a href={post.author_url} target="_blank" rel="noopener noreferrer" class="btn btn-ghost ml-auto shrink-0 !py-2 !px-3.5 text-sm">
+                Profil <Icon name="arrow-up-right" size={14} />
+              </a>
+            )}
+          </div>
+        )}
+
+        {tags.length > 0 && (
+          <div class="flex flex-wrap gap-2 mt-10 pt-6 border-t border-line">
+            {tags.map((t) => (
+              <a href={`/blog/tag/${encodeURIComponent(t)}`} class="chip hover:text-ink-text">#{t}</a>
+            ))}
+          </div>
+        )}
+      </article>
+
+      {related.length > 0 && (
+        <section class="container-x py-8">
+          <h2 class="font-display text-lg font-semibold mb-5 text-ink-dim">Okumaya devam et</h2>
+          <div class="grid md:grid-cols-3 gap-4">
+            {related.map((p) => <PostCard post={p} />)}
+          </div>
+        </section>
+      )}
+    </BaseLayout>
+  )
+}

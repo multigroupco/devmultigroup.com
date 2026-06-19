@@ -1,0 +1,289 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import SectionHeader from "@/components/SectionHeader.astro";
+import EventCard from "@/components/EventCard.astro";
+import CompanyStrip from "@/components/CompanyStrip.astro";
+import RecordingCard from "@/components/RecordingCard.astro";
+import PostCard from "@/components/PostCard.astro";
+import Stat from "@/components/Stat.astro";
+import Icon from "@/components/Icon.astro";
+import { tryEnv } from "@/lib/runtime";
+import {
+  listEvents,
+  listRecordings,
+  listPosts,
+  getStats,
+  getSettings,
+  listCommunities,
+} from "@/lib/content";
+import { resolveSite, GATHIN, BRAND, SOCIALS } from "@/lib/site";
+import type { EventRow, RecordingRow, PostRow, CommunityRow, Settings } from "@/lib/types";
+
+const env = tryEnv(Astro.locals);
+let upcoming: EventRow[] = [];
+let recordings: RecordingRow[] = [];
+let posts: PostRow[] = [];
+let communities: CommunityRow[] = [];
+let stats = { events: 0, pastEvents: 0, posts: 0, recordings: 0 };
+let settings: Settings = {};
+if (env) {
+  try { [upcoming, recordings, posts, stats, settings, communities] = await Promise.all([
+    listEvents(env, { when: "upcoming", limit: 4 }),
+    listRecordings(env),
+    listPosts(env, { limit: 3 }),
+    getStats(env),
+    getSettings(env),
+    listCommunities(env),
+  ]); } catch { /* pre-seed */ }
+}
+
+const social = [
+  { icon: "instagram", href: SOCIALS.multigroup.instagram, label: "Instagram" },
+  { icon: "twitter", href: SOCIALS.multigroup.twitter, label: "X" },
+  { icon: "linkedin", href: SOCIALS.multigroup.linkedin, label: "LinkedIn" },
+  { icon: "youtube", href: SOCIALS.multigroup.youtube, label: "YouTube" },
+  { icon: "github", href: SOCIALS.multigroup.github, label: "GitHub" },
+];
+
+const photos = [
+  "/main/main-1.jpg",
+  "/main/main-2.jpg",
+  "/main/main-3.jpg",
+  "/main/main-4.jpg",
+  "/main/main-5.jpg",
+];
+const colA = [photos[0], photos[2], photos[4]];
+const colB = [photos[1], photos[3], photos[2]];
+
+// academy band: tech icons on a slowly rotating orbit ring
+const orbit = ["smartphone", "code", "cpu", "layers", "sparkles", "globe"];
+const orbitPts = orbit.map((icon, i) => {
+  const a = (2 * Math.PI * i) / orbit.length - Math.PI / 2;
+  return { icon, x: Math.round(144 + 112 * Math.cos(a)), y: Math.round(144 + 112 * Math.sin(a)) };
+});
+const site = resolveSite(settings);
+recordings = recordings.slice(0, 3);
+
+const pillars = [
+  { icon: "sparkles", title: "Mobil & iOS", text: "Swift, Jetpack Compose ve modern mobil geliştirme.", span: "md:col-span-2" },
+  { icon: "globe", title: "Web", text: "Frontend, backend ve URL'ye giden her şey.", span: "md:col-span-1" },
+  { icon: "layers", title: "Yapay Zekâ & GenAI", text: "LLM'ler, ajanlar ve uygulamalı makine öğrenmesi.", span: "md:col-span-1" },
+  { icon: "users", title: "Kariyer", text: "Yol haritaları, mülakatlar ve mühendis olarak büyümek.", span: "md:col-span-1" },
+  { icon: "shopping-bag", title: "MultiStore", text: "Topluluk merch'i, kıyafet ve sürprizler.", span: "md:col-span-1", soon: true },
+];
+---
+
+<BaseLayout
+  title=""
+  description={site.description}
+  canonicalPath="/"
+  jsonLd={{
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: BRAND.name,
+    alternateName: BRAND.short,
+    url: BRAND.url,
+    inLanguage: "tr",
+    publisher: { "@id": `${BRAND.url}/#organization` },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${BRAND.url}/blog?q={search_term_string}`,
+      },
+      "query-input": "required name=search_term_string",
+    },
+  }}
+>
+  <!-- ───────────────────────── hero ───────────────────────── -->
+  <section class="container-x pt-12 md:pt-16 pb-12 md:pb-16">
+    <div class="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-14 items-center">
+      <!-- metin -->
+      <div class="animate-rise text-center lg:text-left">
+        <p class="text-sm text-ink-faint mb-5 uppercase tracking-[0.18em]">2020'den beri · Türkiye</p>
+        <h1 class="text-[2.6rem] leading-[1.05] sm:text-6xl lg:text-[4.2rem] font-semibold tracking-tight">
+          Where developers<br />
+          <span class="text-grad">become together.</span>
+        </h1>
+        <p class="text-ink-dim text-lg mt-6 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+          {BRAND.short}; 2020'den beri iOS, web, yapay zekâ ve daha fazlasında üreten
+          geliştiricilerin topluluğu — buluşmalar, konferanslar, bootcamp'ler ve
+          mühendisleri birlikte büyüten bir akademi.
+        </p>
+        <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3 mt-8">
+          <a href={GATHIN.multigroup} target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+            <Icon name="calendar" size={17} /> Etkinliğe katıl
+          </a>
+          <a href="/about" class="btn btn-ghost">Hikâyemiz <Icon name="arrow-right" size={16} /></a>
+        </div>
+        <div class="flex items-center justify-center lg:justify-start gap-2 mt-6">
+          {
+            social.map((s) => (
+              <a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} class="grid place-items-center w-10 h-10 rounded-full border border-line text-ink-dim hover:text-ink-text hover:border-line-strong transition-colors">
+                <Icon name={s.icon} size={18} />
+              </a>
+            ))
+          }
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-6 mt-10 max-w-xl mx-auto lg:mx-0">
+          <Stat value={site.events} label="Etkinlik" align="text-center lg:text-left" />
+          <Stat value={site.members} label="Üye" align="text-center lg:text-left" />
+          <Stat value={`${communities.length || 35}+`} label="Topluluk" align="text-center lg:text-left" />
+          <Stat value={site.companies} label="Şirket" align="text-center lg:text-left" />
+        </div>
+      </div>
+
+      <!-- topluluk foto duvarı (dikey kayan) -->
+      <div class="relative h-[22rem] sm:h-[26rem] lg:h-[34rem] overflow-hidden mask-fade-y animate-rise" style="animation-delay:.1s">
+        <div class="grid grid-cols-2 gap-3 h-full">
+          <div class="flex flex-col gap-3 animate-marquee-up">
+            {
+              [...colA, ...colA].map((src) => (
+                <div class="card overflow-hidden aspect-[4/3] shrink-0">
+                  <img src={src} alt="Developer MultiGroup topluluğu" loading="eager" decoding="async" class="w-full h-full object-cover" />
+                </div>
+              ))
+            }
+          </div>
+          <div class="flex flex-col gap-3 animate-marquee-down">
+            {
+              [...colB, ...colB].map((src) => (
+                <div class="card overflow-hidden aspect-[4/3] shrink-0">
+                  <img src={src} alt="Developer MultiGroup topluluğu" loading="eager" decoding="async" class="w-full h-full object-cover" />
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────────── partner logos ───────────────────── -->
+  <section class="py-6">
+    <p class="container-x text-center text-xs text-ink-faint uppercase tracking-[0.18em] mb-6">
+      Birlikte ürettiğimiz markalar
+    </p>
+    <CompanyStrip />
+  </section>
+
+  <!-- ───────────────────── upcoming events ───────────────────── -->
+  {
+    upcoming.length > 0 && (
+      <section class="container-x py-8">
+        <SectionHeader title="Yaklaşan etkinlikler" href="/events" hrefLabel="Tüm etkinlikler" />
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+          {upcoming.map((e) => <EventCard event={e} />)}
+        </div>
+      </section>
+    )
+  }
+
+  <!-- ───────────────────── alanlar / bento ───────────────────── -->
+  <section class="container-x py-9">
+    <SectionHeader
+      title="Tek topluluk, birçok alan"
+      description="MultiGroup, odaklı toplulukların çatısı. Kendi alanını bul."
+    />
+    <div class="grid md:grid-cols-3 gap-4 mt-8">
+      {
+        pillars.map((p) => (
+          <div class:list={["card card-hover p-6 flex flex-col relative", p.span]}>
+            {p.soon && <span class="badge-soon absolute top-4 right-4">Çok Yakında</span>}
+            <span class="grid place-items-center w-11 h-11 rounded-xl mb-4 bg-white/5 text-ink-text">
+              <Icon name={p.icon} size={21} />
+            </span>
+            <h3 class="font-display text-lg font-semibold">{p.title}</h3>
+            <p class="text-ink-dim text-sm mt-1.5 leading-relaxed">{p.text}</p>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- ───────────────────── academy band ───────────────────── -->
+  <section class="container-x py-8">
+    <div class="card relative overflow-hidden p-8 md:p-12">
+      <div class="absolute -right-20 -top-20 w-72 h-72 rounded-full blur-3xl opacity-50" style="background:radial-gradient(circle, rgba(255,255,255,.06), transparent 70%)"></div>
+      <div class="relative grid md:grid-cols-[1.4fr_1fr] gap-8 items-center">
+        <div>
+          <h2 class="text-2xl md:text-3xl font-semibold">Ürün çıkarmış kişilerle, yaparak öğren.</h2>
+          <p class="text-ink-dim mt-3 max-w-lg leading-relaxed">
+            Akademimiz Modern iOS'tan GenAI temellerine kadar yoğun ve katılımı
+            ücretsiz bootcamp'ler düzenliyor — merakı üretime hazır beceriye dönüştürüyor.
+          </p>
+          <div class="flex flex-wrap gap-3 mt-6">
+            <a href="/academy" class="btn btn-primary">Akademiyi keşfet <Icon name="arrow-right" size={16} /></a>
+            <a href={GATHIN.multiacademy} target="_blank" rel="noopener noreferrer" class="btn btn-ghost">Akademi etkinlikleri</a>
+          </div>
+        </div>
+        <div class="flex justify-center md:justify-end">
+          <div class="relative w-[18rem] h-[18rem] shrink-0">
+            <div class="absolute inset-[2rem] rounded-full border border-dashed border-line"></div>
+            <div class="absolute inset-[5rem] rounded-full border border-line-soft"></div>
+            <div class="absolute inset-0 grid place-items-center">
+              <div class="w-20 h-20 rounded-2xl bg-white/[0.04] border border-line grid place-items-center text-ink-text">
+                <Icon name="book-open" size={30} />
+              </div>
+            </div>
+            <div class="absolute inset-0 animate-spin-slow">
+              {
+                orbitPts.map((p) => (
+                  <div class="absolute" style={`left:${p.x}px;top:${p.y}px`}>
+                    <div class="-translate-x-1/2 -translate-y-1/2">
+                      <div class="animate-spin-slow-rev w-12 h-12 rounded-full border border-line bg-ink-900/90 backdrop-blur grid place-items-center text-ink-text">
+                        <Icon name={p.icon} size={20} />
+                      </div>
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────────── recordings ───────────────────── -->
+  {
+    recordings.length > 0 && (
+      <section class="container-x py-8">
+        <SectionHeader title="Geçmiş etkinlik kayıtları" href="/recordings" hrefLabel="Tüm kayıtlar" />
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+          {recordings.map((r) => <RecordingCard rec={r} />)}
+        </div>
+      </section>
+    )
+  }
+
+  <!-- ───────────────────── blog ───────────────────── -->
+  {
+    posts.length > 0 && (
+      <section class="container-x py-8">
+        <SectionHeader title="Blog'dan" href="/blog" hrefLabel="Tüm yazılar" />
+        <div class="grid md:grid-cols-3 gap-4 mt-8">
+          {posts.map((p) => <PostCard post={p} />)}
+        </div>
+      </section>
+    )
+  }
+
+
+
+  <!-- ───────────────────── join CTA ───────────────────── -->
+  <section class="container-x py-10">
+    <div class="card relative overflow-hidden p-10 md:p-14 text-center">
+      <div class="absolute inset-0 -z-10 opacity-50" style="background:radial-gradient(60% 80% at 50% 0%, rgba(255,255,255,.08), transparent 70%)"></div>
+      <h2 class="text-3xl md:text-4xl font-semibold max-w-2xl mx-auto">Bizimle inşa etmeye hazır mısın?</h2>
+      <p class="text-ink-dim mt-4 max-w-xl mx-auto leading-relaxed">
+        Türkiye'nin dört bir yanındaki binlerce geliştiriciye katıl. Bir etkinliğe
+        gel, bir konuşma izle ya da doğrudan topluluğa atla.
+      </p>
+      <div class="flex flex-wrap justify-center gap-3 mt-8">
+        <a href="/links" class="btn btn-primary"><Icon name="sparkles" size={17} /> Tüm bağlantılarımız</a>
+        <a href={GATHIN.multigroup} target="_blank" rel="noopener noreferrer" class="btn btn-ghost">Gathin'de etkinliklere göz at</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

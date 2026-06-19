@@ -1,0 +1,60 @@
+---
+import Icon from "./Icon.astro";
+import { imageSrc } from "@/lib/ui";
+import type { TeamRow, TeamSocials } from "@/lib/types";
+
+interface Props {
+  member: TeamRow;
+}
+const { member } = Astro.props;
+const avatar = imageSrc(member.avatar_url);
+let socials: TeamSocials = {};
+try {
+  socials = JSON.parse(member.socials || "{}");
+} catch {
+  /* ignore malformed */
+}
+const initials = member.name
+  .split(/\s+/)
+  .filter(Boolean)
+  .map((s) => s[0])
+  .slice(0, 2)
+  .join("")
+  .toUpperCase();
+
+// whole card routes to the member's primary profile (LinkedIn first)
+const primary = socials.linkedin || socials.github || socials.website || "";
+const Wrap = primary ? "a" : "div";
+const wrapAttrs = primary ? { href: primary, target: "_blank", rel: "noopener noreferrer" } : {};
+---
+
+<Wrap {...wrapAttrs} class="card card-hover p-3.5 flex flex-col group">
+  <div class="relative aspect-square rounded-xl overflow-hidden bg-ink-900 ring-1 ring-line">
+    {
+      avatar ? (
+        <img
+          src={avatar}
+          alt={member.name}
+          loading="lazy"
+          class="w-full h-full object-cover transition duration-500 group-hover:scale-[1.03]"
+        />
+      ) : (
+        <div class="w-full h-full grid place-items-center">
+          <span class="font-display text-4xl text-ink-faint">{initials}</span>
+        </div>
+      )
+    }
+  </div>
+  <div class="flex items-center justify-between gap-3 mt-3.5 px-1">
+    <div class="min-w-0">
+      <h3 class="font-display text-lg font-semibold leading-tight truncate">{member.name}</h3>
+      {member.role && <p class="text-ink-dim text-sm truncate">{member.role}</p>}
+      {member.team && <p class="text-ink-faint text-xs truncate mt-0.5">{member.team}</p>}
+    </div>
+    <div class="flex items-center gap-2 shrink-0 text-ink-faint group-hover:text-ink-text transition-colors">
+      {socials.linkedin && <Icon name="linkedin" size={18} />}
+      {socials.github && <Icon name="github" size={18} />}
+      {socials.twitter && <Icon name="twitter" size={18} />}
+    </div>
+  </div>
+</Wrap>

@@ -1,0 +1,48 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import Icon from "@/components/Icon.astro";
+import Field from "@/components/admin/Field.astro";
+import { getEnv } from "@/lib/runtime";
+import { getSettings } from "@/lib/content";
+import { SETTINGS_FIELDS, saveSettings } from "@/lib/admin";
+
+const env = getEnv(Astro.locals);
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  await saveSettings(env, form);
+  return Astro.redirect("/admin/settings?saved=1");
+}
+
+const settings = await getSettings(env);
+const filled: Record<string, string> = { banner_enabled: "1", ...settings };
+const saved = Astro.url.searchParams.get("saved") === "1";
+---
+
+<AdminLayout title="Settings">
+  <header class="mb-7">
+    <h1 class="text-3xl font-semibold">Settings</h1>
+    <p class="text-ink-dim mt-2 text-sm">Site metadata, analytics and search verification.</p>
+  </header>
+
+  {saved && (
+    <div class="card p-3.5 mb-6 flex items-center gap-2 text-sm text-lime border-lime/20">
+      <Icon name="check" size={16} /> Saved.
+    </div>
+  )}
+
+  <form method="POST" class="space-y-6">
+    <div class="grid md:grid-cols-2 gap-5">
+      {SETTINGS_FIELDS.map((f) => <Field field={f} value={filled[f.name]} />)}
+    </div>
+    <div class="pt-4 border-t border-line">
+      <button type="submit" class="btn btn-primary"><Icon name="check" size={16} /> Save settings</button>
+    </div>
+  </form>
+
+  <div class="card p-5 mt-8 text-sm text-ink-dim space-y-2">
+    <p class="font-display font-semibold text-ink-text">Connecting analytics &amp; search</p>
+    <p>1. Create a <strong>Google Analytics 4</strong> property and paste its Measurement ID (<code class="text-cyan">G-XXXXXXXXXX</code>) above — tracking activates instantly, site-wide.</p>
+    <p>2. In <strong>Google Search Console</strong>, choose the URL-prefix property and the “HTML tag” method, then paste the token above. Verify, and submit <code class="text-cyan">/sitemap.xml</code>.</p>
+  </div>
+</AdminLayout>

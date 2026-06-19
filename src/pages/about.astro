@@ -1,0 +1,143 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import SectionHeader from "@/components/SectionHeader.astro";
+import Stat from "@/components/Stat.astro";
+import Icon from "@/components/Icon.astro";
+import { tryEnv } from "@/lib/runtime";
+import { getStats, getSettings } from "@/lib/content";
+import { resolveSite, GATHIN, BRAND } from "@/lib/site";
+
+const env = tryEnv(Astro.locals);
+let stats = { events: 0, pastEvents: 0, posts: 0, recordings: 0 };
+let settings = {};
+if (env) {
+  try { [stats, settings] = await Promise.all([getStats(env), getSettings(env)]); } catch {}
+}
+const site = resolveSite(settings);
+
+const values = [
+  { icon: "users", title: "Önce topluluk", text: "Yaptığımız her şey geliştiriciler tarafından, geliştiriciler için. Kapı tutmak yok, ego yok." },
+  { icon: "book-open", title: "Açıkça öğren", text: "Konuşmalar, kayıtlar ve notlar — bilgiye erişim ücretsiz olmalı." },
+  { icon: "sparkles", title: "Birlikte üret", text: "En iyi gelişim, omuz omuza gerçek işler ortaya koyarak olur." },
+  { icon: "globe", title: "Türkiye'nin her yerinde", text: "Çevrimiçi ve yüz yüze — geliştiriciler neredeyse, biz de orada olmak istiyoruz." },
+];
+
+// Self-contained Turkish Q&A — visible on the page AND emitted as FAQPage so
+// answer engines (AI Overviews, ChatGPT, Perplexity) can quote it verbatim.
+const faqs = [
+  {
+    q: "Developer MultiGroup nedir?",
+    a: "Developer MultiGroup (kısaca MultiGroup), 2020'den beri aktif, Türkiye merkezli gönüllü bir geliştirici topluluğudur. Mobil/iOS, web, yapay zekâ (GenAI), oyun geliştirme, Web3 ve kariyer alanlarında buluşmalar, konferanslar ve atölyeler düzenler.",
+  },
+  {
+    q: "Etkinlikler ücretsiz mi?",
+    a: "Evet. Aksi belirtilmediği sürece Developer MultiGroup etkinlikleri ücretsizdir; kayıtlar genellikle Gathin üzerinden alınır.",
+  },
+  {
+    q: "MultiAcademy nedir?",
+    a: "MultiAcademy, Developer MultiGroup'un öğrenme koludur. Modern iOS, Android/Compose, GenAI temelleri ve web gibi alanlarda ücretsiz, mentör eşliğinde ve proje odaklı yoğun bootcamp'ler düzenler.",
+  },
+  {
+    q: "Hangi alanlara odaklanıyorsunuz?",
+    a: "Topluluk; mobil/iOS, web, yapay zekâ/GenAI, oyun geliştirme, Web3 ve kariyer gelişimi alanlarına odaklanır.",
+  },
+  {
+    q: "Topluluğa nasıl katılırım?",
+    a: "Etkinliklere Gathin üzerinden ücretsiz kayıt olabilir; topluluğa katılmak ya da gönüllü olmak için sitedeki 'Aramıza katıl' başvuru formunu doldurabilirsiniz.",
+  },
+  {
+    q: "Hangi şehirlerde etkinlik yapıyorsunuz?",
+    a: "Developer MultiGroup hem çevrimiçi hem de İstanbul başta olmak üzere Türkiye'nin farklı şehirlerinde yüz yüze etkinlikler düzenler.",
+  },
+];
+
+const faqLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((f) => ({
+    "@type": "Question",
+    name: f.q,
+    acceptedAnswer: { "@type": "Answer", text: f.a },
+  })),
+};
+---
+
+<BaseLayout
+  title="Hakkımızda — Türkiye'nin Geliştirici Topluluğu"
+  description="Developer MultiGroup'un hikâyesi, misyonu ve değerleri. 2020'den beri Türkiye'de geliştiricileri bir araya getiren gönüllü topluluk."
+  canonicalPath="/about"
+  jsonLd={faqLd}
+  breadcrumbs={[{ name: "Hakkımızda", item: `${BRAND.url}/about` }]}
+>
+  <section class="container-x pt-12 pb-10">
+    <h1 class="text-4xl md:text-6xl font-semibold leading-[1.05] max-w-3xl">
+      Geliştiricilerin <span class="text-grad">birlikte geliştiği</span> bir ev.
+    </h1>
+    <p class="text-ink-dim text-lg mt-6 max-w-2xl leading-relaxed">
+      {BRAND.short} basit bir inançla başladı: geliştiriciler birlikte daha hızlı gelişir.
+      Bir avuç buluşma olarak başlayan şey — mobil, web, AI, oyunlar ve daha fazlasını
+      kapsayan — bir topluluklar şemsiyesine, ayrıca merakı ustalığa dönüştüren
+      bir akademiye dönüştü.
+    </p>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-12 max-w-2xl">
+      <Stat value={site.events} label="Etkinlik" />
+      <Stat value={site.members} label="Üye" />
+      <Stat value={site.recordings} label="Kayıt" />
+      <Stat value={site.companies} label="Şirket" />
+    </div>
+  </section>
+
+  <section class="container-x py-10">
+    <SectionHeader title="Değerlerimiz" />
+    <div class="grid sm:grid-cols-2 gap-4 mt-8">
+      {
+        values.map((v) => (
+          <div class="card p-6 flex gap-4">
+            <span class="grid place-items-center w-11 h-11 rounded-xl shrink-0 bg-white/5 text-violet">
+              <Icon name={v.icon} size={21} />
+            </span>
+            <div>
+              <h3 class="font-display text-lg font-semibold">{v.title}</h3>
+              <p class="text-ink-dim text-sm mt-1.5 leading-relaxed">{v.text}</p>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="container-x py-10">
+    <div class="card relative overflow-hidden p-8 md:p-12">
+      <div class="absolute inset-0 -z-10 opacity-50" style="background:radial-gradient(60% 80% at 80% 0%, rgba(255,255,255,.07), transparent 70%)"></div>
+      <div class="grid md:grid-cols-[1.3fr_1fr] gap-8 items-center">
+        <div>
+          <h2 class="text-2xl md:text-3xl font-semibold">MultiAcademy</h2>
+          <p class="text-ink-dim mt-3 max-w-lg leading-relaxed">
+            Öğrenme kolumuz, gerçek ürünler geliştirmiş mentörlerle ücretsiz, yoğun
+            bootcamp'ler düzenliyor — Modern iOS'tan GenAI temellerine kadar.
+          </p>
+          <a href="/academy" class="btn btn-primary mt-6">Akademiyi keşfet <Icon name="arrow-right" size={16} /></a>
+        </div>
+        <div class="flex md:justify-end">
+          <a href={GATHIN.multigroup} target="_blank" rel="noopener noreferrer" class="btn btn-ghost">
+            <Icon name="calendar" size={16} /> Tüm etkinliklere göz at
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="container-x py-10">
+    <SectionHeader title="Sıkça sorulan sorular" />
+    <div class="grid md:grid-cols-2 gap-4 mt-8">
+      {
+        faqs.map((f) => (
+          <div class="card p-6">
+            <h3 class="font-display text-base font-semibold">{f.q}</h3>
+            <p class="text-ink-dim text-sm mt-2 leading-relaxed">{f.a}</p>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>

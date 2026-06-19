@@ -1,0 +1,41 @@
+---
+import Icon from "./Icon.astro";
+import { imageSrc, ytPlaylistUrl, ytPlaylistId } from "@/lib/ui";
+import type { RecordingRow } from "@/lib/types";
+
+interface Props {
+  rec: RecordingRow;
+}
+const { rec } = Astro.props;
+const ytId = rec.playlist_id || ytPlaylistId(rec.youtube_url);
+// Real YouTube playlist cover (first video thumbnail) resolved on demand,
+// falling back to the gradient behind it if it can't be fetched.
+const thumb = imageSrc(rec.cover_image) || (ytId ? `/yt/${ytId}` : "");
+const href = rec.youtube_url || (ytId ? ytPlaylistUrl(ytId) : "#");
+---
+
+<a href={href} target="_blank" rel="noopener noreferrer" class="card card-hover relative overflow-hidden block group">
+  <div class="relative aspect-video overflow-hidden skeleton">
+    {thumb && (
+      <img
+        src={thumb}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        onload="this.parentElement.classList.remove('skeleton')"
+        onerror="this.style.display='none';this.parentElement.classList.remove('skeleton')"
+        class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+      />
+    )}
+    <div class="absolute inset-0 grid place-items-center">
+      <span class="grid place-items-center w-14 h-14 rounded-full bg-ink-950/65 backdrop-blur border border-line-strong text-ink-text transition-transform group-hover:scale-110">
+        <Icon name="play" size={22} />
+      </span>
+    </div>
+    {rec.video_count > 0 && <span class="absolute bottom-2 right-2 chip bg-ink-950/80 backdrop-blur">{rec.video_count} video</span>}
+  </div>
+  <div class="p-4">
+    <h3 class="font-display font-semibold leading-snug line-clamp-2">{rec.title}</h3>
+    {rec.description && <p class="text-ink-dim text-sm mt-1.5 line-clamp-2">{rec.description}</p>}
+  </div>
+</a>

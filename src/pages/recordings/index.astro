@@ -1,0 +1,61 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import RecordingCard from "@/components/RecordingCard.astro";
+import Icon from "@/components/Icon.astro";
+import { getEnv } from "@/lib/runtime";
+import { listRecordings } from "@/lib/content";
+import { SOCIALS, BRAND } from "@/lib/site";
+
+const env = getEnv(Astro.locals);
+const recs = await listRecordings(env);
+
+const groups = [
+  { key: "event", label: "Etkinlik kayıtları" },
+  { key: "bootcamp", label: "Bootcamp serisi" },
+  { key: "talk", label: "Konuşmalar" },
+  { key: "series", label: "Seriler" },
+];
+const known = new Set(groups.map((g) => g.key));
+const sections = groups
+  .map((g) => ({ ...g, items: recs.filter((r) => r.category === g.key) }))
+  .filter((s) => s.items.length > 0);
+const other = recs.filter((r) => !known.has(r.category));
+if (other.length) sections.push({ key: "other", label: "Daha fazla", items: other });
+---
+
+<BaseLayout
+  title="Etkinlik Kayıtları & Konuşmalar"
+  description="Developer MultiGroup'tan konuşmaları, konferansları ve bootcamp serilerini YouTube'da tekrar izle."
+  canonicalPath="/recordings"
+  breadcrumbs={[{ name: "Kayıtlar", item: `${BRAND.url}/recordings` }]}
+>
+  <section class="container-x pt-14 pb-8">
+    <h1 class="text-4xl md:text-5xl font-semibold">Kayıtlar</h1>
+    <p class="text-ink-dim mt-4 max-w-2xl leading-relaxed">
+      Bir etkinliği mi kaçırdın? Düzenlediğimiz neredeyse her şeyi kaydediyoruz.
+      Aşağıdaki oynatma listelerine dal — hepsi YouTube kanalımızda.
+    </p>
+    <a href={SOCIALS.multigroup.youtube} target="_blank" rel="noopener noreferrer" class="btn btn-ghost mt-6">
+      <Icon name="youtube" size={18} /> Kanalı ziyaret et
+    </a>
+  </section>
+
+  {
+    recs.length === 0 ? (
+      <section class="container-x py-10">
+        <div class="card p-12 text-center text-ink-dim">
+          <Icon name="play" size={28} class="mx-auto mb-3 opacity-50" /> Oynatma listeleri hazırlanıyor — birazdan burada.
+        </div>
+      </section>
+    ) : (
+      sections.map((s) => (
+        <section class="container-x py-6">
+          <h2 class="font-display text-xl font-semibold mb-5">{s.label}</h2>
+          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {s.items.map((r) => <RecordingCard rec={r} />)}
+          </div>
+        </section>
+      ))
+    )
+  }
+</BaseLayout>

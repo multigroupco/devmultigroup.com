@@ -1,0 +1,15 @@
+---
+interface Props {
+  value: string;
+  label: string;
+  center?: boolean;
+  align?: string;
+}
+const { value, label, center = false, align } = Astro.props;
+const alignCls = align ?? (center ? "text-center" : "text-center sm:text-left");
+---
+
+<div class:list={[alignCls]}>
+  <div class="font-display text-2xl sm:text-3xl font-semibold text-grad tabular-nums tracking-tight whitespace-nowrap">{value}</div>
+  <div class="text-ink-faint text-xs md:text-sm mt-1 font-mono uppercase tracking-wide">{label}</div>
+</div>

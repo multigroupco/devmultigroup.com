@@ -1,0 +1,64 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import Icon from "@/components/Icon.astro";
+import Field from "@/components/admin/Field.astro";
+import { getEnv } from "@/lib/runtime";
+import { getResource, getRow, saveRow, deleteRow } from "@/lib/admin";
+
+const env = getEnv(Astro.locals);
+const { resource = "", id = "" } = Astro.params;
+const res = getResource(resource);
+if (!res) return Astro.redirect("/admin");
+const isNew = id === "new";
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const action = form.get("_action");
+  if (action === "delete" && !isNew) {
+    await deleteRow(env, res, id);
+    return Astro.redirect(`/admin/${res.key}`);
+  }
+  await saveRow(env, res, form);
+  return Astro.redirect(`/admin/${res.key}`);
+}
+
+const row = isNew ? null : await getRow(env, res, id);
+if (!isNew && !row) return Astro.redirect(`/admin/${res.key}`);
+---
+
+<AdminLayout title={`${isNew ? "New" : "Edit"} ${res.singular}`}>
+  <a href={`/admin/${res.key}`} class="inline-flex items-center gap-1.5 text-sm text-ink-dim hover:text-ink-text mb-6">
+    <Icon name="arrow-right" size={15} class="rotate-180" /> {res.label}
+  </a>
+
+  <h1 class="text-3xl font-semibold mb-7">{isNew ? `New ${res.singular.toLowerCase()}` : `Edit ${res.singular.toLowerCase()}`}</h1>
+
+  <form method="POST" enctype="multipart/form-data" class="space-y-6">
+    <input type="hidden" name="id" value={isNew ? "" : id} />
+
+    <div class="grid md:grid-cols-2 gap-5">
+      {res.fields.map((f) => <Field field={f} value={row?.[f.name]} />)}
+    </div>
+
+    <div class="flex items-center gap-3 pt-4 border-t border-line">
+      <button type="submit" name="_action" value="save" class="btn btn-primary">
+        <Icon name="check" size={16} /> {isNew ? "Create" : "Save changes"}
+      </button>
+      <a href={`/admin/${res.key}`} class="btn btn-ghost">Cancel</a>
+      {
+        !isNew && (
+          <button
+            type="submit"
+            name="_action"
+            value="delete"
+            formnovalidate
+            onclick="return confirm('Delete this permanently?')"
+            class="btn btn-ghost ml-auto !text-coral hover:!border-coral/40"
+          >
+            <Icon name="close" size={16} /> Delete
+          </button>
+        )
+      }
+    </div>
+  </form>
+</AdminLayout>

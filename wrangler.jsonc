@@ -1,6 +1,48 @@
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "devmultigroup-com",
-	"pages_build_output_dir": "out",
-	"compatibility_date": "2025-12-01"
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "devmultigroup-web",
+  "account_id": "4d41dfaeb65887513d0440c9e42cb0b9",
+  "main": "./dist/_worker.js/index.js",
+  "compatibility_date": "2026-06-19",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "devmultigroup-db",
+      "database_id": "849d67d6-c0e3-4de3-a241-d9b77fa28cd0",
+      "migrations_dir": "migrations"
+    },
+    {
+      // Shared email-marketing DB; newsletter sign-ups append to the
+      // "MultiGroup Newsletter" contact list (id 1).
+      "binding": "MAIL_DB",
+      "database_name": "mail-templates-db",
+      "database_id": "e0e1881b-03ba-40b7-ae7e-e04f9f96c54c"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "CACHE",
+      "id": "bfcc4b5e3680456ba38cdfcac35bad78"
+    },
+    {
+      // Astro's session store (adapter default binding name). Reuses the same
+      // KV namespace as CACHE — session keys are namespaced separately.
+      "binding": "SESSION",
+      "id": "bfcc4b5e3680456ba38cdfcac35bad78"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "devmultigroup-media"
+    }
+  ]
 }

@@ -1,0 +1,178 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PostCard from "@/components/PostCard.astro";
+import Icon from "@/components/Icon.astro";
+import { getEnv } from "@/lib/runtime";
+import { listPosts } from "@/lib/content";
+import { csv } from "@/lib/db";
+import { categoryLabel } from "@/lib/ui";
+import { iso } from "@/lib/format";
+import { BRAND } from "@/lib/site";
+
+const env = getEnv(Astro.locals);
+const posts = await listPosts(env, { limit: 60 });
+const cats = [...new Set(posts.map((p) => p.category).filter(Boolean))];
+// Deep-link from the homepage SearchAction (/blog?q=…). The client script reads
+// this initial value and filters on load, so the SearchAction target is real.
+const q = Astro.url.searchParams.get("q")?.trim() ?? "";
+
+const blogLd = {
+  "@context": "https://schema.org",
+  "@type": "Blog",
+  name: `${BRAND.name} Blog`,
+  url: `${BRAND.url}/blog`,
+  inLanguage: "tr",
+  blogPost: posts.slice(0, 20).map((p) => ({
+    "@type": "BlogPosting",
+    headline: p.title,
+    url: `${BRAND.url}/blog/${p.slug}`,
+    ...(iso(p.published_at ?? p.created_at) ? { datePublished: iso(p.published_at ?? p.created_at) } : {}),
+    ...(p.author ? { author: { "@type": "Person", name: p.author } } : {}),
+  })),
+};
+---
+
+<BaseLayout
+  title="Yazılım & Topluluk Blogu"
+  description="Developer MultiGroup topluluğundan notlar, rehberler ve hikâyeler — mühendislik, etkinlikler ve geliştirme zanaatı."
+  canonicalPath="/blog"
+  jsonLd={blogLd}
+  breadcrumbs={[{ name: "Blog", item: `${BRAND.url}/blog` }]}
+>
+  <section class="container-x pt-14 pb-6">
+    <h1 class="text-4xl md:text-5xl font-semibold">Blog</h1>
+    <p class="text-ink-dim mt-4 max-w-2xl leading-relaxed">
+      Topluluktan dersler — derinlemesine yazılar, özetler ve ara sıra cesur yorumlar.
+    </p>
+
+    {
+      posts.length > 0 && (
+        <div class="flex flex-col sm:flex-row gap-3 mt-8">
+          <div class="relative flex-1">
+            <Icon name="search" size={17} class="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
+            <input id="blog-search" type="search" placeholder="Yazılarda ara…" autocomplete="off" class="blog-search" value={q} />
+          </div>
+          <div class="flex gap-3">
+            <div class="blog-dd" data-dd="filter">
+              <button type="button" class="blog-dd-btn">
+                <Icon name="filter" size={15} /> Filtrele
+                <span id="filter-badge" class="blog-dd-badge" hidden />
+              </button>
+              <div class="blog-dd-menu">
+                <button type="button" class="blog-dd-opt is-active" data-cat="">Tümü</button>
+                {cats.map((c) => (
+                  <button type="button" class="blog-dd-opt" data-cat={c}>{categoryLabel(c)}</button>
+                ))}
+              </div>
+            </div>
+            <div class="blog-dd" data-dd="sort">
+              <button type="button" class="blog-dd-btn">
+                <Icon name="sort-arrows" size={15} /> Sırala
+              </button>
+              <div class="blog-dd-menu">
+                <button type="button" class="blog-dd-opt is-active" data-sort="new">En yeni</button>
+                <button type="button" class="blog-dd-opt" data-sort="old">En eski</button>
+                <button type="button" class="blog-dd-opt" data-sort="read">Okuma süresi</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+  </section>
+
+  {
+    posts.length === 0 ? (
+      <section class="container-x py-10">
+        <div class="card p-12 text-center text-ink-dim">
+          <Icon name="pen" size={28} class="mx-auto mb-3 opacity-50" />
+          İlk yazı yolda. Takipte kalın.
+        </div>
+      </section>
+    ) : (
+      <section class="container-x py-4">
+        <div id="blog-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {posts.map((p) => (
+            <div
+              class="blog-item"
+              data-title={p.title.toLowerCase()}
+              data-tags={csv(p.tags).join(" ").toLowerCase()}
+              data-author={p.author.toLowerCase()}
+              data-cat={p.category}
+              data-date={String(p.published_at ?? p.created_at)}
+              data-read={String(p.reading_minutes)}
+            >
+              <PostCard post={p} />
+            </div>
+          ))}
+        </div>
+        <p id="blog-empty" class="text-center text-ink-dim py-16" hidden>Aramana uyan yazı bulunamadı.</p>
+      </section>
+    )
+  }
+
+  <script is:inline>
+    (() => {
+      function init() {
+        const grid = document.getElementById("blog-grid");
+        if (!grid || grid.dataset.bound) return;
+        grid.dataset.bound = "1";
+        const items = [...grid.querySelectorAll(".blog-item")];
+        const search = document.getElementById("blog-search");
+        const empty = document.getElementById("blog-empty");
+        const badge = document.getElementById("filter-badge");
+        const state = { q: search ? search.value : "", cat: "", sort: "new" };
+
+        function apply() {
+          const q = state.q.trim().toLowerCase();
+          let visible = items.filter((el) => {
+            const matchQ = !q || el.dataset.title.includes(q) || el.dataset.tags.includes(q) || el.dataset.author.includes(q);
+            const matchC = !state.cat || el.dataset.cat === state.cat;
+            return matchQ && matchC;
+          });
+          visible.sort((a, b) => {
+            if (state.sort === "read") return Number(b.dataset.read) - Number(a.dataset.read);
+            const da = Number(a.dataset.date), db = Number(b.dataset.date);
+            return state.sort === "old" ? da - db : db - da;
+          });
+          items.forEach((el) => (el.style.display = "none"));
+          visible.forEach((el) => {
+            el.style.display = "";
+            grid.appendChild(el);
+          });
+          if (empty) empty.hidden = visible.length > 0;
+          if (badge) {
+            badge.hidden = !state.cat;
+            badge.textContent = "1";
+          }
+        }
+
+        if (search) search.addEventListener("input", () => { state.q = search.value; apply(); });
+
+        document.querySelectorAll(".blog-dd").forEach((dd) => {
+          const btn = dd.querySelector(".blog-dd-btn");
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const wasOpen = dd.classList.contains("open");
+            document.querySelectorAll(".blog-dd").forEach((d) => d.classList.remove("open"));
+            if (!wasOpen) dd.classList.add("open");
+          });
+          dd.querySelectorAll(".blog-dd-opt").forEach((opt) => {
+            opt.addEventListener("click", () => {
+              dd.querySelectorAll(".blog-dd-opt").forEach((o) => o.classList.remove("is-active"));
+              opt.classList.add("is-active");
+              if (dd.dataset.dd === "filter") state.cat = opt.dataset.cat;
+              else state.sort = opt.dataset.sort;
+              dd.classList.remove("open");
+              apply();
+            });
+          });
+        });
+        document.addEventListener("click", () => document.querySelectorAll(".blog-dd").forEach((d) => d.classList.remove("open")));
+        if (state.q) apply();
+      }
+      document.addEventListener("astro:page-load", init);
+      init();
+    })();
+  </script>
+</BaseLayout>

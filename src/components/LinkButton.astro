@@ -1,0 +1,29 @@
+---
+import Icon from "./Icon.astro";
+import { accentHex } from "@/lib/ui";
+import type { LinkRow } from "@/lib/types";
+
+interface Props {
+  link: LinkRow;
+}
+const { link } = Astro.props;
+const hex = accentHex(link.accent);
+// Route through /go/<id> so we can count clicks before redirecting out.
+const href = `/go/${link.id}`;
+---
+
+<a
+  href={href}
+  class="card card-hover relative flex items-center gap-4 p-4"
+  data-link
+  style={`--a:${hex}`}
+>
+  <span class="grid place-items-center w-11 h-11 rounded-xl shrink-0" style={`background:color-mix(in srgb, ${hex} 14%, transparent);color:${hex}`}>
+    <Icon name={link.icon || "link"} size={20} />
+  </span>
+  <span class="flex-1 min-w-0">
+    <span class="block font-display font-semibold leading-tight">{link.label}</span>
+    {link.description && <span class="block text-ink-dim text-sm truncate">{link.description}</span>}
+  </span>
+  <Icon name="arrow-up-right" size={18} class="text-ink-faint shrink-0 transition-transform" />
+</a>

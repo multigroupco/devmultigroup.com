@@ -1,0 +1,84 @@
+---
+import Icon from "./Icon.astro";
+import { BRAND, FOOTER_NAV, SOCIALS } from "@/lib/site";
+
+const year = new Date().getFullYear();
+const mg = SOCIALS.multigroup;
+const social = [
+  { icon: "instagram", href: mg.instagram, label: "Instagram" },
+  { icon: "twitter", href: mg.twitter, label: "X / Twitter" },
+  { icon: "linkedin", href: mg.linkedin, label: "LinkedIn" },
+  { icon: "youtube", href: mg.youtube, label: "YouTube" },
+];
+---
+
+<footer class="relative mt-24 border-t border-line">
+  <div class="container-x py-9">
+    <div class="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr]">
+      <div>
+        <a href="/" class="inline-flex items-center mb-4">
+          <img src="/dmg-logo.webp" alt={BRAND.name} width="173" height="36" class="h-9 w-auto" />
+        </a>
+        <p class="text-ink-dim text-sm max-w-xs leading-relaxed">{BRAND.description}</p>
+        <div class="flex items-center gap-2 mt-5">
+          {
+            social.map((s) => (
+              <a
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={s.label}
+                class="grid place-items-center w-9 h-9 rounded-full border border-line text-ink-dim hover:text-ink-text hover:border-line-strong transition-colors"
+              >
+                <Icon name={s.icon} size={17} />
+              </a>
+            ))
+          }
+          <button type="button" data-contact="support" aria-label="Bize ulaş" title="Bize ulaş" class="grid place-items-center w-9 h-9 rounded-full border border-line text-ink-dim hover:text-ink-text hover:border-line-strong transition-colors">
+            <Icon name="mail" size={17} />
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <div class="grid grid-cols-2 gap-x-8">
+          <ul class="space-y-2.5">
+            {FOOTER_NAV.slice(0, 4).map((n) => (
+              <li>
+                <a href={n.href} class="text-ink-dim hover:text-ink-text text-sm transition-colors">{n.label}</a>
+              </li>
+            ))}
+          </ul>
+          <ul class="space-y-2.5">
+            {FOOTER_NAV.slice(4).map((n) => (
+              <li>
+                <a href={n.href} class="text-ink-dim hover:text-ink-text text-sm transition-colors">{n.label}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div>
+        <p class="text-ink-dim text-sm leading-relaxed mb-4">
+          MultiAcademy bizim öğrenme kolumuz — geliştiriciler için Bootcamp'ler ve
+          uygulamalı programlar.
+        </p>
+        <div class="flex items-center gap-2">
+          <a href={SOCIALS.multiacademy.instagram} target="_blank" rel="noopener noreferrer" aria-label="MultiAcademy Instagram" class="grid place-items-center w-9 h-9 rounded-full border border-line text-ink-dim hover:text-ink-text hover:border-line-strong transition-colors">
+            <Icon name="instagram" size={17} />
+          </a>
+          <a href={SOCIALS.multiacademy.linkedin} target="_blank" rel="noopener noreferrer" aria-label="MultiAcademy LinkedIn" class="grid place-items-center w-9 h-9 rounded-full border border-line text-ink-dim hover:text-ink-text hover:border-line-strong transition-colors">
+            <Icon name="linkedin" size={17} />
+          </a>
+          <a href="/academy" class="chip ml-1">Akademiyi keşfet</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-12 pt-6 border-t border-line-soft flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-ink-faint">
+      <p>© 2020–{year} {BRAND.name}. Topluluk için özenle hazırlandı.</p>
+      <p class="font-mono">{BRAND.tagline.toLowerCase()}</p>
+    </div>
+  </div>
+</footer>

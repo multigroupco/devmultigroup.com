@@ -1,0 +1,88 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import LinkButton from "@/components/LinkButton.astro";
+import Icon from "@/components/Icon.astro";
+import { getEnv } from "@/lib/runtime";
+import { listLinks } from "@/lib/content";
+import { BRAND, SOCIALS } from "@/lib/site";
+import type { LinkRow } from "@/lib/types";
+
+const env = getEnv(Astro.locals);
+const links = await listLinks(env);
+
+const ORDER = ["primary", "communities", "academy", "resources", "social", "links"];
+const LABELS: Record<string, string> = {
+  primary: "",
+  communities: "Communities",
+  academy: "Academy",
+  resources: "Resources",
+  social: "Follow us",
+  links: "More",
+};
+const grouped = new Map<string, LinkRow[]>();
+for (const l of links) {
+  const g = l.group_name || "links";
+  if (!grouped.has(g)) grouped.set(g, []);
+  grouped.get(g)!.push(l);
+}
+const orderedGroups = [
+  ...ORDER.filter((g) => grouped.has(g)),
+  ...[...grouped.keys()].filter((g) => !ORDER.includes(g)),
+];
+
+const social = [
+  { icon: "instagram", href: SOCIALS.multigroup.instagram },
+  { icon: "twitter", href: SOCIALS.multigroup.twitter },
+  { icon: "linkedin", href: SOCIALS.multigroup.linkedin },
+  { icon: "youtube", href: SOCIALS.multigroup.youtube },
+];
+---
+
+<BaseLayout title="Bağlantılar" description="Developer MultiGroup'la ilgili her şey — tek dokunuşta." canonicalPath="/links" bare>
+  <div class="min-h-dvh flex flex-col items-center px-5 py-8">
+    <main class="w-full max-w-md">
+      <!-- profile -->
+      <div class="text-center">
+        <a href="/" class="inline-block">
+          <img src="/dmg-logo.webp" alt={BRAND.name} width="245" height="51" class="h-12 w-auto mx-auto" />
+        </a>
+        <h1 class="sr-only">Developer MultiGroup</h1>
+        <p class="text-ink-dim text-sm mt-4">{BRAND.tagline}</p>
+        <div class="flex items-center justify-center gap-2 mt-3 text-xs text-ink-faint">
+          <span class="inline-flex items-center gap-1"><Icon name="map-pin" size={13} /> Türkiye</span>
+          <span class="opacity-40">•</span>
+          <span class="inline-flex items-center gap-1"><Icon name="users" size={13} /> yazılım topluluğu</span>
+        </div>
+
+        <div class="flex items-center justify-center gap-2 mt-5">
+          {
+            social.map((s) => (
+              <a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.icon} class="grid place-items-center w-10 h-10 rounded-full border border-line text-ink-dim hover:text-ink-text hover:border-line-strong transition-colors">
+                <Icon name={s.icon} size={18} />
+              </a>
+            ))
+          }
+        </div>
+      </div>
+
+      <!-- link groups -->
+      <div class="mt-9 space-y-6">
+        {
+          links.length === 0 ? (
+            <div class="card p-8 text-center text-ink-dim text-sm">Bağlantılar hazırlanıyor.</div>
+          ) : (
+            orderedGroups.map((g) => (
+              <section class="space-y-2.5">
+                {grouped.get(g)!.map((l) => <LinkButton link={l} />)}
+              </section>
+            ))
+          )
+        }
+      </div>
+
+      <p class="text-center text-xs text-ink-faint mt-10">
+        <a href="/" class="hover:text-ink-text transition-colors">{BRAND.domain}</a>
+      </p>
+    </main>
+  </div>
+</BaseLayout>

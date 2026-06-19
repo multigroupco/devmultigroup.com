@@ -1,0 +1,274 @@
+---
+import Icon from "./Icon.astro";
+import { NAV, BRAND, JOIN_FORM } from "@/lib/site";
+
+const path = Astro.url.pathname;
+const isActive = (href: string) =>
+  href === "/" ? path === "/" : path === href || path.startsWith(href + "/");
+---
+
+<header id="site-header" class="site-header">
+  <div class="container-x flex items-center justify-between gap-4 h-16">
+    <a href="/" class="flex items-center shrink-0" aria-label={BRAND.name}>
+      <img src="/dmg-logo.webp" alt={BRAND.name} width="135" height="28" class="h-7 w-auto" />
+    </a>
+
+    <nav class="hidden md:flex items-center gap-1" aria-label="Primary">
+      {
+        NAV.map((item) =>
+          item.children ? (
+            <div class="nav-dd">
+              <a
+                href={item.href}
+                class:list={["nav-link inline-flex items-center gap-1", isActive(item.href) && "nav-link-active"]}
+                aria-haspopup="true"
+              >
+                {item.label}
+                <Icon name="chevron-right" size={13} class="dd-caret" />
+              </a>
+              <div class="nav-dd-menu">
+                <div class="nav-dd-panel">
+                  {item.children.map((c) =>
+                    c.soon ? (
+                      <span class="nav-dd-link is-soon">
+                        {c.label}
+                        <span class="dd-soon">yakında</span>
+                      </span>
+                    ) : (
+                      <a href={c.href} class:list={["nav-dd-link", isActive(c.href) && "is-current"]}>
+                        {c.label}
+                        <Icon name="arrow-right" size={14} class="opacity-40" />
+                      </a>
+                    ),
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <a
+              href={item.href}
+              class:list={["nav-link", isActive(item.href) && "nav-link-active"]}
+            >
+              {item.label}
+            </a>
+          ),
+        )
+      }
+    </nav>
+
+    <div class="flex items-center gap-2">
+      <button type="button" data-contact="newsletter" class="btn btn-ghost hidden sm:inline-flex !rounded-xl !p-2.5" aria-label="Bültene abone ol" title="Bültene abone ol">
+        <Icon name="bell" size={16} />
+      </button>
+      <a href={JOIN_FORM} target="_blank" rel="noopener noreferrer" class="btn btn-ghost group hidden sm:inline-flex !rounded-xl !py-2 !px-3.5 text-sm" data-ga="join_click" data-ga-params={JSON.stringify({ location: "header" })}>
+        Aramıza katıl
+        <span class="relative inline-flex w-[15px] h-[15px]">
+          <Icon name="user-check" size={15} class="absolute inset-0 transition-all duration-200 group-hover:opacity-0 group-hover:scale-50" />
+          <Icon name="arrow-up-right" size={15} class="absolute inset-0 opacity-0 scale-50 transition-all duration-200 group-hover:opacity-100 group-hover:scale-100" />
+        </span>
+      </a>
+      <button id="menu-toggle" class="md:hidden btn btn-ghost !p-2.5" aria-label="Menu" aria-expanded="false">
+        <Icon name="menu" size={20} />
+      </button>
+    </div>
+  </div>
+
+  <!-- mobile drawer -->
+  <div id="mobile-nav" class="mobile-nav md:hidden">
+    <nav class="container-x flex flex-col py-3" aria-label="Mobile">
+      {
+        NAV.map((item) =>
+          item.children ? (
+            <div class="mnav-group">
+              <span class="mnav-parent">{item.label}</span>
+              {item.children.map((c) =>
+                c.soon ? (
+                  <span class="mnav-link is-soon">
+                    {c.label}
+                    <span class="dd-soon">yakında</span>
+                  </span>
+                ) : (
+                  <a href={c.href} class:list={["mnav-link", isActive(c.href) && "text-grad"]}>
+                    {c.label}
+                    <Icon name="chevron-right" size={16} />
+                  </a>
+                ),
+              )}
+            </div>
+          ) : (
+            <a href={item.href} class:list={["mnav-link", isActive(item.href) && "text-grad"]}>
+              {item.label}
+              <Icon name="chevron-right" size={16} />
+            </a>
+          ),
+        )
+      }
+      <a href={JOIN_FORM} target="_blank" rel="noopener noreferrer" class="btn btn-ghost mt-3 justify-center !rounded-xl" data-ga="join_click" data-ga-params={JSON.stringify({ location: "mobile_nav" })}><Icon name="user-check" size={16} /> Aramıza katıl</a>
+      <button type="button" data-contact="newsletter" class="btn btn-ghost mt-2 justify-center !rounded-xl"><Icon name="bell" size={16} /> Bültene abone ol</button>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    border-bottom: 1px solid transparent;
+    transition: background-color 0.3s ease, border-color 0.3s ease, backdrop-filter 0.3s ease;
+  }
+  .site-header.scrolled {
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(14px) saturate(140%);
+    border-bottom-color: var(--color-line);
+  }
+  .nav-link {
+    position: relative;
+    padding: 0.5rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    color: var(--color-ink-dim);
+    transition: color 0.2s var(--ease-out-soft);
+  }
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0.9rem;
+    right: 0.9rem;
+    bottom: 0.26rem;
+    height: 1.5px;
+    border-radius: 2px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: center;
+    opacity: 0;
+    transition: transform 0.25s var(--ease-out-soft), opacity 0.2s;
+  }
+  .nav-link:hover {
+    color: var(--color-ink-text);
+  }
+  .nav-link-active {
+    color: var(--color-ink-text);
+  }
+  .nav-link:hover::after,
+  .nav-link-active::after {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+
+  /* partner dropdown */
+  .nav-dd { position: relative; }
+  .dd-caret { transform: rotate(90deg); opacity: 0.5; }
+  .nav-dd-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    padding-top: 0.5rem;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(6px);
+    transition: opacity 0.2s var(--ease-out-soft), transform 0.2s var(--ease-out-soft), visibility 0.2s;
+    z-index: 60;
+  }
+  .nav-dd:hover .nav-dd-menu,
+  .nav-dd:focus-within .nav-dd-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+  .nav-dd-panel {
+    min-width: 13rem;
+    padding: 0.4rem;
+    border-radius: 16px;
+    border: 1px solid var(--color-line);
+    background: rgba(0, 0, 0, 0.92);
+    backdrop-filter: blur(16px) saturate(140%);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+  .nav-dd-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    color: var(--color-ink-dim);
+    transition: background-color 0.15s, color 0.15s;
+  }
+  a.nav-dd-link:hover,
+  .nav-dd-link.is-current {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-ink-text);
+  }
+  .nav-dd-link.is-soon { color: var(--color-ink-faint); cursor: default; }
+  .dd-soon {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-line);
+    color: var(--color-ink-faint);
+  }
+
+  .mobile-nav {
+    overflow: hidden;
+    max-height: 0;
+    border-bottom: 1px solid transparent;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(14px);
+    transition: max-height 0.35s var(--ease-out-soft), border-color 0.35s;
+  }
+  .mobile-nav.open {
+    max-height: 40rem;
+    border-bottom-color: var(--color-line);
+  }
+  .mnav-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 0.25rem;
+    border-bottom: 1px solid var(--color-line-soft);
+    color: var(--color-ink-text);
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+  }
+  .mnav-parent {
+    display: block;
+    padding: 0.9rem 0.25rem 0.35rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-ink-faint);
+  }
+  .mnav-link.is-soon { color: var(--color-ink-faint); }
+</style>
+
+<script is:inline>
+  (() => {
+    const onScroll = () => {
+      const h = document.getElementById("site-header");
+      if (h) h.classList.toggle("scrolled", window.scrollY > 8);
+    };
+    const bind = () => {
+      onScroll();
+      const t = document.getElementById("menu-toggle");
+      const d = document.getElementById("mobile-nav");
+      if (t && d)
+        t.onclick = () => {
+          const open = d.classList.toggle("open");
+          t.setAttribute("aria-expanded", String(open));
+        };
+    };
+    if (!window.__dmgHeader) {
+      window.__dmgHeader = true;
+      window.addEventListener("scroll", onScroll, { passive: true });
+      document.addEventListener("astro:page-load", bind);
+    }
+    bind();
+  })();
+</script>

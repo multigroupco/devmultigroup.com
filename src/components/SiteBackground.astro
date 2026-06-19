@@ -1,0 +1,66 @@
+---
+// Fixed, non-interactive backdrop: soft multi-colour gradient mesh + film grain.
+// Rendered once per page behind everything (z-index below content).
+---
+
+<div class="site-bg" aria-hidden="true">
+  <div class="blob blob-a animate-float-slow"></div>
+  <div class="blob blob-b animate-float-slow"></div>
+  <div class="blob blob-c animate-float-slow"></div>
+  <div class="grain"></div>
+  <div class="vignette"></div>
+</div>
+
+<style>
+  .site-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -10;
+    overflow: hidden;
+    pointer-events: none;
+    background:
+      radial-gradient(120% 80% at 50% -10%, rgba(255, 255, 255, 0.05), transparent 60%),
+      var(--color-ink-950);
+  }
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.6;
+    will-change: transform;
+  }
+  .blob-a {
+    width: 46rem;
+    height: 46rem;
+    top: -18rem;
+    left: -10rem;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.05), transparent 65%);
+  }
+  .blob-b {
+    width: 40rem;
+    height: 40rem;
+    top: 10rem;
+    right: -14rem;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.035), transparent 65%);
+    animation-delay: -5s;
+  }
+  .blob-c {
+    width: 38rem;
+    height: 38rem;
+    bottom: -18rem;
+    left: 30%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.03), transparent 65%);
+    animation-delay: -9s;
+  }
+  .grain {
+    position: absolute;
+    inset: -50%;
+    opacity: 0.04;
+    mix-blend-mode: overlay;
+  }
+  .vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(120% 120% at 50% 0%, transparent 55%, rgba(0, 0, 0, 0.5) 100%);
+  }
+</style>

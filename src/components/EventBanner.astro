@@ -1,0 +1,162 @@
+---
+import Icon from "@/components/Icon.astro";
+import { formatDate } from "@/lib/format";
+import { GATHIN } from "@/lib/site";
+import type { EventRow } from "@/lib/types";
+
+interface Props {
+  event: EventRow;
+}
+const { event } = Astro.props;
+const href =
+  event.registration_url ||
+  (event.community === "multiacademy" ? GATHIN.multiacademy : GATHIN.multigroup);
+const when = formatDate(event.starts_at);
+const label = when ? `${event.title} · ${when}` : event.title;
+---
+
+<div id="event-banner" class="event-banner" data-banner-id={event.id}>
+  <div class="container-x banner-inner">
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      class="banner-link"
+      aria-label={`${event.title} — Gathin'de kayıt ol`}
+    >
+      <span class="pulse-dot" aria-hidden="true"></span>
+      <span class="banner-marquee"><span class="banner-text">{label}</span></span>
+    </a>
+    <a href={href} target="_blank" rel="noopener noreferrer" class="banner-cta">
+      <span class="hidden sm:inline">Gathin'de&nbsp;</span>kayıt ol
+      <Icon name="arrow-up-right" size={14} />
+    </a>
+    <button id="banner-dismiss" class="banner-x" aria-label="Kapat">
+      <Icon name="close" size={15} />
+    </button>
+  </div>
+</div>
+
+<style>
+  .event-banner {
+    position: relative;
+    background: #1a9d57;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.18);
+    color: #fff;
+    font-size: 0.85rem;
+  }
+  .banner-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding-block: 0.55rem;
+    width: 100%;
+    min-width: 0;
+  }
+  .banner-link {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    color: #fff;
+  }
+  .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    animation: pulse 2s infinite;
+    flex: none;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.55); }
+    70% { box-shadow: 0 0 0 8px rgba(255, 255, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+  }
+  .banner-marquee {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .banner-text {
+    font-weight: 600;
+  }
+  .banner-cta {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+  }
+  .banner-x {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 1.7rem;
+    height: 1.7rem;
+    border-radius: 999px;
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .banner-x:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  /* On mobile the title scrolls (marquee) so the full name is readable and the
+     register link never collides with it. */
+  @media (max-width: 719px) {
+    .banner-text {
+      display: inline-block;
+      padding-left: 100%;
+      animation: banner-scroll 18s linear infinite;
+    }
+    .banner-link:active .banner-text {
+      animation-play-state: paused;
+    }
+  }
+  @keyframes banner-scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-100%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .banner-text {
+      animation: none !important;
+      padding-left: 0 !important;
+    }
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    const bind = () => {
+      const el = document.getElementById("event-banner");
+      if (!el) return;
+      const id = el.getAttribute("data-banner-id");
+      const key = "dmg-banner-dismissed";
+      try {
+        if (localStorage.getItem(key) === id) {
+          el.style.display = "none";
+          return;
+        }
+      } catch {}
+      const x = document.getElementById("banner-dismiss");
+      if (x)
+        x.onclick = (e) => {
+          e.preventDefault();
+          el.style.display = "none";
+          try { localStorage.setItem(key, id || "1"); } catch {}
+        };
+    };
+    if (!window.__dmgBanner) {
+      window.__dmgBanner = true;
+      document.addEventListener("astro:page-load", bind);
+    }
+    bind();
+  })();
+</script>

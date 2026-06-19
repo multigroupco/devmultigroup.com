@@ -1,0 +1,122 @@
+---
+import { toLocalInput, type Field } from "@/lib/admin";
+import { imageSrc } from "@/lib/ui";
+
+interface Props {
+  field: Field;
+  value?: unknown;
+}
+const { field, value } = Astro.props;
+const base =
+  "w-full bg-ink-900 border border-line rounded-xl px-3.5 py-2.5 text-sm text-ink-text placeholder:text-ink-faint focus:border-violet outline-none transition-colors";
+const str = value == null ? "" : String(value);
+const num = Number(value);
+const preview = field.type === "image" && str ? imageSrc(str) : "";
+---
+
+<label class:list={["block", field.full && "md:col-span-2"]}>
+  <span class="block text-sm text-ink-dim mb-1.5 font-medium">
+    {field.label}
+    {field.required && <span class="text-coral">*</span>}
+  </span>
+
+  {field.type === "textarea" && (
+    <textarea name={field.name} rows="3" class={base} placeholder={field.placeholder} required={field.required}>{str}</textarea>
+  )}
+
+  {field.type === "markdown" && (
+    <div class="space-y-1.5">
+      <textarea name={field.name} rows="12" data-md-upload class={`${base} font-mono text-[0.82rem] leading-6`} placeholder="# Markdown supported…">{str}</textarea>
+      <span class="block text-xs text-ink-faint">Görsel yapıştır (Ctrl/⌘+V) ya da sürükle-bırak — otomatik yüklenir ve markdown olarak eklenir.</span>
+    </div>
+  )}
+
+  {(field.type === "select" || field.type === "color") && (
+    <select name={field.name} class={base}>
+      {(field.options ?? []).map((o) => (
+        <option value={o.value} selected={str === o.value}>{o.label}</option>
+      ))}
+    </select>
+  )}
+
+  {field.type === "boolean" && (
+    <div class="flex items-center gap-2.5 pt-1">
+      <input type="checkbox" name={field.name} value="1" checked={num === 1} class="w-4 h-4 accent-violet" />
+      <span class="text-sm text-ink-dim">Enabled</span>
+    </div>
+  )}
+
+  {field.type === "datetime" && (
+    <input type="datetime-local" name={field.name} value={toLocalInput(value as number)} class={base} />
+  )}
+
+  {field.type === "number" && (
+    <input type="number" name={field.name} value={Number.isFinite(num) ? num : 0} class={base} />
+  )}
+
+  {field.type === "image" && (
+    <div class="space-y-2">
+      {preview && <img src={preview} alt="" class="h-24 rounded-lg border border-line object-cover" />}
+      <input type="text" name={field.name} value={str} class={base} placeholder="https://… or leave blank and upload below" />
+      <input type="file" name={`${field.name}_file`} accept="image/*" class="block text-xs text-ink-dim file:mr-3 file:rounded-lg file:border-0 file:bg-ink-800 file:px-3 file:py-1.5 file:text-ink-text" />
+    </div>
+  )}
+
+  {(field.type === "text" || field.type === "tags") && (
+    <input type="text" name={field.name} value={str} class={base} placeholder={field.placeholder ?? (field.type === "tags" ? "comma, separated, tags" : "")} required={field.required} />
+  )}
+
+  {field.help && <span class="block text-xs text-ink-faint mt-1.5">{field.help}</span>}
+</label>
+
+{field.type === "markdown" && (
+  <script is:inline>
+    (() => {
+      if (window.__mdUpload) return;
+      window.__mdUpload = true;
+      const isMd = (el) => el && el.tagName === "TEXTAREA" && el.hasAttribute("data-md-upload");
+      const insertAt = (ta, text) => {
+        const s = ta.selectionStart, e = ta.selectionEnd;
+        ta.value = ta.value.slice(0, s) + text + ta.value.slice(e);
+        ta.selectionStart = ta.selectionEnd = s + text.length;
+      };
+      const replaceToken = (ta, token, repl) => {
+        const i = ta.value.indexOf(token);
+        if (i !== -1) ta.value = ta.value.slice(0, i) + repl + ta.value.slice(i + token.length);
+        return i !== -1;
+      };
+      async function upload(ta, file) {
+        const token = "![yükleniyor… " + Math.random().toString(36).slice(2, 8) + "]()";
+        insertAt(ta, (ta.value && !ta.value.endsWith("\n") ? "\n" : "") + token + "\n");
+        try {
+          const fd = new FormData();
+          fd.append("file", file, file.name || "pasted.png");
+          const r = await fetch("/admin/upload", { method: "POST", body: fd });
+          const j = await r.json().catch(() => ({}));
+          if (j.ok) replaceToken(ta, token, "![](" + j.url + ")");
+          else { replaceToken(ta, token, ""); alert(j.error || "Yükleme başarısız."); }
+        } catch {
+          replaceToken(ta, token, "");
+          alert("Yükleme hatası.");
+        }
+      }
+      document.addEventListener("paste", (e) => {
+        const ta = document.activeElement;
+        if (!isMd(ta)) return;
+        const imgs = [...((e.clipboardData && e.clipboardData.items) || [])].filter((i) => i.kind === "file" && i.type.startsWith("image/"));
+        if (!imgs.length) return;
+        e.preventDefault();
+        imgs.forEach((i) => { const f = i.getAsFile(); if (f) upload(ta, f); });
+      });
+      document.addEventListener("dragover", (e) => { if (isMd(e.target)) e.preventDefault(); });
+      document.addEventListener("drop", (e) => {
+        const ta = e.target;
+        if (!isMd(ta)) return;
+        const files = [...((e.dataTransfer && e.dataTransfer.files) || [])].filter((f) => f.type.startsWith("image/"));
+        if (!files.length) return;
+        e.preventDefault();
+        files.forEach((f) => upload(ta, f));
+      });
+    })();
+  </script>
+)}

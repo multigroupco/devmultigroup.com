@@ -1,0 +1,47 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import Icon from "@/components/Icon.astro";
+import { getEnv } from "@/lib/runtime";
+import { RESOURCES, countRows } from "@/lib/admin";
+
+const env = getEnv(Astro.locals);
+const resources = Object.values(RESOURCES);
+const counts = await Promise.all(
+  resources.map((r) => countRows(env, r.table).catch(() => 0)),
+);
+const cards = resources.map((r, i) => ({ ...r, count: counts[i] }));
+---
+
+<AdminLayout title="Dashboard">
+  <header class="mb-8">
+    <h1 class="text-3xl font-semibold">Dashboard</h1>
+    <p class="text-ink-dim mt-2 text-sm">Everything on the site is editable here. Changes are cached and invalidated automatically.</p>
+  </header>
+
+  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {
+      cards.map((c) => (
+        <a href={`/admin/${c.key}`} class="card card-hover p-5 flex items-center gap-4">
+          <span class="grid place-items-center w-11 h-11 rounded-xl bg-white/5 text-violet shrink-0">
+            <Icon name={c.icon} size={20} />
+          </span>
+          <span class="flex-1">
+            <span class="block font-display font-semibold">{c.label}</span>
+            <span class="block text-ink-faint text-sm">{c.count} {c.count === 1 ? "item" : "items"}</span>
+          </span>
+          <Icon name="chevron-right" size={18} class="text-ink-faint" />
+        </a>
+      ))
+    }
+    <a href="/admin/settings" class="card card-hover p-5 flex items-center gap-4">
+      <span class="grid place-items-center w-11 h-11 rounded-xl bg-white/5 text-amber shrink-0">
+        <Icon name="sparkles" size={20} />
+      </span>
+      <span class="flex-1">
+        <span class="block font-display font-semibold">Settings</span>
+        <span class="block text-ink-faint text-sm">Analytics, SEO &amp; site config</span>
+      </span>
+      <Icon name="chevron-right" size={18} class="text-ink-faint" />
+    </a>
+  </div>
+</AdminLayout>

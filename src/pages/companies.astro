@@ -1,0 +1,187 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Icon from "@/components/Icon.astro";
+import SectionHeader from "@/components/SectionHeader.astro";
+import CompanyStrip from "@/components/CompanyStrip.astro";
+import { COMPANIES, BRAND } from "@/lib/site";
+
+const companiesLd = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "Developer MultiGroup partner şirketleri",
+  numberOfItems: COMPANIES.length,
+  itemListElement: COMPANIES.map((c, i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    item: { "@type": "Organization", name: c.name },
+  })),
+};
+
+const wite = [
+  { img: "/partners/wite-1.jpg", title: "Architecture & Design Patterns", oturum: "Oturum 1", href: "https://gathin.com/events/architecture-design-patterns-583" },
+  { img: "/partners/wite-2.jpg", title: "Kotlin Deep Dive", oturum: "Oturum 2", href: "https://gathin.com/events/kotlin-deep-dive-%E2%80%94-aadc-2-997" },
+  { img: "/partners/wite-3.jpg", title: "Jetpack Compose & Accessibility", oturum: "Oturum 3", href: "https://gathin.com/events/jetpack-compose-accessibility-community-networking-100" },
+];
+const lodos = [
+  { img: "/partners/lodos-gathin.jpg", name: "ToGather", url: "https://gathin.com", label: "gathin.com", desc: "Etkinlik platformu" },
+  { img: "/partners/lodos-socialhive.jpg", name: "SocialHive", url: "https://socialhive.lodos.io", label: "socialhive.lodos.io", desc: "Topluluk & iletişim platformu" },
+  { img: "/partners/lodos-achieve.jpg", name: "Achieve", url: "https://achieve.lodos.io", label: "achieve.lodos.io", desc: "Sertifikasyon platformu" },
+];
+const bwaiHref = "https://gathin.com/events/build-with-ai-program-2026-649";
+---
+
+<BaseLayout
+  title="Partner Şirketler & İş Birlikleri"
+  description="Developer MultiGroup'un birlikte ürettiği markalar — Google, Wite, Lodos, Trendyol, Hepsiburada, Akbank ve daha fazlası. Ortak workshop ve programlar."
+  canonicalPath="/companies"
+  jsonLd={companiesLd}
+  breadcrumbs={[{ name: "Şirketler", item: `${BRAND.url}/companies` }]}
+>
+  <section class="container-x pt-14 pb-8">
+    <div class="grid lg:grid-cols-[1.25fr_0.75fr] gap-10 lg:gap-12 items-center">
+      <div>
+        <p class="text-sm text-ink-faint uppercase tracking-[0.18em] mb-4">Partner · Şirketler</p>
+        <h1 class="text-4xl md:text-5xl font-semibold leading-[1.05]">
+          Yol boyunca <span class="text-grad">birlikte ürettiğimiz</span> markalar.
+        </h1>
+        <p class="text-ink-dim text-lg mt-5 max-w-xl leading-relaxed">
+          Workshop'lardan platform geliştirmeye, sertifika programlarından öğrenci köprülerine —
+          sektörün önde gelen markalarıyla gerçek işler üretiyoruz.
+        </p>
+      </div>
+      <div class="lg:pl-10 lg:border-l border-line">
+        <div class="flex flex-wrap gap-x-9 gap-y-4">
+          <div>
+            <div class="font-display text-3xl font-semibold text-grad tabular-nums">25+</div>
+            <div class="text-ink-faint text-xs mt-1 font-mono uppercase tracking-wide">şirket</div>
+          </div>
+          <div>
+            <div class="font-display text-3xl font-semibold text-grad tabular-nums">4</div>
+            <div class="text-ink-faint text-xs mt-1 font-mono uppercase tracking-wide">etkinlik</div>
+          </div>
+          <div>
+            <div class="font-display text-3xl font-semibold text-grad tabular-nums">750+</div>
+            <div class="text-ink-faint text-xs mt-1 font-mono uppercase tracking-wide">katılımcı</div>
+          </div>
+        </div>
+        <div class="card p-4 mt-6 flex items-center justify-between gap-4">
+          <div class="min-w-0">
+            <p class="font-medium text-sm">Sponsor olmak ister misiniz?</p>
+            <p class="text-ink-faint text-xs mt-0.5">Markanızı topluluğa taşıyın.</p>
+          </div>
+          <button type="button" data-contact="sponsor" class="btn btn-primary shrink-0 !py-2 !px-3.5 text-sm">
+            <Icon name="mail" size={15} /> Sponsor ol
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- signature: drifting logo wall -->
+  <section class="py-6 space-y-7">
+    <CompanyStrip />
+    <CompanyStrip reverse />
+  </section>
+
+  <section class="container-x py-8 space-y-5">
+    <SectionHeader title="Öne çıkan iş birlikleri" />
+
+    <!-- Wite -->
+    <div class="card p-6 md:p-8">
+      <div class="flex flex-wrap items-center gap-3">
+        <img src="/companies/wite.png" alt="Wite" height="24" class="h-6 w-auto" />
+        <span class="chip">Android</span>
+      </div>
+      <h3 class="font-display text-xl md:text-2xl font-semibold mt-4">Android Workshop Serisi</h3>
+      <p class="text-ink-dim mt-2 max-w-2xl leading-relaxed">
+        Wite ile 3 oturumluk, uygulamalı bir ileri seviye Android programı yürütüyoruz —
+        program sonunda uygun öğrencileri Wite'a yönlendiriyoruz.
+      </p>
+      <div class="grid sm:grid-cols-3 gap-3 mt-6">
+        {
+          wite.map((w) => (
+            <a href={w.href} target="_blank" rel="noopener noreferrer" class="group relative block rounded-xl overflow-hidden ring-1 ring-line card-hover">
+              <img src={w.img} alt={`${w.title} — ${w.oturum}`} loading="lazy" class="w-full aspect-video object-cover transition duration-500 group-hover:scale-[1.03]" />
+              <div class="absolute inset-0 grid place-items-center bg-black/0 group-hover:bg-black/45 transition-colors">
+                <span class="flex items-center gap-1.5 text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition">
+                  Etkinliğe git <Icon name="arrow-up-right" size={15} />
+                </span>
+              </div>
+              <span class="absolute top-2.5 right-2.5 grid place-items-center w-7 h-7 rounded-full bg-black/55 backdrop-blur-sm border border-white/15 text-white">
+                <Icon name="arrow-up-right" size={13} />
+              </span>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+
+    <!-- Lodos -->
+    <div class="card p-6 md:p-8">
+      <img src="/companies/lodos.png" alt="Lodos.io" height="24" class="h-6 w-auto" />
+      <h3 class="font-display text-xl md:text-2xl font-semibold mt-4">Platform Geliştirme</h3>
+      <p class="text-ink-dim mt-2 max-w-2xl leading-relaxed">
+        Lodos ile üç platformu birlikte inşa ediyoruz: <strong class="text-ink-text">ToGather</strong> (etkinlik),
+        <strong class="text-ink-text">SocialHive</strong> (topluluk & iletişim) ve
+        <strong class="text-ink-text">Achieve</strong> (sertifikasyon). Topluluk tarafını biz kuruyoruz —
+        insanları bir araya getiren ve toplulukları daha iyi araçlarla büyüten kısmı.
+      </p>
+      <div class="grid sm:grid-cols-3 gap-4 mt-6">
+        {
+          lodos.map((l) => (
+            <a href={l.url} target="_blank" rel="noopener noreferrer" class="group rounded-xl overflow-hidden ring-1 ring-line card-hover block">
+              <img src={l.img} alt={l.name} loading="lazy" class="w-full aspect-video object-cover" />
+              <div class="flex items-center justify-between gap-2 p-4">
+                <div class="min-w-0">
+                  <p class="font-medium text-sm">{l.name}</p>
+                  <p class="text-ink-faint text-xs mt-0.5 truncate">{l.desc} · {l.label}</p>
+                </div>
+                <Icon name="arrow-up-right" size={16} class="text-ink-faint group-hover:text-ink-text transition-colors shrink-0" />
+              </div>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+
+    <!-- Google -->
+    <div class="card p-6 md:p-8">
+      <div class="flex flex-wrap items-start justify-between gap-6">
+        <div>
+          <img src="/companies/google.png" alt="Google" height="24" class="h-6 w-auto" />
+          <h3 class="font-display text-xl md:text-2xl font-semibold mt-4">Build with AI</h3>
+          <p class="text-ink-dim mt-2 max-w-xl leading-relaxed">
+            Google for Developers ile Build with AI sertifika programını yürüttük.
+          </p>
+        </div>
+        <div class="flex gap-x-8 gap-y-3 shrink-0">
+          <div>
+            <div class="font-display text-3xl font-semibold text-grad tabular-nums">1.5k</div>
+            <div class="text-ink-faint text-xs mt-1 font-mono uppercase tracking-wide">katılımcı</div>
+          </div>
+          <div>
+            <div class="font-display text-3xl font-semibold text-grad tabular-nums">30+</div>
+            <div class="text-ink-faint text-xs mt-1 font-mono uppercase tracking-wide">partner etkinliği</div>
+          </div>
+          <div>
+            <div class="font-display text-3xl font-semibold text-grad tabular-nums">10+</div>
+            <div class="text-ink-faint text-xs mt-1 font-mono uppercase tracking-wide">oturum</div>
+          </div>
+        </div>
+      </div>
+      <div class="grid sm:grid-cols-3 gap-3 mt-6">
+        <a href={bwaiHref} target="_blank" rel="noopener noreferrer" class="group relative block rounded-xl overflow-hidden ring-1 ring-line card-hover">
+          <img src="/partners/google-bwai.jpg" alt="Build with AI 2026" loading="lazy" class="w-full aspect-video object-cover transition duration-500 group-hover:scale-[1.03]" />
+          <div class="absolute inset-0 grid place-items-center bg-black/0 group-hover:bg-black/45 transition-colors">
+            <span class="flex items-center gap-1.5 text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition">
+              Etkinliğe git <Icon name="arrow-up-right" size={15} />
+            </span>
+          </div>
+          <span class="absolute top-2.5 right-2.5 grid place-items-center w-7 h-7 rounded-full bg-black/55 backdrop-blur-sm border border-white/15 text-white">
+            <Icon name="arrow-up-right" size={13} />
+          </span>
+        </a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

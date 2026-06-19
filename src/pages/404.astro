@@ -1,0 +1,20 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Icon from "@/components/Icon.astro";
+---
+
+<BaseLayout title="Sayfa bulunamadı" noindex hideBanner>
+  <section class="container-x py-16 md:py-24 text-center">
+    <p class="text-sm text-ink-faint mb-5 uppercase tracking-[0.2em]">Sayfa bulunamadı</p>
+    <h1 class="text-7xl md:text-9xl font-semibold text-grad">404</h1>
+    <p class="text-ink-dim mt-5 max-w-md mx-auto">
+      Aradığın sayfa burada değil — taşınmış ya da hiç olmamış olabilir. Hadi
+      seni doğru yere götürelim.
+    </p>
+    <div class="flex flex-wrap justify-center gap-3 mt-8">
+      <a href="/" class="btn btn-primary"><Icon name="arrow-right" size={16} class="rotate-180" /> Ana Sayfa</a>
+      <a href="/events" class="btn btn-ghost">Etkinlikler</a>
+      <a href="/blog" class="btn btn-ghost">Blog</a>
+    </div>
+  </section>
+</BaseLayout>

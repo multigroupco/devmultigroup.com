@@ -1,0 +1,98 @@
+---
+import { BRAND } from "@/lib/site";
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Path (e.g. "/blog/foo") — canonical is derived from Astro.site. */
+  canonicalPath?: string;
+  image?: string;
+  type?: "website" | "article" | "profile";
+  noindex?: boolean;
+  keywords?: string;
+  publishedTime?: string;
+  modifiedTime?: string;
+  /** Google Search Console verification token (settings.gsc_verification). */
+  gscVerification?: string;
+}
+
+const {
+  title,
+  description = BRAND.description,
+  canonicalPath,
+  image,
+  type = "website",
+  noindex = false,
+  keywords,
+  publishedTime,
+  modifiedTime,
+  gscVerification,
+} = Astro.props;
+
+const siteOrigin = (Astro.site?.origin ?? BRAND.url).replace(/\/$/, "");
+const path = canonicalPath ?? Astro.url.pathname;
+const canonical = siteOrigin + (path === "/" ? "" : path.replace(/\/$/, "")) || siteOrigin + "/";
+const fullTitle = title ? `${title} · ${BRAND.short}` : `${BRAND.name} — ${BRAND.tagline}`;
+
+// Open Graph image: use the page's real cover when one is passed; otherwise
+// generate a branded, title-bearing dynamic card via /api/og. The eyebrow is
+// derived from the section so each page gets a distinct, on-brand share image.
+const EYEBROW: Record<string, string> = {
+  blog: "Blog",
+  events: "Etkinlik",
+  academy: "MultiAcademy",
+  team: "Ekip",
+  recordings: "Kayıtlar",
+  communities: "Topluluklar",
+  companies: "Şirketler",
+  about: "Hakkımızda",
+  links: "Bağlantılar",
+};
+const seg = (path.split("/").filter(Boolean)[0] || "").toLowerCase();
+// og:image is built from the ACTUAL request origin (not the configured apex) so the
+// share image always resolves on whatever host serves the page — including the
+// workers.dev staging URL before the apex cutover. canonical/og:url stay on the apex.
+const imgOrigin = (Astro.url?.origin || siteOrigin).replace(/\/$/, "");
+const ogImage =
+  image && image !== "/og-default.png"
+    ? image.startsWith("http")
+      ? image
+      : imgOrigin + image
+    : `${imgOrigin}/api/og?title=${encodeURIComponent(title || BRAND.tagline)}&eyebrow=${encodeURIComponent(EYEBROW[seg] || "Developer MultiGroup")}`;
+---
+
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+<meta name="author" content={BRAND.name} />
+<link rel="canonical" href={canonical} />
+{keywords && <meta name="keywords" content={keywords} />}
+{
+  noindex ? (
+    <meta name="robots" content="noindex, nofollow" />
+  ) : (
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+  )
+}
+{gscVerification && <meta name="google-site-verification" content={gscVerification} />}
+
+<!-- Open Graph -->
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content={BRAND.name} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={ogImage} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content={fullTitle} />
+<meta property="og:locale" content="tr_TR" />
+{publishedTime && <meta property="article:published_time" content={publishedTime} />}
+{modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content="@devmultigroup" />
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImage} />
+<meta name="twitter:image:alt" content={fullTitle} />

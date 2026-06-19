@@ -1,0 +1,41 @@
+---
+import { formatDate } from "@/lib/format";
+import { imageSrc } from "@/lib/ui";
+import type { PostRow } from "@/lib/types";
+
+interface Props {
+  post: PostRow;
+  featured?: boolean;
+}
+const { post, featured = false } = Astro.props;
+// Real cover if set, otherwise a dynamically generated monochrome banner
+// (which already prints the category — so no chip overlay here).
+const cover = imageSrc(post.cover_image) || `/blog/banner/${post.slug}.svg`;
+const href = `/blog/${post.slug}`;
+---
+
+<article class:list={["card card-hover relative overflow-hidden flex flex-col", featured ? "md:flex-row" : "h-full"]}>
+  <div class:list={["relative overflow-hidden skeleton", featured ? "md:w-2/5 aspect-[16/9]" : "aspect-[16/9]"]}>
+    <img
+      src={cover}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      onload="this.parentElement.classList.remove('skeleton')"
+      class="absolute inset-0 w-full h-full object-cover"
+    />
+  </div>
+  <div class:list={["p-5 flex flex-col flex-1", featured && "md:justify-center md:p-7"]}>
+    <h3 class:list={["font-display font-semibold leading-snug", featured ? "text-lg md:text-xl" : "text-lg"]}>
+      <a href={href} class="after:absolute after:inset-0">{post.title}</a>
+    </h3>
+    {post.excerpt && <p class="text-ink-dim text-sm mt-2 line-clamp-3">{post.excerpt}</p>}
+    <div class="flex items-center gap-2 mt-4 text-xs text-ink-faint">
+      <span>{post.author}</span>
+      <span class="opacity-40">•</span>
+      <span>{formatDate(post.published_at ?? post.created_at)}</span>
+      <span class="opacity-40">•</span>
+      <span>{post.reading_minutes} dk okuma</span>
+    </div>
+  </div>
+</article>

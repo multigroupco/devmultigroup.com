@@ -1,0 +1,129 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import EventCard from "@/components/EventCard.astro";
+import RecordingCard from "@/components/RecordingCard.astro";
+import SectionHeader from "@/components/SectionHeader.astro";
+import Icon from "@/components/Icon.astro";
+import { getEnv } from "@/lib/runtime";
+import { listEvents, listRecordings } from "@/lib/content";
+import { GATHIN, SOCIALS, BRAND } from "@/lib/site";
+
+const env = getEnv(Astro.locals);
+const [upcoming, past, recs] = await Promise.all([
+  listEvents(env, { community: "multiacademy", when: "upcoming", limit: 24 }),
+  listEvents(env, { community: "multiacademy", when: "past", limit: 24 }),
+  listRecordings(env, "bootcamp"),
+]);
+
+const programs = [
+  { title: "Modern iOS", text: "SwiftUI, mimari ve App Store'a yayınlama.", icon: "smartphone" },
+  { title: "Android · Compose", text: "XML'den modern Android'e Jetpack Compose.", icon: "layers" },
+  { title: "GenAI Temelleri", text: "Google Gemini ile LLM'ler, prompt yazımı ve ajanlar.", icon: "cpu" },
+  { title: "Web Temelleri", text: "Tarayıcıdan üretim seviyesi uygulamalara.", icon: "code" },
+];
+
+const academyLd = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "MultiAcademy bootcamp programları",
+  itemListElement: programs.map((p, i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    item: {
+      "@type": "Course",
+      name: p.title,
+      description: p.text,
+      provider: {
+        "@type": "EducationalOrganization",
+        name: "MultiAcademy",
+        url: "https://academy.devmultigroup.com",
+      },
+      isAccessibleForFree: true,
+      inLanguage: "tr",
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "TRY",
+        category: "Free",
+        availability: "https://schema.org/InStock",
+      },
+    },
+  })),
+};
+---
+
+<BaseLayout
+  title="Ücretsiz Yazılım Bootcamp'leri · MultiAcademy"
+  description="MultiAcademy — Developer MultiGroup'un öğrenme kolu. Modern iOS'tan GenAI'a ücretsiz, yoğun ve mentör eşliğinde bootcamp'ler."
+  canonicalPath="/academy"
+  jsonLd={academyLd}
+  breadcrumbs={[{ name: "Akademi", item: `${BRAND.url}/academy` }]}
+>
+  <section class="container-x pt-14 pb-8">
+    <div class="card relative overflow-hidden p-8 md:p-12">
+      <div class="absolute -right-16 -top-16 w-72 h-72 rounded-full blur-3xl opacity-50" style="background:radial-gradient(circle, rgba(255,255,255,.06), transparent 70%)"></div>
+      <div class="relative max-w-2xl">
+        <h1 class="text-4xl md:text-5xl font-semibold leading-tight">Üreterek öğren, işe hazır çık.</h1>
+        <p class="text-ink-dim mt-5 leading-relaxed">
+          MultiAcademy, uygulamalı ve mentör eşliğindeki bootcamp'ler düzenliyor — katılımı ücretsiz ve
+          gerçek projeler üzerine kurulu. Gerçekten üreten insanlarla birlikte öğren.
+        </p>
+        <div class="flex flex-wrap gap-3 mt-7">
+          <a href={GATHIN.multiacademy} target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+            <Icon name="calendar" size={17} /> Akademi etkinlikleri
+          </a>
+          <a href="https://academy.devmultigroup.com" target="_blank" rel="noopener noreferrer" class="btn btn-ghost">
+            <Icon name="globe" size={16} /> academy.devmultigroup.com
+          </a>
+          <a href={SOCIALS.multiacademy.instagram} target="_blank" rel="noopener noreferrer" class="btn btn-ghost">
+            <Icon name="instagram" size={16} /> @devmultiacademy
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="container-x py-10">
+    <SectionHeader title="Neler öğretiyoruz" />
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+      {
+        programs.map((p) => (
+          <div class="card card-hover p-6">
+            <span class="grid place-items-center w-11 h-11 rounded-xl mb-4 bg-white/5 text-ink-text">
+              <Icon name={p.icon} size={21} />
+            </span>
+            <h3 class="font-display text-lg font-semibold">{p.title}</h3>
+            <p class="text-ink-dim text-sm mt-2 leading-relaxed">{p.text}</p>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  {
+    upcoming.length > 0 && (
+      <section class="container-x py-8">
+        <SectionHeader title="Akademide yaklaşanlar" />
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">{upcoming.map((e) => <EventCard event={e} />)}</div>
+      </section>
+    )
+  }
+
+  {
+    recs.length > 0 && (
+      <section class="container-x py-8">
+        <SectionHeader title="Bootcamp kayıtları" href="/recordings" hrefLabel="Tüm kayıtlar" />
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">{recs.map((r) => <RecordingCard rec={r} />)}</div>
+      </section>
+    )
+  }
+
+  {
+    past.length > 0 && (
+      <section class="container-x py-8">
+        <SectionHeader title="Geçmiş programlar" />
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">{past.map((e) => <EventCard event={e} />)}</div>
+      </section>
+    )
+  }
+</BaseLayout>

@@ -1,0 +1,76 @@
+---
+import Icon from "./Icon.astro";
+import { formatDayLabel, formatTime, isUpcoming } from "@/lib/format";
+import { categoryAccent, accentHex, categoryLabel, imageSrc } from "@/lib/ui";
+import { GATHIN } from "@/lib/site";
+import type { EventRow } from "@/lib/types";
+
+interface Props {
+  event: EventRow;
+}
+const { event } = Astro.props;
+const hex = accentHex(categoryAccent(event.category));
+const upcoming = isUpcoming(event.starts_at);
+const d = formatDayLabel(event.starts_at);
+const time = formatTime(event.starts_at);
+const href = `/events/${event.slug}`;
+const reg =
+  event.registration_url ||
+  (event.community === "multiacademy" ? GATHIN.multiacademy : GATHIN.multigroup);
+const where = event.is_online ? "Çevrimiçi" : event.city;
+const cover = imageSrc(event.cover_image);
+---
+
+<article class="card card-hover relative overflow-hidden flex flex-col h-full group">
+  <div class="relative aspect-[16/9] overflow-hidden skeleton bg-ink-900">
+    {
+      cover && (
+        <img
+          src={cover}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onload="this.parentElement.classList.remove('skeleton')"
+          onerror="this.style.display='none';this.parentElement.classList.remove('skeleton')"
+          class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+      )
+    }
+    <div class="absolute inset-0 bg-gradient-to-t from-ink-950/85 via-ink-950/10 to-transparent"></div>
+
+    <!-- date badge -->
+    <div class="absolute top-3 left-3 flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-ink-950/65 backdrop-blur border border-line-strong">
+      <span class="text-[0.58rem] font-mono uppercase text-ink-dim leading-none">{d.month}</span>
+      <span class="font-display text-lg font-semibold leading-none mt-0.5">{d.day}</span>
+    </div>
+  </div>
+
+  <div class="p-4 flex flex-col flex-1">
+    <h3 class="font-display text-base font-semibold leading-snug line-clamp-2">
+      <a href={href} class="after:absolute after:inset-0">{event.title}</a>
+    </h3>
+    {event.summary && <p class="text-ink-dim text-sm mt-1.5 line-clamp-2">{event.summary}</p>}
+
+    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-3 text-xs text-ink-faint">
+      {(d.day !== "--" || time) && (
+        <span class="inline-flex items-center gap-1">
+          <Icon name="calendar" size={13} />{d.weekday} {d.day} {d.month}{time && ` · ${time}`}
+        </span>
+      )}
+      {where && <span class="inline-flex items-center gap-1"><Icon name="map-pin" size={13} />{where}</span>}
+    </div>
+
+    {
+      upcoming && (
+        <a
+          href={reg}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="relative z-10 btn btn-ghost !py-2 !px-3 text-xs mt-4 self-start"
+        >
+          Kayıt ol <Icon name="arrow-up-right" size={13} />
+        </a>
+      )
+    }
+  </div>
+</article>

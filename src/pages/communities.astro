@@ -1,0 +1,172 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Icon from "@/components/Icon.astro";
+import CommunitiesMap from "@/components/CommunitiesMap.astro";
+import { tryEnv } from "@/lib/runtime";
+import { listCommunities } from "@/lib/content";
+import { imageSrc } from "@/lib/ui";
+import { BRAND } from "@/lib/site";
+import type { CommunityRow } from "@/lib/types";
+
+const env = tryEnv(Astro.locals);
+let communities: CommunityRow[] = [];
+if (env) {
+  try {
+    communities = await listCommunities(env);
+  } catch {
+    /* pre-seed */
+  }
+}
+
+const communitiesLd = communities.length
+  ? {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: "Developer MultiGroup partner toplulukları",
+      numberOfItems: communities.length,
+      itemListElement: communities.map((c, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        item: {
+          "@type": "Organization",
+          name: c.name,
+          ...(c.url || c.instagram ? { url: c.url || c.instagram } : {}),
+          ...(c.city ? { address: { "@type": "PostalAddress", addressLocality: c.city, addressCountry: "TR" } } : {}),
+        },
+      })),
+    }
+  : undefined;
+
+const ECO_LOGO: Record<string, string> = {
+  "MultiGroup UNIT": "/logo-small-white.png",
+  Google: "/ecosystems/google.svg",
+  Huawei: "/ecosystems/huawei.svg",
+  Amazon: "/ecosystems/amazon.svg",
+  IEEE: "/ecosystems/ieee.svg",
+};
+const ECO_LABEL: Record<string, string> = {
+  "MultiGroup UNIT": "MultiGroup UNIT",
+  Google: "Google",
+  Huawei: "Huawei",
+  Amazon: "Amazon",
+  IEEE: "IEEE",
+  Independent: "Bağımsız",
+};
+const ECO_ORDER = ["MultiGroup UNIT", "Google", "Huawei", "Amazon", "IEEE", "Independent"];
+const groups = ECO_ORDER.map((eco) => ({
+  eco,
+  items: communities.filter((c) => c.ecosystem === eco),
+})).filter((g) => g.items.length);
+
+const cityCount = new Set(communities.map((c) => c.city)).size;
+const ecoCount = groups.length;
+
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+---
+
+<BaseLayout
+  title="Partner Topluluklar & Ekosistem"
+  description="Developer MultiGroup'un birlikte büyüdüğü topluluk ve ekosistem ağı — Google, Huawei, Amazon, IEEE ve bağımsız topluluklar Türkiye'nin dört bir yanında."
+  canonicalPath="/communities"
+  jsonLd={communitiesLd}
+  breadcrumbs={[{ name: "Topluluklar", item: `${BRAND.url}/communities` }]}
+>
+  <section class="container-x pt-14 pb-8">
+    <div class="grid lg:grid-cols-[1.25fr_0.75fr] gap-10 lg:gap-12 items-center">
+      <div>
+        <p class="text-sm text-ink-faint uppercase tracking-[0.18em] mb-4">Partner · Topluluklar</p>
+        <h1 class="text-4xl md:text-5xl font-semibold leading-[1.05]">
+          Tek başına değil, <span class="text-grad">bir ağ olarak</span> büyüyoruz.
+        </h1>
+        <p class="text-ink-dim text-lg mt-5 max-w-xl leading-relaxed">
+          Üniversite kulüplerinden ekosistem topluluklarına kadar Türkiye'nin dört bir yanından
+          {communities.length} toplulukla birlikte etkinlikler düzenliyor, bilgiyi paylaşıyoruz.
+        </p>
+      </div>
+      <div class="lg:pl-10 lg:border-l border-line">
+        <div class="grid grid-cols-3 gap-4">
+          <div>
+            <div class="font-display text-3xl font-semibold text-grad tabular-nums">{communities.length}</div>
+            <div class="text-ink-faint text-xs mt-1 font-mono uppercase tracking-wide">topluluk</div>
+          </div>
+          <div>
+            <div class="font-display text-3xl font-semibold text-grad tabular-nums">{cityCount}</div>
+            <div class="text-ink-faint text-xs mt-1 font-mono uppercase tracking-wide">şehir</div>
+          </div>
+          <div>
+            <div class="font-display text-3xl font-semibold text-grad tabular-nums">{ecoCount}</div>
+            <div class="text-ink-faint text-xs mt-1 font-mono uppercase tracking-wide">ekosistem</div>
+          </div>
+        </div>
+        <div class="card p-4 mt-6 flex items-center justify-between gap-4">
+          <div class="min-w-0">
+            <p class="font-medium text-sm">Partner olmak ister misiniz?</p>
+            <p class="text-ink-faint text-xs mt-0.5">Topluluğunuzu ağa katın.</p>
+          </div>
+          <button type="button" data-contact="partner" class="btn btn-primary shrink-0 !py-2 !px-3.5 text-sm">
+            <Icon name="mail" size={15} /> Partner ol
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {
+    communities.length > 0 && (
+      <section class="container-x pb-4">
+        <CommunitiesMap communities={communities} />
+      </section>
+    )
+  }
+
+  <section class="container-x py-8">
+    {
+      groups.map((g) => (
+        <div class="mt-10 first:mt-2">
+          <div class="flex items-center gap-2.5 mb-5">
+            {ECO_LOGO[g.eco] && <img src={ECO_LOGO[g.eco]} alt={g.eco} height="20" class="h-5 w-auto object-contain opacity-90" />}
+            <h2 class="font-display text-lg font-semibold">{ECO_LABEL[g.eco]}</h2>
+            <span class="chip">{g.items.length}</span>
+          </div>
+          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {g.items.map((c) => {
+              const logo = ECO_LOGO[c.ecosystem];
+              const inner = (
+                <div class="group card card-hover p-4 flex items-center gap-3.5 h-full">
+                  <div class="relative w-12 h-12 rounded-xl bg-white/[0.04] border border-line grid place-items-center shrink-0">
+                    {c.logo_url ? (
+                      <img src={imageSrc(c.logo_url)} alt={c.name} loading="lazy" class="w-full h-full object-cover rounded-xl grayscale group-hover:grayscale-0 transition duration-300" />
+                    ) : (
+                      <span class="font-display text-sm text-ink-dim">{initials(c.name)}</span>
+                    )}
+                    {logo && (
+                      <img src={logo} alt={c.ecosystem} width="20" height="20" class="absolute -bottom-1.5 -right-1.5 w-5 h-5 p-1 rounded-full bg-ink-950 border border-line object-contain" />
+                    )}
+                  </div>
+                  <div class="min-w-0">
+                    <h3 class="font-medium text-sm leading-snug">{c.name}</h3>
+                    <div class="text-ink-faint text-xs mt-1 flex items-center gap-1">
+                      <Icon name="map-pin" size={12} /> {c.city}
+                    </div>
+                  </div>
+                </div>
+              );
+              return c.url || c.instagram ? (
+                <a href={c.url || c.instagram} target="_blank" rel="noopener noreferrer">{inner}</a>
+              ) : (
+                inner
+              );
+            })}
+          </div>
+        </div>
+      ))
+    }
+  </section>
+</BaseLayout>

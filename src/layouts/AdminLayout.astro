@@ -1,0 +1,84 @@
+---
+import "@fontsource-variable/space-grotesk";
+import "@fontsource-variable/inter";
+import "@fontsource-variable/jetbrains-mono";
+import "@/styles/global.css";
+import Icon from "@/components/Icon.astro";
+import SiteBackground from "@/components/SiteBackground.astro";
+import { RESOURCES } from "@/lib/admin";
+
+interface Props {
+  title?: string;
+}
+const { title } = Astro.props;
+const email = Astro.locals.adminEmail;
+const path = Astro.url.pathname;
+const resources = Object.values(RESOURCES);
+const active = (href: string) => path === href || path.startsWith(href + "/");
+---
+
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title ? `${title} · Admin` : "Admin"} · MultiGroup</title>
+  </head>
+  <body>
+    <SiteBackground />
+    <div class="min-h-dvh md:grid md:grid-cols-[16rem_1fr]">
+      <aside class="border-b md:border-b-0 md:border-r border-line md:min-h-dvh p-4 md:sticky md:top-0 md:h-dvh md:overflow-y-auto">
+        <a href="/admin" class="flex items-center gap-2 mb-6 px-2">
+          <img src="/dmg-logo.webp" alt="" width="106" height="22" class="h-[22px] w-auto" />
+          <span class="font-display font-semibold text-ink-dim">/ Admin</span>
+        </a>
+        <nav class="space-y-1">
+          <a href="/admin" class:list={["admin-nav", path === "/admin" && "admin-nav-active"]}>
+            <Icon name="layers" size={17} /> Dashboard
+          </a>
+          {
+            resources.map((r) => (
+              <a href={`/admin/${r.key}`} class:list={["admin-nav", active(`/admin/${r.key}`) && "admin-nav-active"]}>
+                <Icon name={r.icon} size={17} /> {r.label}
+              </a>
+            ))
+          }
+          <a href="/admin/settings" class:list={["admin-nav", active("/admin/settings") && "admin-nav-active"]}>
+            <Icon name="sparkles" size={17} /> Settings
+          </a>
+        </nav>
+        <div class="mt-6 pt-4 border-t border-line space-y-1">
+          <a href="/" target="_blank" class="admin-nav"><Icon name="external" size={17} /> View site</a>
+          <a href="/cdn-cgi/access/logout" class="admin-nav"><Icon name="arrow-up-right" size={17} /> Sign out</a>
+        </div>
+        {email && <p class="mt-4 px-2 text-xs text-ink-faint font-mono truncate">{email}</p>}
+      </aside>
+
+      <main class="p-5 md:p-8 max-w-5xl w-full">
+        <slot />
+      </main>
+    </div>
+
+    <style>
+      .admin-nav {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.55rem 0.7rem;
+        border-radius: 0.7rem;
+        font-size: 0.9rem;
+        color: var(--color-ink-dim);
+        transition: color 0.2s, background-color 0.2s;
+      }
+      .admin-nav:hover {
+        color: var(--color-ink-text);
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .admin-nav-active {
+        color: var(--color-ink-text);
+        background: rgba(255, 255, 255, 0.07);
+      }
+    </style>
+  </body>
+</html>

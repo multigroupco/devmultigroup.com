@@ -1,0 +1,94 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import TeamCard from "@/components/TeamCard.astro";
+import SectionHeader from "@/components/SectionHeader.astro";
+import Icon from "@/components/Icon.astro";
+import { getEnv } from "@/lib/runtime";
+import { listTeam } from "@/lib/content";
+import { JOIN_FORM, BRAND } from "@/lib/site";
+import { imageSrc } from "@/lib/ui";
+import type { TeamSocials } from "@/lib/types";
+
+const env = getEnv(Astro.locals);
+const team = await listTeam(env);
+const core = team.filter((m) => m.community !== "multiacademy");
+const academy = team.filter((m) => m.community === "multiacademy");
+
+const teamLd = team.length
+  ? {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: "Developer MultiGroup ekibi",
+      itemListElement: team.map((m, i) => {
+        let socials: TeamSocials = {};
+        try { socials = m.socials ? JSON.parse(m.socials) : {}; } catch { /* ignore */ }
+        const sameAs = [socials.linkedin, socials.github, socials.twitter, socials.website, socials.instagram].filter(Boolean);
+        const avatar = m.avatar_url ? imageSrc(m.avatar_url) : "";
+        const absAvatar = avatar ? (avatar.startsWith("http") ? avatar : BRAND.url + avatar) : "";
+        return {
+          "@type": "ListItem",
+          position: i + 1,
+          item: {
+            "@type": "Person",
+            name: m.name,
+            ...(m.role ? { jobTitle: m.role } : {}),
+            ...(absAvatar ? { image: absAvatar } : {}),
+            worksFor: { "@type": "Organization", name: BRAND.name, url: BRAND.url },
+            ...(sameAs.length ? { sameAs } : {}),
+          },
+        };
+      }),
+    }
+  : undefined;
+---
+
+<BaseLayout
+  title="Ekip & Gönüllüler"
+  description="Developer MultiGroup'un arkasındaki gönüllüler, organizatörler, konuşmacılar ve mentorlar — topluluğu birlikte büyüten ekibimizle tanışın."
+  canonicalPath="/team"
+  jsonLd={teamLd}
+  breadcrumbs={[{ name: "Ekip", item: `${BRAND.url}/team` }]}
+>
+  <section class="container-x pt-14 pb-8">
+    <h1 class="text-4xl md:text-5xl font-semibold">Ekip</h1>
+    <p class="text-ink-dim mt-4 max-w-2xl leading-relaxed">
+      MultiGroup, gönüllülerin enerjisiyle ayakta — topluluğun büyümesi için
+      zamanını ayıran organizatörler, konuşmacılar ve mentorlar.
+    </p>
+  </section>
+
+  {
+    team.length === 0 ? (
+      <section class="container-x py-10">
+        <div class="card p-12 text-center text-ink-dim">
+          <Icon name="users" size={28} class="mx-auto mb-3 opacity-50" /> Ekip profilleri çok yakında.
+        </div>
+      </section>
+    ) : (
+      <>
+        <section class="container-x py-4">
+          {academy.length > 0 && <SectionHeader title="MultiGroup" />}
+          <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+            {core.map((m) => <TeamCard member={m} />)}
+          </div>
+        </section>
+        {academy.length > 0 && (
+          <section class="container-x py-8">
+            <SectionHeader title="MultiAcademy" />
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+              {academy.map((m) => <TeamCard member={m} />)}
+            </div>
+          </section>
+        )}
+      </>
+    )
+  }
+
+  <section class="container-x py-8">
+    <div class="card p-8 md:p-10 text-center">
+      <h2 class="font-display text-2xl font-semibold">Topluluğa destek olmak ister misin?</h2>
+      <p class="text-ink-dim mt-3 max-w-lg mx-auto">Ekibimize katıl — organizatör, konuşmacı veya mentor olarak topluluğa destek ol.</p>
+      <a href={JOIN_FORM} target="_blank" rel="noopener noreferrer" class="btn btn-primary group mt-6">Aramıza katıl<span class="relative inline-flex w-4 h-4"><Icon name="user-check" size={16} class="absolute inset-0 transition-all duration-200 group-hover:opacity-0 group-hover:scale-50" /><Icon name="arrow-up-right" size={16} class="absolute inset-0 opacity-0 scale-50 transition-all duration-200 group-hover:opacity-100 group-hover:scale-100" /></span></a>
+    </div>
+  </section>
+</BaseLayout>

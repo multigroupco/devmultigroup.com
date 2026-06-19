@@ -1,0 +1,75 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import Icon from "@/components/Icon.astro";
+import { getEnv } from "@/lib/runtime";
+import { getResource, listRows } from "@/lib/admin";
+import { formatDate } from "@/lib/format";
+
+const env = getEnv(Astro.locals);
+const { resource = "" } = Astro.params;
+const res = getResource(resource);
+if (!res) return Astro.redirect("/admin");
+
+const rows = await listRows(env, res);
+
+const DATE_COLS = new Set(["starts_at", "ends_at", "published_at", "taken_at", "posted_at", "created_at", "updated_at"]);
+const BOOL_COLS = new Set(["is_active", "is_featured", "featured", "is_online"]);
+
+function display(col: string, val: unknown): string {
+  if (val == null || val === "") return "—";
+  if (DATE_COLS.has(col)) return formatDate(Number(val));
+  if (BOOL_COLS.has(col)) return Number(val) === 1 ? "Yes" : "No";
+  const s = String(val);
+  return s.length > 48 ? s.slice(0, 48) + "…" : s;
+}
+---
+
+<AdminLayout title={res.label}>
+  <header class="flex items-center justify-between gap-4 mb-7">
+    <div>
+      <h1 class="text-3xl font-semibold">{res.label}</h1>
+    </div>
+    <a href={`/admin/${res.key}/new`} class="btn btn-primary !py-2.5">
+      <Icon name="sparkles" size={16} /> New {res.singular.toLowerCase()}
+    </a>
+  </header>
+
+  {
+    rows.length === 0 ? (
+      <div class="card p-12 text-center text-ink-dim">
+        Nothing here yet. <a href={`/admin/${res.key}/new`} class="text-violet">Create the first one →</a>
+      </div>
+    ) : (
+      <div class="card overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-line text-ink-faint text-left">
+              {res.listColumns.map((c) => <th class="px-4 py-3 font-medium font-mono text-xs uppercase tracking-wide">{c.label}</th>)}
+              <th class="px-4 py-3 w-10" />
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr class="border-b border-line-soft hover:bg-white/[0.02] transition-colors">
+                {res.listColumns.map((c, i) => (
+                  <td class="px-4 py-3">
+                    {i === 0 ? (
+                      <a href={`/admin/${res.key}/${row.id}`} class="font-medium text-ink-text hover:text-violet transition-colors">
+                        {display(c.name, row[c.name])}
+                      </a>
+                    ) : (
+                      <span class="text-ink-dim">{display(c.name, row[c.name])}</span>
+                    )}
+                  </td>
+                ))}
+                <td class="px-4 py-3 text-right">
+                  <a href={`/admin/${res.key}/${row.id}`} class="text-ink-faint hover:text-ink-text"><Icon name="pen" size={15} /></a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+</AdminLayout>

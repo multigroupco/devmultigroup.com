@@ -1,0 +1,159 @@
+---
+import "@fontsource-variable/space-grotesk";
+import "@fontsource-variable/inter";
+import "@fontsource-variable/jetbrains-mono";
+import "@/styles/global.css";
+
+import Seo from "@/components/Seo.astro";
+import Analytics from "@/components/Analytics.astro";
+import JsonLd from "@/components/JsonLd.astro";
+import SiteBackground from "@/components/SiteBackground.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import ContactModal from "@/components/ContactModal.astro";
+import EventBanner from "@/components/EventBanner.astro";
+import { ClientRouter } from "astro:transitions";
+
+import { tryEnv } from "@/lib/runtime";
+import { getSettings, featuredEvent } from "@/lib/content";
+import { resolveSite, BRAND, SOCIALS } from "@/lib/site";
+import type { EventRow, Settings } from "@/lib/types";
+
+interface Props {
+  title?: string;
+  description?: string;
+  canonicalPath?: string;
+  image?: string;
+  type?: "website" | "article" | "profile";
+  noindex?: boolean;
+  hideBanner?: boolean;
+  bare?: boolean; // no header/footer (e.g. links page)
+  publishedTime?: string;
+  modifiedTime?: string;
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  /** Breadcrumb trail (excluding the implicit "Ana Sayfa" root, which is prepended). */
+  breadcrumbs?: { name: string; item: string }[];
+}
+
+const {
+  title,
+  description,
+  canonicalPath,
+  image,
+  type = "website",
+  noindex = false,
+  hideBanner = false,
+  bare = false,
+  publishedTime,
+  modifiedTime,
+  jsonLd,
+  breadcrumbs,
+} = Astro.props;
+
+let settings: Settings = {};
+let banner: EventRow | null = null;
+const env = tryEnv(Astro.locals);
+if (env) {
+  try { settings = await getSettings(env); } catch { /* pre-seed: defaults */ }
+  if (!hideBanner && !bare) {
+    try { banner = await featuredEvent(env); } catch { /* ignore */ }
+  }
+}
+const site = resolveSite(settings);
+const desc = description ?? site.description;
+
+const orgLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "@id": `${BRAND.url}/#organization`,
+  name: BRAND.name,
+  alternateName: [BRAND.short, "DevMultiGroup"],
+  url: BRAND.url,
+  logo: `${BRAND.url}/dmg-logo.webp`,
+  image: `${BRAND.url}/og-default.png`,
+  description: site.description,
+  slogan: BRAND.tagline,
+  email: BRAND.email,
+  foundingDate: "2020",
+  knowsLanguage: ["tr", "en"],
+  areaServed: { "@type": "Country", name: "Türkiye" },
+  address: { "@type": "PostalAddress", addressCountry: "TR", addressLocality: "İstanbul" },
+  contactPoint: [
+    { "@type": "ContactPoint", contactType: "customer support", email: "support@devmultigroup.com", availableLanguage: ["Turkish", "English"] },
+    { "@type": "ContactPoint", contactType: "partnerships", email: "partner@devmultigroup.com", availableLanguage: ["Turkish", "English"] },
+    { "@type": "ContactPoint", contactType: "sponsorship", email: "sponsor@devmultigroup.com", availableLanguage: ["Turkish", "English"] },
+  ],
+  subOrganization: {
+    "@type": "EducationalOrganization",
+    name: "MultiAcademy",
+    url: "https://academy.devmultigroup.com",
+    description: "Developer MultiGroup'un öğrenme kolu — ücretsiz, yoğun yazılım bootcamp'leri.",
+  },
+  sameAs: [
+    SOCIALS.multigroup.instagram,
+    SOCIALS.multigroup.twitter,
+    SOCIALS.multigroup.linkedin,
+    SOCIALS.multigroup.youtube,
+    SOCIALS.multigroup.github,
+    SOCIALS.multigroup.kommunity,
+  ],
+};
+const breadcrumbLd =
+  breadcrumbs && breadcrumbs.length
+    ? {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { name: "Ana Sayfa", item: BRAND.url },
+          ...breadcrumbs,
+        ].map((c, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          name: c.name,
+          item: c.item,
+        })),
+      }
+    : null;
+
+const extra = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
+const structured = [orgLd, ...extra, ...(breadcrumbLd ? [breadcrumbLd] : [])];
+---
+
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0d0d0e" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/dmg-logo.webp" type="image/webp" />
+    <link rel="apple-touch-icon" href="/dmg-logo.webp" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="alternate" type="application/rss+xml" title={`${BRAND.short} Blog`} href="/rss.xml" />
+    <Seo
+      title={title}
+      description={desc}
+      canonicalPath={canonicalPath}
+      image={image}
+      type={type}
+      noindex={noindex}
+      publishedTime={publishedTime}
+      modifiedTime={modifiedTime}
+      gscVerification={site.gscVerification}
+    />
+    <JsonLd data={structured} />
+    <Analytics measurementId={site.gaMeasurementId} />
+    <ClientRouter />
+  </head>
+  <body>
+    <SiteBackground />
+    {site.bannerEnabled && banner && !hideBanner && !bare && <EventBanner event={banner} />}
+    {!bare && <Header />}
+    <main id="main">
+      <slot />
+    </main>
+    {!bare && <Footer />}
+    {!bare && <ContactModal />}
+  </body>
+</html>

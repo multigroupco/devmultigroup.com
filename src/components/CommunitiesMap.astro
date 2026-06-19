@@ -1,0 +1,58 @@
+---
+import type { CommunityRow } from "@/lib/types";
+import { TURKEY_VIEWBOX, CITY_XY } from "@/lib/turkey-map";
+
+interface Props {
+  communities: CommunityRow[];
+}
+const { communities } = Astro.props;
+
+const counts: Record<string, number> = {};
+for (const c of communities) counts[c.city] = (counts[c.city] || 0) + 1;
+
+const LABELED = new Set([
+  "İstanbul", "Ankara", "İzmir", "Kayseri", "Antalya", "Hatay", "Bursa", "Çanakkale", "Zonguldak",
+]);
+
+const dots = Object.keys(CITY_XY)
+  .filter((c) => counts[c] && CITY_XY[c])
+  .map((city) => {
+    const [x, y] = CITY_XY[city];
+    const n = counts[city];
+    return { city, x, y, n, r: Math.round((5 + Math.sqrt(n) * 2.6) * 10) / 10 };
+  });
+---
+
+<div class="relative w-full max-w-4xl mx-auto">
+  <div class="absolute inset-0 blur-3xl opacity-30" style="background:radial-gradient(ellipse at 35% 40%, rgba(255,255,255,.06), transparent 60%)"></div>
+  <img src="/turkey.svg" alt="Türkiye haritası" width="716" height="312" loading="lazy" class="relative w-full h-auto select-none pointer-events-none" draggable="false" />
+  <svg viewBox={TURKEY_VIEWBOX} class="absolute inset-0 w-full h-full overflow-visible">
+    {
+      dots.map((d) => (
+        <g class="map-node">
+          <title>{`${d.city} — ${d.n} topluluk`}</title>
+          <circle cx={d.x} cy={d.y} r={d.r + 5} fill="rgba(255,255,255,0.06)" />
+          <circle cx={d.x} cy={d.y} r={d.r} fill="#ffffff" fill-opacity="0.95" />
+          <text x={d.x} y={d.y + 3.1} text-anchor="middle" class="map-count">{d.n}</text>
+          {LABELED.has(d.city) && (
+            <text x={d.x} y={d.y - d.r - 4} text-anchor="middle" class="map-label">{d.city}</text>
+          )}
+        </g>
+      ))
+    }
+  </svg>
+</div>
+
+<style>
+  .map-label {
+    fill: rgba(255, 255, 255, 0.68);
+    font-size: 11px;
+    font-family: var(--font-mono);
+  }
+  .map-count {
+    fill: #000;
+    font-size: 9px;
+    font-weight: 700;
+    font-family: var(--font-display);
+  }
+</style>
