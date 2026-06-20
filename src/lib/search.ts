@@ -135,7 +135,23 @@ export const TYPES: Record<SearchType, TypeConfig> = {
 
 export const SEARCH_TYPES = Object.keys(TYPES) as SearchType[];
 
-const vid = (type: SearchType, id: string) => `${type}:${id}`;
+// Vectorize ids are capped at 64 bytes. Most row ids are short (uuids), but some
+// (e.g. slug-based event ids) overflow — hash those to a stable short form so the
+// id stays well under the limit while remaining deterministic for upsert/delete.
+function shortHash(s: string): string {
+  let h1 = 0x811c9dc5;
+  let h2 = 0x01000193;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 0x01000193);
+    h2 = Math.imul(h2 ^ c, 0x85ebca6b);
+  }
+  return (h1 >>> 0).toString(36) + (h2 >>> 0).toString(36);
+}
+const vid = (type: SearchType, id: string): string => {
+  const raw = `${type}:${id}`;
+  return raw.length <= 64 ? raw : `${type}:${shortHash(id)}`;
+};
 
 /** Embed one string with bge-m3. Returns null when AI is unavailable or errors. */
 async function embed(env: Env, text: string): Promise<number[] | null> {
