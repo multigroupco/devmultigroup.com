@@ -5,8 +5,8 @@ import Icon from "@/components/Icon.astro";
 import { getEnv } from "@/lib/runtime";
 import { listPosts } from "@/lib/content";
 import { csv } from "@/lib/db";
-import { categoryLabel } from "@/lib/ui";
-import { iso } from "@/lib/format";
+import { categoryLabel, imageSrc } from "@/lib/ui";
+import { iso, formatDate } from "@/lib/format";
 import { BRAND } from "@/lib/site";
 
 const env = getEnv(Astro.locals);
@@ -15,6 +15,10 @@ const cats = [...new Set(posts.map((p) => p.category).filter(Boolean))];
 // Deep-link from the homepage SearchAction (/blog?q=…). The client script reads
 // this initial value and filters on load, so the SearchAction target is real.
 const q = Astro.url.searchParams.get("q")?.trim() ?? "";
+
+// Editorial highlights (featured + side list) take the first 4; the rest
+// continue as a compact two-column list, denser than the side list above.
+const gridPosts = posts.slice(4);
 
 const blogLd = {
   "@context": "https://schema.org",
@@ -40,45 +44,49 @@ const blogLd = {
   breadcrumbs={[{ name: "Blog", item: `${BRAND.url}/blog` }]}
 >
   <section class="container-x pt-14 pb-6">
-    <h1 class="text-4xl md:text-5xl font-semibold">Blog</h1>
-    <p class="text-ink-dim mt-4 max-w-2xl leading-relaxed">
-      Topluluktan dersler — derinlemesine yazılar, özetler ve ara sıra cesur yorumlar.
-    </p>
-
-    {
-      posts.length > 0 && (
-        <div class="flex flex-col sm:flex-row gap-3 mt-8">
-          <div class="relative flex-1">
-            <Icon name="search" size={17} class="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
-            <input id="blog-search" type="search" placeholder="Yazılarda ara…" autocomplete="off" class="blog-search" value={q} />
-          </div>
-          <div class="flex gap-3">
-            <div class="blog-dd" data-dd="filter">
-              <button type="button" class="blog-dd-btn">
-                <Icon name="filter" size={15} /> Filtrele
-                <span id="filter-badge" class="blog-dd-badge" hidden />
-              </button>
-              <div class="blog-dd-menu">
-                <button type="button" class="blog-dd-opt is-active" data-cat="">Tümü</button>
-                {cats.map((c) => (
-                  <button type="button" class="blog-dd-opt" data-cat={c}>{categoryLabel(c)}</button>
-                ))}
+    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+      <div>
+        <p class="text-sm text-ink-faint uppercase tracking-[0.18em] mb-3">Blog</p>
+        <h1 class="text-4xl md:text-5xl font-semibold">Topluluktan notlar.</h1>
+        <p class="text-ink-dim mt-4 max-w-2xl leading-relaxed">
+          Derinlemesine yazılar, özetler ve ara sıra cesur yorumlar.
+        </p>
+      </div>
+      {
+        gridPosts.length > 0 && (
+          <div class="flex flex-col sm:flex-row gap-3 lg:shrink-0">
+            <div class="relative sm:w-56 lg:w-60">
+              <Icon name="search" size={17} class="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
+              <input id="blog-search" type="search" placeholder="Yazılarda ara…" autocomplete="off" class="blog-search" value={q} />
+            </div>
+            <div class="flex gap-3">
+              <div class="blog-dd" data-dd="filter">
+                <button type="button" class="blog-dd-btn">
+                  <Icon name="filter" size={15} /> Filtrele
+                  <span id="filter-badge" class="blog-dd-badge" hidden />
+                </button>
+                <div class="blog-dd-menu">
+                  <button type="button" class="blog-dd-opt is-active" data-cat="">Tümü</button>
+                  {cats.map((c) => (
+                    <button type="button" class="blog-dd-opt" data-cat={c}>{categoryLabel(c)}</button>
+                  ))}
+                </div>
+              </div>
+              <div class="blog-dd" data-dd="sort">
+                <button type="button" class="blog-dd-btn">
+                  <Icon name="sort-arrows" size={15} /> Sırala
+                </button>
+                <div class="blog-dd-menu">
+                  <button type="button" class="blog-dd-opt is-active" data-sort="new">En yeni</button>
+                  <button type="button" class="blog-dd-opt" data-sort="old">En eski</button>
+                  <button type="button" class="blog-dd-opt" data-sort="read">Okuma süresi</button>
+                </div>
               </div>
             </div>
-            <div class="blog-dd" data-dd="sort">
-              <button type="button" class="blog-dd-btn">
-                <Icon name="sort-arrows" size={15} /> Sırala
-              </button>
-              <div class="blog-dd-menu">
-                <button type="button" class="blog-dd-opt is-active" data-sort="new">En yeni</button>
-                <button type="button" class="blog-dd-opt" data-sort="old">En eski</button>
-                <button type="button" class="blog-dd-opt" data-sort="read">Okuma süresi</button>
-              </div>
-            </div>
           </div>
-        </div>
-      )
-    }
+        )
+      }
+    </div>
   </section>
 
   {
@@ -90,24 +98,85 @@ const blogLd = {
         </div>
       </section>
     ) : (
-      <section class="container-x py-4">
-        <div id="blog-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {posts.map((p) => (
-            <div
-              class="blog-item"
-              data-title={p.title.toLowerCase()}
-              data-tags={csv(p.tags).join(" ").toLowerCase()}
-              data-author={p.author.toLowerCase()}
-              data-cat={p.category}
-              data-date={String(p.published_at ?? p.created_at)}
-              data-read={String(p.reading_minutes)}
-            >
-              <PostCard post={p} />
+      <>
+        <section class="container-x pb-2">
+          <div class="grid lg:grid-cols-2 gap-6 lg:gap-8 items-stretch">
+            <PostCard post={posts[0]} featured />
+            {posts.length > 1 && (
+              <div class="flex flex-col">
+                {posts.slice(1, 4).map((p, i) => (
+                  <a
+                    href={`/blog/${p.slug}`}
+                    class:list={["group flex gap-4 py-4", i > 0 && "border-t border-line"]}
+                  >
+                    <div class="relative w-28 sm:w-36 aspect-[16/10] rounded-xl overflow-hidden shrink-0 skeleton">
+                      <img
+                        src={imageSrc(p.cover_image) || `/blog/banner/${p.slug}.svg`}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        class="img-reveal absolute inset-0 w-full h-full object-cover"
+                      />
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-[0.65rem] uppercase tracking-wide text-ink-faint font-mono">{categoryLabel(p.category)}</p>
+                      <h3 class="font-display font-semibold leading-snug line-clamp-2 mt-1 group-hover:text-grad transition-colors">{p.title}</h3>
+                      <div class="text-xs text-ink-faint mt-2 flex items-center gap-2">
+                        <span>{p.author}</span>
+                        <span class="opacity-40">•</span>
+                        <span>{formatDate(p.published_at ?? p.created_at)}</span>
+                        <span class="opacity-40">•</span>
+                        <span>{p.reading_minutes} dk</span>
+                      </div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {gridPosts.length > 0 && (
+          <section class="container-x pt-4 pb-12">
+            <div id="blog-grid" class="flex flex-col divide-y divide-line">
+              {gridPosts.map((p) => (
+                <a
+                  href={`/blog/${p.slug}`}
+                  class="blog-item group flex items-center gap-4 py-3.5"
+                  data-title={p.title.toLowerCase()}
+                  data-tags={csv(p.tags).join(" ").toLowerCase()}
+                  data-author={p.author.toLowerCase()}
+                  data-cat={p.category}
+                  data-date={String(p.published_at ?? p.created_at)}
+                  data-read={String(p.reading_minutes)}
+                >
+                  <div class="relative w-20 sm:w-24 aspect-[16/10] rounded-lg overflow-hidden shrink-0 skeleton">
+                    <img
+                      src={imageSrc(p.cover_image) || `/blog/banner/${p.slug}.svg`}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      class="img-reveal absolute inset-0 w-full h-full object-cover"
+                    />
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-[0.6rem] uppercase tracking-wide text-ink-faint font-mono">{categoryLabel(p.category)}</p>
+                    <h3 class="font-display font-semibold text-base leading-snug line-clamp-2 mt-0.5 group-hover:text-grad transition-colors">{p.title}</h3>
+                  </div>
+                  <div class="shrink-0 hidden sm:flex items-center gap-2 text-xs text-ink-faint">
+                    <span>{p.author}</span>
+                    <span class="opacity-40">•</span>
+                    <span>{formatDate(p.published_at ?? p.created_at)}</span>
+                    <span class="opacity-40">•</span>
+                    <span>{p.reading_minutes} dk</span>
+                  </div>
+                </a>
+              ))}
             </div>
-          ))}
-        </div>
-        <p id="blog-empty" class="text-center text-ink-dim py-16" hidden>Aramana uyan yazı bulunamadı.</p>
-      </section>
+            <p id="blog-empty" class="text-center text-ink-dim py-16" hidden>Aramana uyan yazı bulunamadı.</p>
+          </section>
+        )}
+      </>
     )
   }
 

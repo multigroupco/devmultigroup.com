@@ -46,14 +46,21 @@ export interface EventQuery {
   when?: "upcoming" | "past" | "all";
   limit?: number;
   offset?: number;
+  year?: number;
 }
+
+// [yearStart, yearEnd) epoch seconds for a calendar year in Turkey (UTC+3, no DST)
+const yearRange = (year: number): [number, number] => [
+  Math.floor(Date.UTC(year, 0, 1) / 1000) - 3 * 3600,
+  Math.floor(Date.UTC(year + 1, 0, 1) / 1000) - 3 * 3600,
+];
 
 export async function listEvents(
   env: Env,
   q: EventQuery = {},
 ): Promise<EventRow[]> {
-  const { community = "all", when = "all", limit = 50, offset = 0 } = q;
-  const key = `list:${community}:${when}:${limit}:${offset}`;
+  const { community = "all", when = "all", limit = 50, offset = 0, year } = q;
+  const key = `list:${community}:${when}:${limit}:${offset}:${year ?? 0}`;
   return cached(env, NS.events, key, async () => {
     const where: string[] = ["status = 'published'"];
     const params: unknown[] = [];
@@ -73,12 +80,69 @@ export async function listEvents(
       // most recent event first (by start date) → oldest last
       order = "ORDER BY COALESCE(starts_at, 0) DESC";
     }
+    if (year) {
+      const [ys, ye] = yearRange(year);
+      where.push("starts_at >= ? AND starts_at < ?");
+      params.push(ys, ye);
+    }
     params.push(limit, offset);
     return all<EventRow>(
       env.DB,
       `SELECT * FROM events WHERE ${where.join(" AND ")} ${order} LIMIT ? OFFSET ?`,
       params,
     );
+  });
+}
+
+/** Count of published events for a community/when filter (cached) — for pagination. */
+export async function countEvents(
+  env: Env,
+  q: { community?: string; when?: "all" | "upcoming" | "past"; year?: number } = {},
+): Promise<number> {
+  const { community = "all", when = "all", year } = q;
+  return cached(env, NS.events, `count:${community}:${when}:${year ?? 0}`, async () => {
+    const where: string[] = ["status = 'published'"];
+    const params: unknown[] = [];
+    if (community !== "all") {
+      where.push("community = ?");
+      params.push(community);
+    }
+    if (when === "upcoming") {
+      where.push("(starts_at IS NULL OR starts_at >= ?)");
+      params.push(cutoff());
+    } else if (when === "past") {
+      where.push("starts_at < ?");
+      params.push(cutoff());
+    }
+    if (year) {
+      const [ys, ye] = yearRange(year);
+      where.push("starts_at >= ? AND starts_at < ?");
+      params.push(ys, ye);
+    }
+    const r = await first<{ n: number }>(
+      env.DB,
+      `SELECT COUNT(*) n FROM events WHERE ${where.join(" AND ")}`,
+      params,
+    );
+    return r?.n ?? 0;
+  });
+}
+
+/** Distinct years that have past events (cached) — for the year filter. */
+export async function eventYears(env: Env, community = "all"): Promise<number[]> {
+  return cached(env, NS.events, `years:${community}`, async () => {
+    const where: string[] = ["status = 'published'", "starts_at IS NOT NULL", "starts_at < ?"];
+    const params: unknown[] = [cutoff()];
+    if (community !== "all") {
+      where.push("community = ?");
+      params.push(community);
+    }
+    const rows = await all<{ y: string }>(
+      env.DB,
+      `SELECT DISTINCT strftime('%Y', starts_at, 'unixepoch', '+3 hours') y FROM events WHERE ${where.join(" AND ")} ORDER BY y DESC`,
+      params,
+    );
+    return rows.map((r) => parseInt(r.y, 10)).filter(Boolean);
   });
 }
 
@@ -182,6 +246,20 @@ export async function listRecordings(
       `SELECT * FROM recordings WHERE is_active=1 ORDER BY sort_order ASC`,
     );
   });
+}
+
+/** Recordings linked to a given event (via event_recordings). */
+export async function getEventRecordings(env: Env, eventId: string): Promise<RecordingRow[]> {
+  return cached(env, NS.recordings, `ev:${eventId}`, () =>
+    all<RecordingRow>(
+      env.DB,
+      `SELECT r.* FROM recordings r
+       JOIN event_recordings er ON er.recording_id = r.id
+       WHERE er.event_id = ? AND r.is_active = 1
+       ORDER BY r.sort_order ASC`,
+      [eventId],
+    ),
+  );
 }
 
 /* ── gallery ──────────────────────────────────────────────────────────────── */

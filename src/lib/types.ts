@@ -82,6 +82,7 @@ export interface RecordingRow {
   cover_image: string;
   category: string;
   video_count: number;
+  duration_minutes: number;
   sort_order: number;
   is_active: number;
   created_at: number;

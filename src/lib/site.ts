@@ -27,7 +27,7 @@ export const NAV: NavItem[] = [
     href: "/communities",
     children: [
       { label: "Topluluklar", href: "/communities" },
-      { label: "Şirketler", href: "/companies" },
+      { label: "İş Birlikleri", href: "/partnerships" },
     ],
   },
 ];
@@ -92,6 +92,7 @@ export interface SiteConfig {
   events: string;
   recordings: string;
   companies: string;
+  speakers: string;
 }
 
 /** Merge DB settings over sane defaults so the site renders before seeding. */
@@ -108,5 +109,6 @@ export function resolveSite(settings: Settings): SiteConfig {
     events: settings.stat_events || "100+",
     recordings: settings.stat_recordings || "17+",
     companies: settings.stat_companies || "25+",
+    speakers: settings.stat_speakers || "200+",
   };
 }

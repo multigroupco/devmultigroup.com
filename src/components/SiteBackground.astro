@@ -9,6 +9,8 @@
   <div class="blob blob-c animate-float-slow"></div>
   <div class="grain"></div>
   <div class="vignette"></div>
+  <!-- keep the (fixed) blob glow from bleeding into the navbar zone at any scroll -->
+  <div class="bg-top-scrim"></div>
 </div>
 
 <style>
@@ -18,15 +20,25 @@
     z-index: -10;
     overflow: hidden;
     pointer-events: none;
-    background:
-      radial-gradient(120% 80% at 50% -10%, rgba(255, 255, 255, 0.05), transparent 60%),
-      var(--color-ink-950);
+    /* flat base — the old top-center white wash sat (position:fixed) directly
+       under the navbar, reading as a logo "glow" + a lighter strip below it. */
+    background: var(--color-ink-950);
+  }
+  .bg-top-scrim {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 18rem;
+    /* solid through the whole navbar + strip zone, then fade — so no blob light
+       leaks under the navbar at any scroll position */
+    background: linear-gradient(to bottom, var(--color-ink-950) 72%, transparent);
   }
   .blob {
     position: absolute;
     border-radius: 50%;
     filter: blur(100px);
-    opacity: 0.6;
+    opacity: 0.45;
     will-change: transform;
   }
   .blob-a {

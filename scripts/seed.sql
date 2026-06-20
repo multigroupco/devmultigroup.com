@@ -16,8 +16,9 @@ INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES
   ('banner_enabled', '1', unixepoch()),
   ('stat_events', '100+', unixepoch()),
   ('stat_members', '15.000+', unixepoch()),
-  ('stat_recordings', '17+', unixepoch()),
+  ('stat_recordings', '20+', unixepoch()),
   ('stat_companies', '25+', unixepoch()),
+  ('stat_speakers', '200+', unixepoch()),
   ('stat_cities', 'İstanbul', unixepoch());
 
 -- ── recordings (YouTube playlist’leri — gerçek id’ler) ───────────────────────

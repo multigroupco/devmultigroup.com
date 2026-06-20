@@ -1,0 +1,116 @@
+---
+// Page-transition loading screen: a spinning flower mark + a thin top progress
+// bar. Driven by Astro's view-transition lifecycle (astro:before-preparation →
+// astro:page-load). Marked transition:persist so the element survives the swap.
+---
+
+<div id="dmg-loader" class="dmg-loader" transition:persist="dmg-loader" role="status" aria-hidden="true">
+  <div class="dmg-loader-bar"><span></span></div>
+  <img src="/logo-small-white.png" alt="" width="44" height="44" class="dmg-loader-logo" />
+</div>
+
+<style>
+  .dmg-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: grid;
+    place-items: center;
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(6px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.3s var(--ease-out-soft), visibility 0.3s var(--ease-out-soft);
+  }
+  .dmg-loader.is-active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+  .dmg-loader-logo {
+    width: 44px;
+    height: 44px;
+    animation: dmg-loader-spin 0.9s linear infinite;
+  }
+  @keyframes dmg-loader-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .dmg-loader-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2.5px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+  }
+  .dmg-loader-bar span {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: #fff;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    transition: width 0.2s var(--ease-out-soft);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dmg-loader-logo {
+      animation: none;
+    }
+    .dmg-loader,
+    .dmg-loader-bar span {
+      transition: none;
+    }
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    const setup = () => {
+      const loader = document.getElementById("dmg-loader");
+      if (!loader) return;
+      const bar = loader.querySelector(".dmg-loader-bar span");
+      let trickle, showT, hideT, prog = 0;
+      const set = (p) => {
+        prog = p;
+        if (bar) bar.style.width = p + "%";
+      };
+
+      const start = () => {
+        clearTimeout(hideT);
+        clearTimeout(showT);
+        // brief delay so instant / prefetched navigations don't flash the screen
+        showT = setTimeout(() => {
+          loader.classList.add("is-active");
+          set(12);
+          clearInterval(trickle);
+          trickle = setInterval(() => set(prog + (90 - prog) * 0.12), 220);
+        }, 130);
+      };
+
+      const done = () => {
+        clearTimeout(showT);
+        clearInterval(trickle);
+        if (!loader.classList.contains("is-active")) {
+          set(0);
+          return;
+        }
+        set(100);
+        hideT = setTimeout(() => {
+          loader.classList.remove("is-active");
+          setTimeout(() => set(0), 320);
+        }, 200);
+      };
+
+      document.addEventListener("astro:before-preparation", start);
+      document.addEventListener("astro:page-load", done);
+    };
+
+    if (!window.__dmgLoader) {
+      window.__dmgLoader = true;
+      setup();
+    }
+  })();
+</script>

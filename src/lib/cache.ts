@@ -23,6 +23,7 @@ export async function cached<T>(
   key: string,
   loader: () => Promise<T>,
   ttl: number = DEFAULT_TTL,
+  shouldCache?: (data: T) => boolean,
 ): Promise<T> {
   const cache = env?.CACHE;
   if (!cache) return loader(); // no KV bound (e.g. bare unit test) → straight through
@@ -40,8 +41,13 @@ export async function cached<T>(
   }
 
   const data = await loader();
-  // Don't cache empty/undefined payloads as authoritative.
-  if (data !== undefined && data !== null) {
+  // Don't cache empty/undefined payloads as authoritative. Callers can refine
+  // with `shouldCache` — e.g. search skips caching empty result sets so a query
+  // run during Vectorize's eventual-consistency window can't pin a stale "no
+  // results" for the whole TTL.
+  const storable =
+    data !== undefined && data !== null && (shouldCache ? shouldCache(data) : true);
+  if (storable) {
     await cache.put(k, JSON.stringify(data), { expirationTtl: ttl });
   }
   return data;
@@ -75,4 +81,5 @@ export const NS = {
   social: "social",
   home: "home",
   communities: "communities",
+  search: "search",
 } as const;

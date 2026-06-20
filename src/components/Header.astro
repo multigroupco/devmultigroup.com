@@ -2,6 +2,19 @@
 import Icon from "./Icon.astro";
 import { NAV, BRAND, JOIN_FORM } from "@/lib/site";
 
+interface Props {
+  variant?: "multigroup" | "academy";
+}
+const { variant = "multigroup" } = Astro.props;
+
+// brand variants — same collapse/spin logic, just different mark + wordmark.
+// w = full display width (px), wordLeft = where the wordmark begins (mark slot).
+const BRANDS = {
+  multigroup: { name: BRAND.name, href: "/", mark: "/logo-small-white.png", word: "/dmg-logo.webp", w: 135, wordLeft: 28, h: 28, spin: 180 },
+  academy: { name: "MultiAcademy", href: "/", mark: "/multiacademy-mark-white.png", word: "/multiacademy-logo.png", w: 157, wordLeft: 19, h: 32, spin: 360 },
+} as const;
+const brand = BRANDS[variant];
+
 const path = Astro.url.pathname;
 const isActive = (href: string) =>
   href === "/" ? path === "/" : path === href || path.startsWith(href + "/");
@@ -9,8 +22,13 @@ const isActive = (href: string) =>
 
 <header id="site-header" class="site-header">
   <div class="container-x flex items-center justify-between gap-4 h-16">
-    <a href="/" class="flex items-center shrink-0" aria-label={BRAND.name}>
-      <img src="/dmg-logo.webp" alt={BRAND.name} width="135" height="28" class="h-7 w-auto" />
+    <a href={brand.href} class="brand shrink-0" aria-label={brand.name} style={`--brand-w:${brand.w}px;--brand-word-left:${brand.wordLeft}px;--brand-h:${brand.h}px;--brand-spin:${brand.spin}deg`}>
+      <span class="brand-mark">
+        <img src={brand.mark} alt="" height="28" aria-hidden="true" />
+      </span>
+      <span class="brand-word">
+        <img src={brand.word} alt={brand.name} height="28" />
+      </span>
     </a>
 
     <nav class="hidden md:flex items-center gap-1" aria-label="Primary">
@@ -57,6 +75,9 @@ const isActive = (href: string) =>
     </nav>
 
     <div class="flex items-center gap-2">
+      <button type="button" data-search-open class="btn btn-ghost !rounded-xl !p-2.5" aria-label="Ara" title="Ara">
+        <Icon name="search" size={16} />
+      </button>
       <button type="button" data-contact="newsletter" class="btn btn-ghost hidden sm:inline-flex !rounded-xl !p-2.5" aria-label="Bültene abone ol" title="Bültene abone ol">
         <Icon name="bell" size={16} />
       </button>
@@ -103,7 +124,8 @@ const isActive = (href: string) =>
           ),
         )
       }
-      <a href={JOIN_FORM} target="_blank" rel="noopener noreferrer" class="btn btn-ghost mt-3 justify-center !rounded-xl" data-ga="join_click" data-ga-params={JSON.stringify({ location: "mobile_nav" })}><Icon name="user-check" size={16} /> Aramıza katıl</a>
+      <button type="button" data-search-open class="btn btn-ghost mt-3 justify-center !rounded-xl"><Icon name="search" size={16} /> Ara</button>
+      <a href={JOIN_FORM} target="_blank" rel="noopener noreferrer" class="btn btn-ghost mt-2 justify-center !rounded-xl" data-ga="join_click" data-ga-params={JSON.stringify({ location: "mobile_nav" })}><Icon name="user-check" size={16} /> Aramıza katıl</a>
       <button type="button" data-contact="newsletter" class="btn btn-ghost mt-2 justify-center !rounded-xl"><Icon name="bell" size={16} /> Bültene abone ol</button>
     </nav>
   </div>
@@ -115,12 +137,82 @@ const isActive = (href: string) =>
     top: 0;
     z-index: 50;
     border-bottom: 1px solid transparent;
-    transition: background-color 0.3s ease, border-color 0.3s ease, backdrop-filter 0.3s ease;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+  }
+  /* soft top scrim so the transparent navbar never reveals hero photos behind it */
+  .site-header::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 8rem;
+    background: linear-gradient(to bottom, var(--color-ink-950) 40%, transparent);
+    pointer-events: none;
+    z-index: -1;
+    transition: opacity 0.3s var(--ease-out-soft);
+  }
+  .site-header.scrolled::before {
+    opacity: 0;
   }
   .site-header.scrolled {
-    background: rgba(0, 0, 0, 0.72);
-    backdrop-filter: blur(14px) saturate(140%);
+    background: var(--color-ink-950);
     border-bottom-color: var(--color-line);
+  }
+
+  /* Logo: on scroll the "MultiGroup" wordmark collapses away (Anthropic-style)
+     and the flower mark spins a full 360°. The brand keeps a fixed 135px
+     footprint so the collapse never shifts the nav links. */
+  .brand {
+    position: relative;
+    width: var(--brand-w, 135px); /* fixed slot: mark + wordmark */
+    height: var(--brand-h, 28px);
+    flex: none;
+  }
+  .brand-mark {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: var(--brand-h, 28px);
+    display: flex;
+    align-items: center;
+    transition: transform 1.1s var(--ease-out-soft);
+  }
+  .brand-mark img {
+    display: block;
+    height: var(--brand-h, 28px);
+    width: auto;
+  }
+  .brand-word {
+    position: absolute;
+    left: var(--brand-word-left, 28px); /* sits right after the mark */
+    top: 0;
+    width: calc(var(--brand-w, 135px) - var(--brand-word-left, 28px));
+    height: var(--brand-h, 28px);
+    overflow: hidden;
+    transition: width 0.9s var(--ease-out-soft), opacity 0.7s var(--ease-out-soft);
+  }
+  .brand-word img {
+    display: block;
+    height: var(--brand-h, 28px);
+    width: var(--brand-w, 135px);
+    max-width: none;
+    margin-left: calc(-1 * var(--brand-word-left, 28px)); /* hide the mark; show only the wordmark */
+  }
+  .site-header.scrolled .brand-mark {
+    transform: rotate(var(--brand-spin, 180deg));
+  }
+  .site-header.scrolled .brand-word {
+    width: 0;
+    opacity: 0;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .brand-mark,
+    .brand-word {
+      transition: none;
+    }
+    .site-header.scrolled .brand-mark {
+      transform: none;
+    }
   }
   .nav-link {
     position: relative;

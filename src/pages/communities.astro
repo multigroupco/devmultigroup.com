@@ -127,46 +127,197 @@ const initials = (name: string) =>
   }
 
   <section class="container-x py-8">
-    {
-      groups.map((g) => (
-        <div class="mt-10 first:mt-2">
-          <div class="flex items-center gap-2.5 mb-5">
-            {ECO_LOGO[g.eco] && <img src={ECO_LOGO[g.eco]} alt={g.eco} height="20" class="h-5 w-auto object-contain opacity-90" />}
-            <h2 class="font-display text-lg font-semibold">{ECO_LABEL[g.eco]}</h2>
-            <span class="chip">{g.items.length}</span>
-          </div>
-          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {g.items.map((c) => {
-              const logo = ECO_LOGO[c.ecosystem];
-              const inner = (
-                <div class="group card card-hover p-4 flex items-center gap-3.5 h-full">
-                  <div class="relative w-12 h-12 rounded-xl bg-white/[0.04] border border-line grid place-items-center shrink-0">
-                    {c.logo_url ? (
-                      <img src={imageSrc(c.logo_url)} alt={c.name} loading="lazy" class="w-full h-full object-cover rounded-xl grayscale group-hover:grayscale-0 transition duration-300" />
-                    ) : (
-                      <span class="font-display text-sm text-ink-dim">{initials(c.name)}</span>
-                    )}
-                    {logo && (
-                      <img src={logo} alt={c.ecosystem} width="20" height="20" class="absolute -bottom-1.5 -right-1.5 w-5 h-5 p-1 rounded-full bg-ink-950 border border-line object-contain" />
-                    )}
-                  </div>
-                  <div class="min-w-0">
-                    <h3 class="font-medium text-sm leading-snug">{c.name}</h3>
-                    <div class="text-ink-faint text-xs mt-1 flex items-center gap-1">
-                      <Icon name="map-pin" size={12} /> {c.city}
+    <div id="comm-toolbar" class="flex flex-col sm:flex-row gap-3 sm:items-center scroll-mt-20">
+      <label class="relative flex-1 min-w-0">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none">
+          <Icon name="search" size={16} />
+        </span>
+        <input
+          id="comm-search"
+          type="text"
+          autocomplete="off"
+          placeholder="Topluluk veya şehir ara…"
+          class="w-full bg-white/[0.04] border border-line rounded-xl pl-9 pr-9 py-2.5 text-sm placeholder:text-ink-faint focus:outline-none focus:border-white/25 transition"
+        />
+        <button
+          type="button"
+          id="comm-search-clear"
+          aria-label="Aramayı temizle"
+          class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink-text transition"
+        >
+          <Icon name="close" size={15} />
+        </button>
+      </label>
+      <div class="relative shrink-0">
+        <select
+          id="comm-eco"
+          aria-label="Ekosistem filtresi"
+          class="appearance-none w-full sm:w-52 bg-white/[0.04] border border-line rounded-xl pl-3 pr-9 py-2.5 text-sm text-ink-dim focus:outline-none focus:border-white/25 transition cursor-pointer"
+        >
+          <option value="">Tüm ekosistemler</option>
+          {groups.map((g) => (
+            <option value={g.eco}>{ECO_LABEL[g.eco]}</option>
+          ))}
+        </select>
+        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none">
+          <Icon name="chevron-right" size={15} class="rotate-90" />
+        </span>
+      </div>
+    </div>
+
+    <div id="comm-groups">
+      {
+        groups.map((g) => (
+          <div class="comm-group mt-10 first:mt-6" data-group data-eco={g.eco}>
+            <div class="flex items-center gap-2.5 mb-5">
+              {ECO_LOGO[g.eco] && <img src={ECO_LOGO[g.eco]} alt={g.eco} height="20" class="h-5 w-auto object-contain opacity-90" />}
+              <h2 class="font-display text-lg font-semibold">{ECO_LABEL[g.eco]}</h2>
+              <span class="chip" data-group-count>{g.items.length}</span>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {g.items.map((c) => {
+                const logo = ECO_LOGO[c.ecosystem];
+                const q = `${c.name} ${c.city}`.toLocaleLowerCase("tr");
+                const inner = (
+                  <div id={`c-${c.id}`} class="group card card-hover p-4 flex items-center gap-3.5 h-full scroll-mt-24">
+                    <div class="relative w-12 h-12 rounded-xl bg-white/[0.04] border border-line grid place-items-center shrink-0">
+                      {c.logo_url ? (
+                        <img src={imageSrc(c.logo_url)} alt={c.name} loading="lazy" class="w-full h-full object-cover rounded-xl transition duration-300 group-hover:scale-[1.06]" />
+                      ) : (
+                        <span class="font-display text-sm text-ink-dim">{initials(c.name)}</span>
+                      )}
+                      {logo && (
+                        <img src={logo} alt={c.ecosystem} width="20" height="20" class="absolute -bottom-1.5 -right-1.5 w-5 h-5 p-1 rounded-full bg-ink-950 border border-line object-contain" />
+                      )}
+                    </div>
+                    <div class="min-w-0">
+                      <h3 class="font-medium text-sm leading-snug">{c.name}</h3>
+                      <div class="text-ink-faint text-xs mt-1 flex items-center gap-1">
+                        <Icon name="map-pin" size={12} /> {c.city}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-              return c.url || c.instagram ? (
-                <a href={c.url || c.instagram} target="_blank" rel="noopener noreferrer">{inner}</a>
-              ) : (
-                inner
-              );
-            })}
+                );
+                return c.url || c.instagram ? (
+                  <a href={c.url || c.instagram} target="_blank" rel="noopener noreferrer" class="community-card" data-city={c.city} data-eco={c.ecosystem} data-q={q}>
+                    {inner}
+                  </a>
+                ) : (
+                  <div class="community-card" data-city={c.city} data-eco={c.ecosystem} data-q={q}>
+                    {inner}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))
-    }
+        ))
+      }
+    </div>
+
+    <p id="comm-empty" class="hidden text-center text-ink-faint text-sm py-12">
+      Eşleşen topluluk bulunamadı. <button type="button" data-clear-all class="underline hover:text-ink-text">Filtreleri temizle</button>
+    </p>
   </section>
+
+  <style>
+    .community-card.is-hidden,
+    .comm-group.is-hidden {
+      display: none;
+    }
+    #comm-eco option {
+      background: #0d0d0e;
+      color: #fff;
+    }
+  </style>
+
+  <script is:inline>
+    (() => {
+      const init = () => {
+        const groupsWrap = document.getElementById("comm-groups");
+        const search = document.getElementById("comm-search");
+        if (!groupsWrap || !search || groupsWrap.dataset.filterBound) return;
+        groupsWrap.dataset.filterBound = "1";
+
+        const groups = Array.from(document.querySelectorAll(".comm-group"));
+        const ecoSelect = document.getElementById("comm-eco");
+        const clearBtn = document.getElementById("comm-search-clear");
+        const empty = document.getElementById("comm-empty");
+        const nodes = Array.from(document.querySelectorAll(".map-node[data-city]"));
+        const toolbar = document.getElementById("comm-toolbar");
+
+        const state = { eco: "", q: "" };
+        const norm = (s) => (s || "").toLocaleLowerCase("tr").trim();
+
+        const apply = () => {
+          let total = 0;
+          groups.forEach((g) => {
+            let shown = 0;
+            g.querySelectorAll(".community-card").forEach((card) => {
+              const okEco = !state.eco || card.dataset.eco === state.eco;
+              const okQ = !state.q || (card.dataset.q || "").includes(state.q);
+              const vis = okEco && okQ;
+              card.classList.toggle("is-hidden", !vis);
+              if (vis) shown++;
+            });
+            g.classList.toggle("is-hidden", shown === 0);
+            const cnt = g.querySelector("[data-group-count]");
+            if (cnt) cnt.textContent = String(shown);
+            total += shown;
+          });
+          if (empty) empty.classList.toggle("hidden", total !== 0);
+          if (clearBtn) clearBtn.classList.toggle("hidden", !search.value);
+          nodes.forEach((n) => n.classList.toggle("is-selected", !!state.q && norm(n.getAttribute("data-city")) === state.q));
+        };
+
+        search.addEventListener("input", () => {
+          state.q = norm(search.value);
+          apply();
+        });
+        if (clearBtn)
+          clearBtn.addEventListener("click", () => {
+            search.value = "";
+            state.q = "";
+            apply();
+            search.focus();
+          });
+        if (ecoSelect)
+          ecoSelect.addEventListener("change", () => {
+            state.eco = ecoSelect.value || "";
+            apply();
+          });
+
+        const clearAll = document.querySelector("[data-clear-all]");
+        if (clearAll)
+          clearAll.addEventListener("click", () => {
+            state.eco = "";
+            state.q = "";
+            search.value = "";
+            if (ecoSelect) ecoSelect.value = "";
+            apply();
+          });
+
+        nodes.forEach((n) => {
+          if (n.dataset.selectBound) return;
+          n.dataset.selectBound = "1";
+          n.style.cursor = "pointer";
+          n.addEventListener("click", () => {
+            const city = n.getAttribute("data-city");
+            // toggle: clicking the same city again clears the search input
+            search.value = norm(city) === state.q ? "" : city;
+            state.q = norm(search.value);
+            apply();
+            if (state.q && toolbar) toolbar.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        });
+
+        apply();
+      };
+
+      if (!window.__dmgCommFilter) {
+        window.__dmgCommFilter = true;
+        document.addEventListener("astro:page-load", init);
+      }
+      init();
+    })();
+  </script>
 </BaseLayout>

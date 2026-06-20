@@ -19,28 +19,104 @@ const dots = Object.keys(CITY_XY)
   .map((city) => {
     const [x, y] = CITY_XY[city];
     const n = counts[city];
-    return { city, x, y, n, r: Math.round((5 + Math.sqrt(n) * 2.6) * 10) / 10 };
+    return { city, x, y, n, r: Math.round((5 + Math.sqrt(n) * 2.6) * 10) / 10, labeled: LABELED.has(city) };
   });
+
+const byCity = Object.fromEntries(dots.map((d) => [d.city, d]));
+
+// viewBox → percentage helpers (for the HTML tooltip overlay)
+const [vbX, vbY, vbW, vbH] = TURKEY_VIEWBOX.split(/\s+/).map(Number);
+const leftPct = (x: number) => ((x - vbX) / vbW) * 100;
+const topPct = (y: number) => ((y - vbY) / vbH) * 100;
+
+// --- connection arcs (GitHub/Cloudflare-globe style) -----------------------
+// Hub-and-spoke from the busiest city + a few lateral cross-links, each drawn
+// as a quadratic bezier that bows away from the line so it reads as an "arc".
+type Dot = (typeof dots)[number];
+const dist = (a: Dot, b: Dot) => Math.hypot(b.x - a.x, b.y - a.y);
+const arcPath = (a: Dot, b: Dot) => {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len = Math.hypot(dx, dy) || 1;
+  let px = -dy / len;
+  let py = dx / len;
+  if (py > 0) { px = -px; py = -py; } // always bow upward
+  const bow = Math.min(len * 0.22, 56);
+  const cx = (a.x + b.x) / 2 + px * bow;
+  const cy = (a.y + b.y) / 2 + py * bow;
+  return `M${a.x} ${a.y} Q${cx} ${cy} ${b.x} ${b.y}`;
+};
+
+const hub = byCity["İstanbul"] ?? [...dots].sort((a, b) => b.n - a.n)[0];
+const EXTRA_PAIRS: [string, string][] = [
+  ["Ankara", "Kayseri"],
+  ["Kayseri", "Hatay"],
+  ["Ankara", "Antalya"],
+  ["İzmir", "Antalya"],
+  ["Ankara", "İzmir"],
+];
+
+const seen = new Set<string>();
+const arcs: { d: string; len: number }[] = [];
+const addArc = (a?: Dot, b?: Dot) => {
+  if (!a || !b || a === b) return;
+  const key = [a.city, b.city].sort().join("|");
+  if (seen.has(key)) return;
+  seen.add(key);
+  arcs.push({ d: arcPath(a, b), len: dist(a, b) });
+};
+if (hub) {
+  for (const d of dots) if (d !== hub && dist(d, hub) > 40) addArc(hub, d);
+  for (const [p, q] of EXTRA_PAIRS) addArc(byCity[p], byCity[q]);
+}
 ---
 
-<div class="relative w-full max-w-4xl mx-auto">
+<div class="relative w-full max-w-4xl mx-auto" data-map>
   <div class="absolute inset-0 blur-3xl opacity-30" style="background:radial-gradient(ellipse at 35% 40%, rgba(255,255,255,.06), transparent 60%)"></div>
   <img src="/turkey.svg" alt="Türkiye haritası" width="716" height="312" loading="lazy" class="relative w-full h-auto select-none pointer-events-none" draggable="false" />
   <svg viewBox={TURKEY_VIEWBOX} class="absolute inset-0 w-full h-full overflow-visible">
+    <g class="map-arcs">
+      {
+        arcs.map((a, i) => (
+          <g>
+            <path class="arc-base" d={a.d} />
+            <path
+              class="arc-flow"
+              d={a.d}
+              pathLength="100"
+              style={`animation-duration:${(1.8 + a.len * 0.008).toFixed(2)}s;animation-delay:${(i * 0.08).toFixed(2)}s`}
+            />
+          </g>
+        ))
+      }
+    </g>
     {
       dots.map((d) => (
-        <g class="map-node">
+        <g class="map-node" data-city={d.city}>
           <title>{`${d.city} — ${d.n} topluluk`}</title>
-          <circle cx={d.x} cy={d.y} r={d.r + 5} fill="rgba(255,255,255,0.06)" />
+          <circle class="node-halo" cx={d.x} cy={d.y} r={d.r + 5} fill="rgba(255,255,255,0.06)" />
           <circle cx={d.x} cy={d.y} r={d.r} fill="#ffffff" fill-opacity="0.95" />
           <text x={d.x} y={d.y + 3.1} text-anchor="middle" class="map-count">{d.n}</text>
-          {LABELED.has(d.city) && (
+          {d.labeled && (
             <text x={d.x} y={d.y - d.r - 4} text-anchor="middle" class="map-label">{d.city}</text>
           )}
         </g>
       ))
     }
   </svg>
+
+  <!-- hover popovers for the markers whose name is hidden for space -->
+  <div class="map-tips" aria-hidden="true">
+    {
+      dots
+        .filter((d) => !d.labeled)
+        .map((d) => (
+          <span class="map-tip" data-city={d.city} style={`left:${leftPct(d.x).toFixed(3)}%;top:${topPct(d.y).toFixed(3)}%`}>
+            {d.city}
+          </span>
+        ))
+    }
+  </div>
 </div>
 
 <style>
@@ -55,4 +131,109 @@ const dots = Object.keys(CITY_XY)
     font-weight: 700;
     font-family: var(--font-display);
   }
+
+  /* connection arcs */
+  .arc-base {
+    fill: none;
+    stroke: rgba(74, 222, 128, 0.16);
+    stroke-width: 0.7;
+  }
+  .arc-flow {
+    fill: none;
+    stroke: rgba(74, 222, 128, 0.95);
+    stroke-width: 1.3;
+    stroke-linecap: round;
+    stroke-dasharray: 9 41; /* pathLength=100 → two 9% comets per edge */
+    filter: drop-shadow(0 0 2.5px rgba(74, 222, 128, 0.7));
+    animation: arc-dash 4s linear infinite;
+  }
+  @keyframes arc-dash {
+    from { stroke-dashoffset: 100; }
+    to { stroke-dashoffset: 0; }
+  }
+
+  /* marker hover affordance */
+  .map-node[data-city] { cursor: pointer; }
+  .node-halo { transition: fill-opacity 0.2s var(--ease-out-soft); }
+  .map-node[data-city]:hover .node-halo { fill-opacity: 0.16; }
+
+  /* selected marker (city filter active) */
+  .map-node.is-selected .node-halo {
+    fill-opacity: 0.22;
+  }
+  .map-node.is-selected circle:nth-of-type(2) {
+    stroke: #4ade80;
+    stroke-width: 2;
+    paint-order: stroke;
+  }
+
+  /* hover popovers */
+  .map-tips {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 20;
+  }
+  .map-tip {
+    position: absolute;
+    transform: translate(-50%, calc(-100% - 9px)) scale(0.92);
+    transform-origin: bottom center;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    line-height: 1.2;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+    color: var(--color-ink-text);
+    background: rgba(0, 0, 0, 0.82);
+    border: 1px solid var(--color-line);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity 0.18s var(--ease-out-soft), transform 0.18s var(--ease-out-soft);
+  }
+  .map-tip::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.82);
+  }
+  .map-tip.is-on {
+    opacity: 1;
+    transform: translate(-50%, calc(-100% - 11px)) scale(1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .arc-flow { animation: none; opacity: 0.35; stroke-dasharray: none; }
+  }
 </style>
+
+<script is:inline>
+  (() => {
+    const initMaps = () => {
+      document.querySelectorAll("[data-map]").forEach((root) => {
+        root.querySelectorAll(".map-node[data-city]").forEach((node) => {
+          if (node.dataset.tipBound) return;
+          node.dataset.tipBound = "1";
+          const city = node.getAttribute("data-city");
+          const tip = root.querySelector('.map-tip[data-city="' + (window.CSS && CSS.escape ? CSS.escape(city) : city) + '"]');
+          if (!tip) return;
+          const on = () => tip.classList.add("is-on");
+          const off = () => tip.classList.remove("is-on");
+          node.addEventListener("mouseenter", on);
+          node.addEventListener("mouseleave", off);
+          node.addEventListener("focusin", on);
+          node.addEventListener("focusout", off);
+        });
+      });
+    };
+    if (!window.__dmgMap) {
+      window.__dmgMap = true;
+      document.addEventListener("astro:page-load", initMaps);
+    }
+    initMaps();
+  })();
+</script>

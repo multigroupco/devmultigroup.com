@@ -1,0 +1,187 @@
+---
+// Compact scroll-revealed KPI strip with a custom "odometer" roll animation:
+// each digit rolls up through a few cycles and settles on its value (instead of
+// a plain count-up). Monochrome, content-first. SSR renders the final number so
+// it's correct with JS off (see <noscript>); JS only adds the roll on reveal.
+interface Item {
+  value: string;
+  label: string;
+}
+interface Props {
+  eyebrow?: string;
+  title?: string;
+  items: Item[];
+}
+const { eyebrow, title, items } = Astro.props;
+
+const CYCLES = 4; // digit rolls through (CYCLES-1) full 0–9 cycles before landing
+const tokens = (v: string) =>
+  [...v].map((ch) => (/\d/.test(ch) ? { digit: Number(ch) } : { sep: ch }));
+---
+
+<section class="container-x py-12 md:py-16" data-impact>
+  {eyebrow && <p class="text-sm text-ink-faint uppercase tracking-[0.18em]">{eyebrow}</p>}
+  {title && <h2 class="text-xl md:text-2xl font-semibold mt-2 max-w-2xl">{title}</h2>}
+
+  <div class="impact-grid mt-9" style={`--kpi-cols:${items.length}`}>
+    {
+      items.map((it, i) => (
+        <div class="impact-kpi" style={`--d:${i * 70}ms`}>
+          <div class="impact-kpi-num font-display tabular-nums">
+            <span class="odo-wrap">
+              {tokens(it.value).map((t) =>
+                t.sep !== undefined ? (
+                  <span class="odo-sep">{t.sep}</span>
+                ) : (
+                  <span class="odo">
+                    <span class="odo-col" data-to={(CYCLES - 1) * 10 + (t.digit ?? 0)} style={`transform:translateY(-${(CYCLES - 1) * 10 + (t.digit ?? 0)}em)`}>
+                      {Array.from({ length: CYCLES * 10 }, (_, k) => (
+                        <span class="odo-d">{k % 10}</span>
+                      ))}
+                    </span>
+                  </span>
+                ),
+              )}
+            </span>
+          </div>
+          <div class="impact-kpi-label">{it.label}</div>
+        </div>
+      ))
+    }
+  </div>
+</section>
+
+<noscript>
+  <style>
+    .impact-kpi {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  </style>
+</noscript>
+
+<style>
+  /* equal-width columns derived from the metric count → even spacing */
+  .impact-grid {
+    display: grid;
+    gap: 2.25rem 1.5rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (min-width: 640px) {
+    .impact-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 768px) {
+    .impact-grid {
+      grid-template-columns: repeat(var(--kpi-cols, 5), minmax(0, 1fr));
+    }
+  }
+  .impact-kpi {
+    text-align: center;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.5s var(--ease-out-soft), transform 0.5s var(--ease-out-soft);
+    transition-delay: var(--d, 0ms);
+  }
+  .impact-kpi.is-in {
+    opacity: 1;
+    transform: none;
+  }
+  .impact-kpi-num {
+    font-size: clamp(1.75rem, 5vw, 2.75rem);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .impact-kpi-label {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--color-ink-faint);
+    font-family: var(--font-mono);
+  }
+
+  /* odometer */
+  .odo-wrap {
+    display: inline-flex;
+    align-items: flex-end;
+  }
+  .odo,
+  .odo-sep {
+    display: inline-block;
+    height: 1em;
+    line-height: 1;
+  }
+  .odo {
+    overflow: hidden;
+  }
+  .odo-col {
+    display: flex;
+    flex-direction: column;
+    transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .odo-d {
+    display: block;
+    height: 1em;
+    line-height: 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .impact-kpi {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+    .odo-col {
+      transition: none;
+    }
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    const init = () => {
+      document.querySelectorAll("[data-impact]").forEach((root) => {
+        if (root.dataset.impactBound) return;
+        root.dataset.impactBound = "1";
+        const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const run = () => {
+          root.querySelectorAll(".impact-kpi").forEach((kpi, ki) => {
+            kpi.classList.add("is-in");
+            if (reduce) return;
+            kpi.querySelectorAll(".odo-col").forEach((col, di) => {
+              const to = col.dataset.to;
+              // start from 0, then roll down to the (already-rendered) target
+              col.style.transition = "none";
+              col.style.transform = "translateY(0)";
+              void col.offsetHeight; // reflow so the reset applies instantly
+              col.style.transition = "";
+              col.style.transitionDelay = ki * 80 + di * 70 + "ms";
+              col.style.transform = "translateY(-" + to + "em)";
+            });
+          });
+        };
+        if (!("IntersectionObserver" in window)) {
+          run();
+          return;
+        }
+        const io = new IntersectionObserver(
+          (obs) => {
+            obs.forEach((e) => {
+              if (e.isIntersecting) {
+                run();
+                io.disconnect();
+              }
+            });
+          },
+          { threshold: 0.3 },
+        );
+        io.observe(root);
+      });
+    };
+    if (!window.__dmgImpactStrip) {
+      window.__dmgImpactStrip = true;
+      document.addEventListener("astro:page-load", init);
+    }
+    init();
+  })();
+</script>

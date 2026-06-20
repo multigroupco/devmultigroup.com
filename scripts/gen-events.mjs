@@ -1,6 +1,14 @@
 // Generates scripts/events.sql from scripts/gathin-events.json (the 15 Gathin
 // community events). Run: node scripts/gen-events.mjs > scripts/events.sql
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
+
+// Source covers live behind an expired download.php token; the /files/<id> form
+// serves them. We mirror every cover into our own R2 (no external image URLs).
+const toFilesUrl = (u) => {
+  const m = (u || "").match(/[?&]file=([^&]+)/);
+  return m ? `https://files-01.apiollon.com/files/${m[1]}` : u || "";
+};
+const coverManifest = [];
 
 const read = (f) => JSON.parse(readFileSync(new URL(f, import.meta.url), "utf8")).result;
 const data = [
@@ -74,8 +82,11 @@ const rows = data.map((e, i) => {
   const end = parseInt(e.eventEndDateTime, 10) || "NULL";
   const reg = "https://gathin.com/events/" + e.url;
   const feat = e.eventID === featuredId ? 1 : 0;
-  return `  ('${esc(id)}', '${esc(slug)}', '${esc(e.title)}', '${esc(summarize(e.description))}', '${esc(e.description)}', '${esc(e.cover)}', '${e.community}', '${category(e.title, e.community)}', '${esc(e.locationAddress)}', '${esc(city)}', ${isOnline}, ${start}, ${end}, '${esc(reg)}', 'gathin', 'published', ${feat}, '', ${i})`;
+  const coverKey = e.cover ? `events/${slug}.png` : "";
+  if (coverKey) coverManifest.push({ key: coverKey, url: toFilesUrl(e.cover) });
+  return `  ('${esc(id)}', '${esc(slug)}', '${esc(e.title)}', '${esc(summarize(e.description))}', '${esc(e.description)}', '${esc(coverKey)}', '${e.community}', '${category(e.title, e.community)}', '${esc(e.locationAddress)}', '${esc(city)}', ${isOnline}, ${start}, ${end}, '${esc(reg)}', 'gathin', 'published', ${feat}, '', ${i})`;
 });
+writeFileSync("/tmp/gathin-cover-manifest.json", JSON.stringify(coverManifest, null, 1));
 
 const out = [
   "-- GENERATED from scripts/gathin-events.json (Gathin community events). Do not edit by hand.",

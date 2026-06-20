@@ -7,9 +7,9 @@ const env = getEnv(Astro.locals);
 const { slug } = Astro.params;
 const event = slug ? await getEvent(env, slug) : null;
 
-// Academy events live under /academy/<slug> — send them to their canonical home.
-if (event && event.community === "multiacademy") {
-  return Astro.redirect(`/academy/${event.slug}`, 301);
+// Only academy events belong here; MultiGroup events live under /events/<slug>.
+if (event && event.community !== "multiacademy") {
+  return Astro.redirect(`/events/${event.slug}`, 301);
 }
 if (!event) Astro.response.status = 404;
 ---

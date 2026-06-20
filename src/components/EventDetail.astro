@@ -1,0 +1,186 @@
+---
+// Shared event detail body for both /events/[slug] and /academy/[slug].
+// The canonical base path is derived from the event's community, so an academy
+// event always lives under /academy/<slug> and a MultiGroup event under
+// /events/<slug> — the thin route pages just redirect cross-section hits here.
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Icon from "@/components/Icon.astro";
+import { getEnv } from "@/lib/runtime";
+import { listEvents, getEventRecordings } from "@/lib/content";
+import { renderMarkdown } from "@/lib/markdown";
+import { formatDate, formatTime, iso, isUpcoming } from "@/lib/format";
+import { categoryAccent, accentHex, imageSrc } from "@/lib/ui";
+import { GATHIN, BRAND } from "@/lib/site";
+import EventCard from "@/components/EventCard.astro";
+import RecordingCard from "@/components/RecordingCard.astro";
+import type { EventRow } from "@/lib/types";
+
+interface Props {
+  event: EventRow | null;
+}
+const { event } = Astro.props;
+const env = getEnv(Astro.locals);
+
+const academy = event?.community === "multiacademy";
+const base = academy ? "/academy" : "/events";
+const rootName = academy ? "Akademi" : "Etkinlikler";
+const backLabel = academy ? "Tüm programlar" : "Tüm etkinlikler";
+
+const hex = event ? accentHex(categoryAccent(event.category)) : "#ededef";
+const upcoming = event ? isUpcoming(event.starts_at) : false;
+const cover = event ? imageSrc(event.cover_image) : "";
+const reg = event
+  ? event.registration_url ||
+    (academy ? GATHIN.multiacademy : GATHIN.multigroup)
+  : "";
+const where = event ? (event.is_online ? "Çevrimiçi" : [event.location, event.city].filter(Boolean).join(", ")) : "";
+const body = event ? renderMarkdown(event.description) : "";
+const recordings = event ? await getEventRecordings(env, event.id) : [];
+
+const related = event
+  ? (await listEvents(env, { community: event.community, when: "all", limit: 5 })).filter(
+      (e) => e.slug !== event.slug,
+    ).slice(0, 2)
+  : [];
+
+const eventStart = event ? iso(event.starts_at) : "";
+const eventImage = event
+  ? cover
+    ? cover.startsWith("http")
+      ? cover
+      : BRAND.url + cover
+    : `${BRAND.url}/api/og?title=${encodeURIComponent(event.title)}&eyebrow=${encodeURIComponent("ETKİNLİK")}`
+  : "";
+// Event requires a startDate — only emit the schema when we actually have one,
+// otherwise we'd ship an invalid (Search-Console-flagged) Event.
+const eventLd =
+  event && eventStart
+    ? {
+        "@context": "https://schema.org",
+        "@type": "Event",
+        name: event.title,
+        startDate: eventStart,
+        endDate: iso(event.ends_at) || undefined,
+        eventAttendanceMode: event.is_online
+          ? "https://schema.org/OnlineEventAttendanceMode"
+          : "https://schema.org/OfflineEventAttendanceMode",
+        eventStatus: "https://schema.org/EventScheduled",
+        location: event.is_online
+          ? { "@type": "VirtualLocation", url: reg }
+          : {
+              "@type": "Place",
+              name: event.location || event.city || "Türkiye",
+              address: { "@type": "PostalAddress", addressLocality: event.city || "Türkiye", addressCountry: "TR" },
+            },
+        image: [eventImage],
+        description: event.summary || event.title,
+        inLanguage: "tr",
+        organizer: {
+          "@type": "Organization",
+          name: BRAND.name,
+          url: BRAND.url,
+          logo: `${BRAND.url}/dmg-logo.webp`,
+        },
+        url: `${BRAND.url}${base}/${event.slug}`,
+        ...(reg ? { offers: { "@type": "Offer", url: reg, availability: "https://schema.org/InStock", price: "0", priceCurrency: "TRY" } } : {}),
+      }
+    : undefined;
+---
+
+{
+  !event ? (
+    <BaseLayout title="Etkinlik bulunamadı" noindex hideBanner>
+      <section class="container-x py-16 text-center">
+        <h1 class="text-3xl font-semibold">Bu etkinlik kaybolmuş.</h1>
+        <p class="text-ink-dim mt-3">Sona ermiş ya da taşınmış olabilir.</p>
+        <a href="/events" class="btn btn-primary mt-7">Etkinliklere dön</a>
+      </section>
+    </BaseLayout>
+  ) : (
+    <BaseLayout
+      title={event.title}
+      description={event.summary || `${event.title} · ${formatDate(event.starts_at)}${where ? " · " + where : ""} — Developer MultiGroup etkinliği.`}
+      canonicalPath={`${base}/${event.slug}`}
+      image={cover || undefined}
+      type="article"
+      jsonLd={eventLd}
+      breadcrumbs={[
+        { name: rootName, item: `${BRAND.url}${base}` },
+        { name: event.title, item: `${BRAND.url}${base}/${event.slug}` },
+      ]}
+    >
+      <article class="container-x pt-10 pb-6 max-w-3xl">
+        <a href={base} class="inline-flex items-center gap-1.5 text-sm text-ink-dim hover:text-ink-text mb-7">
+          <Icon name="arrow-right" size={15} class="rotate-180" /> {backLabel}
+        </a>
+
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+          <span class="chip" style={`color:${hex};border-color:color-mix(in srgb, ${hex} 35%, transparent)`}>{event.category}</span>
+          {academy && <span class="chip text-lime">akademi</span>}
+          {upcoming ? <span class="chip text-magenta">yaklaşan</span> : <span class="chip">geçmiş</span>}
+        </div>
+
+        <h1 class="text-3xl md:text-5xl font-semibold leading-tight">{event.title}</h1>
+
+        <div class="flex flex-wrap gap-x-6 gap-y-2 mt-6 text-sm text-ink-dim">
+          <span class="inline-flex items-center gap-2"><Icon name="calendar" size={16} style={`color:${hex}`} /> {formatDate(event.starts_at)}{formatTime(event.starts_at) && ` · ${formatTime(event.starts_at)}`}</span>
+          {where && <span class="inline-flex items-center gap-2"><Icon name="map-pin" size={16} style={`color:${hex}`} /> {where}</span>}
+        </div>
+
+        {cover && (
+          <div class="card overflow-hidden mt-8 aspect-[16/9] relative skeleton">
+            <img
+              src={cover}
+              alt={event.title}
+              loading="eager"
+              fetchpriority="high"
+              decoding="async"
+              class="img-reveal absolute inset-0 w-full h-full object-cover"
+            />
+          </div>
+        )}
+
+        {upcoming && (
+          <div class="card p-5 mt-8 flex flex-col sm:flex-row sm:items-center gap-4 justify-between" style={`background:linear-gradient(120deg, color-mix(in srgb, ${hex} 14%, transparent), transparent), linear-gradient(180deg, var(--color-ink-850), var(--color-ink-900))`}>
+            <div>
+              <p class="font-display font-semibold">Sen de orada olmak ister misin?</p>
+              <p class="text-ink-dim text-sm">Katılım ücretsiz — Gathin'de kayıt ol.</p>
+            </div>
+            <a href={reg} target="_blank" rel="noopener noreferrer" class="btn btn-primary shrink-0" data-ga="event_register" data-ga-params={JSON.stringify({ event: event.slug, location: "hero" })}>
+              Kayıt ol <Icon name="arrow-up-right" size={16} />
+            </a>
+          </div>
+        )}
+
+        {body && <div class="prose-dmg mt-9" set:html={body} />}
+
+        {recordings.length > 0 && (
+          <div class="mt-10 pt-6 border-t border-line">
+            <h2 class="font-display text-lg font-semibold mb-5 flex items-center gap-2">
+              <Icon name="play" size={18} /> Kayıtlar
+            </h2>
+            <div class="grid sm:grid-cols-2 gap-4">
+              {recordings.map((r) => <RecordingCard rec={r} />)}
+            </div>
+          </div>
+        )}
+
+        <div class="mt-10 pt-6 border-t border-line flex flex-wrap gap-3">
+          <a href={reg} target="_blank" rel="noopener noreferrer" class="btn btn-ghost" data-ga="event_register" data-ga-params={JSON.stringify({ event: event.slug, location: "footer" })}>
+            <Icon name="external" size={16} /> {upcoming ? "Gathin'de kayıt ol" : "Gathin'de görüntüle"}
+          </a>
+          <a href={base} class="btn btn-ghost">{academy ? "Daha fazla program" : "Daha fazla etkinlik"}</a>
+        </div>
+      </article>
+
+      {related.length > 0 && (
+        <section class="container-x py-8 max-w-3xl">
+          <h2 class="font-display text-lg font-semibold mb-5 text-ink-dim">{academy ? "Akademi" : "MultiGroup"}'dan daha fazlası</h2>
+          <div class="grid sm:grid-cols-2 gap-4">
+            {related.map((e) => <EventCard event={e} />)}
+          </div>
+        </section>
+      )}
+    </BaseLayout>
+  )
+}

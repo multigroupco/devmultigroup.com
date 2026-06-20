@@ -3,25 +3,46 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 import EventCard from "@/components/EventCard.astro";
 import Icon from "@/components/Icon.astro";
 import { getEnv } from "@/lib/runtime";
-import { listEvents } from "@/lib/content";
+import { listEvents, countEvents, eventYears } from "@/lib/content";
 import { GATHIN } from "@/lib/site";
-import type { Community } from "@/lib/types";
+import { formatDayLabel, formatTime } from "@/lib/format";
+import { imageSrc } from "@/lib/ui";
 
 const env = getEnv(Astro.locals);
-const cParam = (Astro.url.searchParams.get("c") || "all") as Community | "all";
-const community = cParam === "multigroup" || cParam === "multiacademy" ? cParam : "all";
+// events page lists MultiGroup events only — academy events live on /academy
+const community = "multigroup" as const;
 
-const [upcoming, past] = await Promise.all([
+const PAGE = 12;
+const page = Math.max(1, parseInt(Astro.url.searchParams.get("page") || "1", 10) || 1);
+const yp = parseInt(Astro.url.searchParams.get("year") || "", 10);
+const year = Number.isFinite(yp) ? yp : undefined;
+const [upcoming, past, pastTotal, years] = await Promise.all([
   listEvents(env, { community, when: "upcoming", limit: 30 }),
-  listEvents(env, { community, when: "past", limit: 48 }),
+  listEvents(env, { community, when: "past", year, limit: PAGE, offset: (page - 1) * PAGE }),
+  countEvents(env, { community, when: "past", year }),
+  eventYears(env, community),
 ]);
+const lastPage = Math.max(1, Math.ceil(pastTotal / PAGE));
+const qstr = (o: { page?: number; year?: number }) => {
+  const sp = new URLSearchParams();
+  if (o.year) sp.set("year", String(o.year));
+  if (o.page && o.page > 1) sp.set("page", String(o.page));
+  const qs = sp.toString();
+  return qs ? `/events?${qs}` : "/events";
+};
+const pageHref = (p: number) => qstr({ page: p, year });
+const yearHref = (y?: number) => `${qstr({ year: y })}#gecmis`;
 
-const tabs: { key: Community | "all"; label: string }[] = [
-  { key: "all", label: "Tümü" },
-  { key: "multigroup", label: "MultiGroup" },
-  { key: "multiacademy", label: "Akademi" },
-];
-const tabHref = (k: string) => (k === "all" ? "/events" : `/events?c=${k}`);
+// hero: feature the soonest upcoming event
+const featured = upcoming[0] ?? null;
+const fcover = featured ? imageSrc(featured.cover_image) : "";
+const fday = featured ? formatDayLabel(featured.starts_at) : null;
+const ftime = featured ? formatTime(featured.starts_at) : "";
+const fwhere = featured ? (featured.is_online ? "Çevrimiçi" : featured.city) : "";
+const freg = featured
+  ? featured.registration_url || (featured.community === "multiacademy" ? GATHIN.multiacademy : GATHIN.multigroup)
+  : "";
+const restUpcoming = featured ? upcoming.slice(1) : upcoming;
 ---
 
 <BaseLayout
@@ -29,47 +50,118 @@ const tabHref = (k: string) => (k === "all" ? "/events" : `/events?c=${k}`);
   description="Developer MultiGroup'tan buluşmalar, konferanslar, atölyeler ve bootcamp'ler — geçmiş ve yaklaşan."
   canonicalPath="/events"
 >
-  <section class="container-x pt-14 pb-8">
-    <h1 class="text-4xl md:text-5xl font-semibold">Etkinlikler</h1>
-    <p class="text-ink-dim mt-4 max-w-2xl leading-relaxed">
-      Koridor sohbetlerinden tıklım tıklım konferanslara kadar — topluluk burada
-      buluşuyor. Kayıtlar Gathin üzerinden yapılıyor.
-    </p>
-
-    <div class="flex flex-wrap items-center gap-2 mt-8">
-      {
-        tabs.map((t) => (
-          <a href={tabHref(t.key)} class:list={["chip !text-sm !px-3.5 !py-1.5", community === t.key ? "text-ink-text border-line-strong bg-white/5" : "hover:text-ink-text"]}>
-            {t.label}
-          </a>
-        ))
-      }
-      <a href={GATHIN.multigroup} target="_blank" rel="noopener noreferrer" class="chip !text-sm !px-3.5 !py-1.5 ml-auto hover:text-ink-text">
-        Etkinliklere katıl <Icon name="arrow-up-right" size={13} />
-      </a>
-    </div>
-  </section>
+  {
+    featured ? (
+      <section class="relative isolate overflow-hidden">
+        <div class="absolute inset-0 -z-10" aria-hidden="true">
+          {fcover && (
+            <div class="container-x relative h-full hidden lg:block">
+              <div class="absolute right-8 top-1/2 -translate-y-1/2 w-[40%] max-w-[34rem] aspect-[16/9] rounded-3xl overflow-hidden skeleton">
+                <img src={fcover} alt="" loading="eager" decoding="async" class="img-reveal w-full h-full object-cover" />
+              </div>
+            </div>
+          )}
+          <div class="absolute inset-0 bg-gradient-to-r from-ink-950 via-ink-950/80 to-transparent to-[54%]" />
+        </div>
+        <div class="container-x pt-16 pb-12 md:pt-20 md:pb-16">
+          <p class="text-sm text-ink-dim font-medium uppercase tracking-[0.18em] mb-6 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-white animate-pulse" /> Sıradaki etkinlik
+          </p>
+          <div class="max-w-3xl lg:max-w-none lg:pr-[44%]">
+            <div class="min-w-0">
+              <h1 class="text-3xl md:text-5xl font-semibold leading-[1.06]">{featured.title}</h1>
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-sm text-ink-dim">
+                <span class="inline-flex items-center gap-1.5"><Icon name="calendar" size={15} /> {fday?.weekday} {fday?.day} {fday?.month}{ftime && ` · ${ftime}`}</span>
+                {fwhere && <span class="inline-flex items-center gap-1.5"><Icon name="map-pin" size={15} /> {fwhere}</span>}
+              </div>
+              <div class="ev-countdown flex items-center gap-2.5 mt-6" data-countdown={featured.starts_at} aria-label="Etkinliğe kalan süre">
+                {[
+                  { k: "d", label: "gün" },
+                  { k: "h", label: "saat" },
+                  { k: "m", label: "dk" },
+                  { k: "s", label: "sn" },
+                ].map((u) => (
+                  <div class="flex flex-col items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-xl bg-ink-950/55 backdrop-blur border border-line">
+                    <span class="font-display text-xl md:text-2xl font-semibold tabular-nums leading-none" data-cd={u.k}>--</span>
+                    <span class="text-[0.58rem] font-mono uppercase tracking-wide text-ink-faint mt-1">{u.label}</span>
+                  </div>
+                ))}
+              </div>
+              <div class="flex flex-wrap items-center gap-3 mt-6">
+                <a href={freg} target="_blank" rel="noopener noreferrer" class="btn btn-primary"><Icon name="arrow-up-right" size={16} /> Kayıt ol</a>
+                <a href={`/events/${featured.slug}`} class="btn btn-ghost">Detaylar</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    ) : (
+      <section class="container-x pt-14 pb-4">
+        <h1 class="text-4xl md:text-5xl font-semibold">Etkinlikler</h1>
+      </section>
+    )
+  }
 
   {
-    upcoming.length > 0 && (
+    restUpcoming.length > 0 && (
       <section class="container-x py-6">
         <h2 class="font-display text-xl font-semibold mb-5 flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-magenta animate-pulse" /> Yaklaşan
         </h2>
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {upcoming.map((e) => <EventCard event={e} />)}
+          {restUpcoming.map((e) => <EventCard event={e} />)}
         </div>
       </section>
     )
   }
 
-  <section class="container-x py-6">
-    <h2 class="font-display text-xl font-semibold mb-5 text-ink-dim">Geçmiş etkinlikler</h2>
+  <section id="gecmis" class="container-x py-6 scroll-mt-20">
+    <div class="flex items-baseline justify-between gap-3 mb-5">
+      <h2 class="font-display text-xl font-semibold text-ink-dim flex items-baseline gap-2">
+        Geçmiş etkinlikler
+        {pastTotal > 0 && <span class="text-sm font-normal text-ink-faint font-mono">{pastTotal}</span>}
+      </h2>
+      {
+        years.length > 0 && (
+          <select
+            onchange="location.href=this.value"
+            aria-label="Yıla göre filtrele"
+            class="shrink-0 bg-transparent text-ink-dim hover:text-ink-text text-sm font-mono cursor-pointer focus:outline-none transition-colors"
+          >
+            <option value={yearHref(undefined)} selected={!year}>Tüm yıllar</option>
+            {years.map((y) => (
+              <option value={yearHref(y)} selected={year === y}>{y}</option>
+            ))}
+          </select>
+        )
+      }
+    </div>
     {
       past.length > 0 ? (
-        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {past.map((e) => <EventCard event={e} />)}
-        </div>
+        <>
+          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {past.map((e) => <EventCard event={e} />)}
+          </div>
+          {lastPage > 1 && (
+            <nav class="flex items-center justify-center gap-4 mt-10" aria-label="Sayfalama">
+              {page > 1 ? (
+                <a href={`${pageHref(page - 1)}#gecmis`} class="btn btn-ghost !py-2 !px-3.5 text-sm">
+                  <Icon name="chevron-right" size={15} class="rotate-180" /> Önceki
+                </a>
+              ) : (
+                <span class="btn btn-ghost !py-2 !px-3.5 text-sm opacity-40 pointer-events-none">Önceki</span>
+              )}
+              <span class="text-sm text-ink-faint font-mono tabular-nums">{page} / {lastPage}</span>
+              {page < lastPage ? (
+                <a href={`${pageHref(page + 1)}#gecmis`} class="btn btn-ghost !py-2 !px-3.5 text-sm">
+                  Sonraki <Icon name="chevron-right" size={15} />
+                </a>
+              ) : (
+                <span class="btn btn-ghost !py-2 !px-3.5 text-sm opacity-40 pointer-events-none">Sonraki</span>
+              )}
+            </nav>
+          )}
+        </>
       ) : (
         <div class="card p-10 text-center text-ink-dim">
           <Icon name="calendar" size={28} class="mx-auto mb-3 opacity-50" />
@@ -78,4 +170,47 @@ const tabHref = (k: string) => (k === "all" ? "/events" : `/events?c=${k}`);
       )
     }
   </section>
+
+  <script is:inline>
+    (() => {
+      const pad = (n) => String(n).padStart(2, "0");
+      const init = () => {
+        document.querySelectorAll("[data-countdown]").forEach((el) => {
+          if (el.dataset.cdBound) return;
+          el.dataset.cdBound = "1";
+          const target = parseInt(el.dataset.countdown, 10) || 0;
+          const set = (k, v) => {
+            const n = el.querySelector('[data-cd="' + k + '"]');
+            if (n) n.textContent = v;
+          };
+          const tick = () => {
+            let rem = target - Math.floor(Date.now() / 1000);
+            if (rem <= 0) {
+              set("d", "00"); set("h", "00"); set("m", "00"); set("s", "00");
+              el.classList.add("is-done");
+              if (el.__cd) { clearInterval(el.__cd); el.__cd = null; }
+              return;
+            }
+            const d = Math.floor(rem / 86400); rem %= 86400;
+            const h = Math.floor(rem / 3600); rem %= 3600;
+            const m = Math.floor(rem / 60);
+            const s = rem % 60;
+            set("d", pad(d)); set("h", pad(h)); set("m", pad(m)); set("s", pad(s));
+          };
+          tick();
+          el.__cd = setInterval(tick, 1000);
+        });
+      };
+      if (!window.__dmgCountdown) {
+        window.__dmgCountdown = true;
+        document.addEventListener("astro:page-load", init);
+        document.addEventListener("astro:before-swap", () => {
+          document.querySelectorAll("[data-countdown]").forEach((el) => {
+            if (el.__cd) clearInterval(el.__cd);
+          });
+        });
+      }
+      init();
+    })();
+  </script>
 </BaseLayout>

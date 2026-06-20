@@ -43,7 +43,7 @@ companies (incl. Google, Trendyol, Hepsiburada, Akbank). Content is in Turkish (
 - [Blog](${o}/blog): articles, guides and event recaps. Feed: ${o}/rss.xml
 - [Team](${o}/team): organizers and volunteers.
 - [Communities](${o}/communities): partner communities and ecosystems (Google, Huawei, Amazon, IEEE) across Türkiye.
-- [Companies](${o}/companies): brands and partners the community builds with.
+- [Partnerships](${o}/partnerships): brands and companies the community builds with.
 - [About](${o}/about): mission, values and FAQ (what it is, whether events are free, how to join).
 - [Links](${o}/links): all official links in one place.
 

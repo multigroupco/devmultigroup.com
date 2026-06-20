@@ -44,5 +44,27 @@
       "binding": "MEDIA",
       "bucket_name": "devmultigroup-media"
     }
+  ],
+  // Plain (non-secret) vars. AI_GATEWAY_ID names the AI Gateway that every
+  // embedding call is routed through, for usage analytics / logging / cost
+  // tracking. Created out-of-band via the AI Gateway API; if it were ever blank,
+  // embeddings fall back to a direct (ungatewayed) Workers AI call.
+  "vars": {
+    "AI_GATEWAY_ID": "devmultigroup-search"
+  },
+  // Workers AI — used ONLY to embed text for semantic search (bge-m3). This is
+  // the embedding engine, not AI Search/AutoRAG; no managed instance exists.
+  "ai": {
+    "binding": "AI"
+  },
+  // Vectorize index holding one embedding per published content row. Created via
+  // `wrangler vectorize create devmultigroup-search --dimensions=1024 --metric=cosine`
+  // with a string metadata index on `type`. No local simulation: in `astro dev`
+  // this binding is absent, so search degrades to a D1 LIKE scan (see lib/search.ts).
+  "vectorize": [
+    {
+      "binding": "VECTORIZE",
+      "index_name": "devmultigroup-search"
+    }
   ]
 }

@@ -277,7 +277,12 @@
   /* contact modal */
   .contact-modal { position: fixed; inset: 0; z-index: 100; display: none; }
   .contact-modal.open { display: grid; place-items: center; padding: 1rem; }
-  .contact-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.72); backdrop-filter: blur(6px); }
+  .contact-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(6px);
+    animation: contact-fade 0.4s var(--ease-out-soft);
+  }
   .contact-card {
     position: relative;
     width: 100%;
@@ -289,7 +294,15 @@
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
     max-height: calc(100dvh - 2rem);
     overflow-y: auto;
-    animation: rise-in 0.28s var(--ease-out-soft);
+    animation: contact-pop 0.44s var(--ease-out-soft);
+  }
+  @keyframes contact-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes contact-pop {
+    from { opacity: 0; transform: translateY(18px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
   .contact-x {
     position: absolute;
@@ -629,5 +642,23 @@
     );
     background-size: 200% 100%;
     animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+
+  /* image reveal — kept invisible until fully decoded, then faded in over the
+     skeleton, so images never paint in progressively (top-to-bottom). The
+     reveal class is toggled by the global handler in BaseLayout. */
+  .img-reveal {
+    opacity: 0;
+    /* include `scale` (Tailwind v4 group-hover:scale-* sets the scale property,
+       not transform) so the hover zoom eases instead of snapping */
+    transition: opacity 0.45s var(--ease-out-soft), scale 0.5s var(--ease-out-soft);
+  }
+  .img-reveal.is-loaded {
+    opacity: 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .img-reveal {
+      transition: none;
+    }
   }
 }

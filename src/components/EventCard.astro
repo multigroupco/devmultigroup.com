@@ -13,7 +13,7 @@ const hex = accentHex(categoryAccent(event.category));
 const upcoming = isUpcoming(event.starts_at);
 const d = formatDayLabel(event.starts_at);
 const time = formatTime(event.starts_at);
-const href = `/events/${event.slug}`;
+const href = `${event.community === "multiacademy" ? "/academy" : "/events"}/${event.slug}`;
 const reg =
   event.registration_url ||
   (event.community === "multiacademy" ? GATHIN.multiacademy : GATHIN.multigroup);
@@ -22,7 +22,7 @@ const cover = imageSrc(event.cover_image);
 ---
 
 <article class="card card-hover relative overflow-hidden flex flex-col h-full group">
-  <div class="relative aspect-[16/9] overflow-hidden skeleton bg-ink-900">
+  <div class:list={["relative aspect-[16/9] overflow-hidden bg-ink-900", cover && "skeleton"]}>
     {
       cover && (
         <img
@@ -30,9 +30,7 @@ const cover = imageSrc(event.cover_image);
           alt=""
           loading="lazy"
           decoding="async"
-          onload="this.parentElement.classList.remove('skeleton')"
-          onerror="this.style.display='none';this.parentElement.classList.remove('skeleton')"
-          class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          class="img-reveal absolute inset-0 w-full h-full object-cover group-hover:scale-105"
         />
       )
     }

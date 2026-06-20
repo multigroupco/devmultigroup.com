@@ -11,8 +11,34 @@ import type { TeamSocials } from "@/lib/types";
 
 const env = getEnv(Astro.locals);
 const team = await listTeam(env);
-const core = team.filter((m) => m.community !== "multiacademy");
-const academy = team.filter((m) => m.community === "multiacademy");
+// squads — grouped into the three teams (Pioneer A / Pioneer B / Initiate)
+const SQUADS = [
+  { name: "Pioneer A", members: ["Serkan Alç", "Batuhan Yalçın", "Furkan Ünsalan", "Zerrin Ayaz", "Alptuğ Gürler", "Azra Çalışkan", "Seda Savaş"] },
+  { name: "Pioneer B", members: ["Gizem Arpay", "Bilgehan Takım", "Burcu Aydın", "Sarp Can Karaman", "Dalida Dikici", "Hatice Rana Yamaç", "Nuriye Dezcan", "Mutlu Özkurt", "Evren Ozkip"] },
+  { name: "Initiate Team", members: ["Olivia Üzümcü", "Tamer Usta", "Nurhan Uzun", "Selin Su Özdemir", "Emirhan Kurt", "Eray Keskinbaş", "Asya Yayla", "Koralp Selçuk"] },
+  { name: "Veteran Team", members: ["Ilgın Sel Balta", "Göker Güner", "Bilal Durnagöl", "Selin Çıldam"] },
+];
+const norm = (s: string) => (s || "").toLocaleLowerCase("tr").trim();
+const byName = new Map(team.map((m) => [norm(m.name), m]));
+const groups = SQUADS.map((sq) => ({
+  name: sq.name,
+  items: sq.members.map((n) => byName.get(norm(n))).filter((m): m is (typeof team)[number] => Boolean(m)),
+}));
+const used = new Set(groups.flatMap((g) => g.items.map((m) => norm(m.name))));
+const leftover = team.filter((m) => !used.has(norm(m.name)));
+
+// hero: a band of volunteer faces flowing behind the title; hover lights one up
+const faces = team.map((m) => (m.avatar_url ? imageSrc(m.avatar_url) : "")).filter(Boolean);
+const faceA = [...faces, ...faces, ...faces, ...faces];
+const faceB = (() => {
+  const r = [...faces].reverse();
+  return [...r, ...r, ...r, ...r];
+})();
+const faceC = (() => {
+  const h = Math.floor(faces.length / 2);
+  const rot = [...faces.slice(h), ...faces.slice(0, h)];
+  return [...rot, ...rot, ...rot, ...rot];
+})();
 
 const teamLd = team.length
   ? {
@@ -49,13 +75,57 @@ const teamLd = team.length
   jsonLd={teamLd}
   breadcrumbs={[{ name: "Ekip", item: `${BRAND.url}/team` }]}
 >
-  <section class="container-x pt-14 pb-8">
-    <h1 class="text-4xl md:text-5xl font-semibold">Ekip</h1>
-    <p class="text-ink-dim mt-4 max-w-2xl leading-relaxed">
-      MultiGroup, gönüllülerin enerjisiyle ayakta — topluluğun büyümesi için
-      zamanını ayıran organizatörler, konuşmacılar ve mentorlar.
-    </p>
-  </section>
+  {
+    faces.length >= 3 ? (
+      <section class="relative isolate overflow-hidden flex items-center min-h-[66svh]">
+        <div class="hero-bg absolute inset-0 -z-10" aria-hidden="true">
+          <div class="hero-bands absolute inset-0 flex flex-col justify-center gap-3 md:gap-4 mask-fade-x">
+            <div class="flex gap-3 md:gap-4 w-max animate-marquee">
+              {faceA.map((src) => (
+                <div class="hero-card card overflow-hidden h-24 sm:h-28 md:h-36 aspect-square shrink-0">
+                  <img src={src} alt="" loading="lazy" decoding="async" class="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+            <div class="flex gap-3 md:gap-4 w-max animate-marquee-rev">
+              {faceB.map((src) => (
+                <div class="hero-card card overflow-hidden h-24 sm:h-28 md:h-36 aspect-square shrink-0">
+                  <img src={src} alt="" loading="lazy" decoding="async" class="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+            <div class="flex gap-3 md:gap-4 w-max animate-marquee">
+              {faceC.map((src) => (
+                <div class="hero-card card overflow-hidden h-24 sm:h-28 md:h-36 aspect-square shrink-0">
+                  <img src={src} alt="" loading="lazy" decoding="async" class="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div class="absolute inset-0 pointer-events-none bg-gradient-to-b from-ink-950/45 via-transparent to-ink-950/80" />
+          <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse 62% 70% at 50% 50%, rgba(0,0,0,.68), rgba(0,0,0,.4) 50%, transparent 82%)" />
+        </div>
+        <div class="hero-content container-x w-full text-center py-16 md:py-24 pointer-events-none">
+          <p class="text-sm text-ink-dim font-medium mb-5 uppercase tracking-[0.18em]">Gönüllüler · Ekip</p>
+          <h1 class="text-4xl md:text-6xl font-semibold leading-[1.05] max-w-3xl mx-auto">
+            Topluluğu birlikte <span class="text-grad">büyüten yüzler.</span>
+          </h1>
+          <p class="text-ink-dim text-lg mt-5 max-w-2xl mx-auto leading-relaxed">
+            MultiGroup, gönüllülerin enerjisiyle ayakta — topluluğun büyümesi için
+            zamanını ayıran organizatörler, konuşmacılar ve mentorlar.
+          </p>
+        </div>
+      </section>
+    ) : (
+      <section class="container-x pt-14 pb-8">
+        <h1 class="text-4xl md:text-5xl font-semibold">Ekip</h1>
+        <p class="text-ink-dim mt-4 max-w-2xl leading-relaxed">
+          MultiGroup, gönüllülerin enerjisiyle ayakta — topluluğun büyümesi için
+          zamanını ayıran organizatörler, konuşmacılar ve mentorlar.
+        </p>
+      </section>
+    )
+  }
 
   {
     team.length === 0 ? (
@@ -65,22 +135,24 @@ const teamLd = team.length
         </div>
       </section>
     ) : (
-      <>
-        <section class="container-x py-4">
-          {academy.length > 0 && <SectionHeader title="MultiGroup" />}
-          <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-            {core.map((m) => <TeamCard member={m} />)}
-          </div>
-        </section>
-        {academy.length > 0 && (
-          <section class="container-x py-8">
-            <SectionHeader title="MultiAcademy" />
+      <section class="container-x py-4">
+        {groups.filter((g) => g.items.length).map((g) => (
+          <div class="mt-12 first:mt-2">
+            <SectionHeader title={g.name} />
             <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-              {academy.map((m) => <TeamCard member={m} />)}
+              {g.items.map((m) => <TeamCard member={m} />)}
             </div>
-          </section>
+          </div>
+        ))}
+        {leftover.length > 0 && (
+          <div class="mt-12">
+            <SectionHeader title="Diğer" />
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+              {leftover.map((m) => <TeamCard member={m} />)}
+            </div>
+          </div>
         )}
-      </>
+      </section>
     )
   }
 
@@ -91,4 +163,36 @@ const teamLd = team.length
       <a href={JOIN_FORM} target="_blank" rel="noopener noreferrer" class="btn btn-primary group mt-6">Aramıza katıl<span class="relative inline-flex w-4 h-4"><Icon name="user-check" size={16} class="absolute inset-0 transition-all duration-200 group-hover:opacity-0 group-hover:scale-50" /><Icon name="arrow-up-right" size={16} class="absolute inset-0 opacity-0 scale-50 transition-all duration-200 group-hover:opacity-100 group-hover:scale-100" /></span></a>
     </div>
   </section>
+
+  <style>
+    .hero-content {
+      text-shadow: 0 2px 28px rgba(0, 0, 0, 0.62);
+    }
+    .hero-card img {
+      filter: brightness(0.38) saturate(0.9);
+      transition: filter 0.45s var(--ease-out-soft), transform 0.6s var(--ease-out-soft);
+    }
+    .hero-card:hover img {
+      filter: brightness(1.08) saturate(1);
+      transform: scale(1.05);
+    }
+    .hero-bands > div:hover {
+      animation-play-state: paused;
+    }
+    /* daha yavaş, satır başına farklı tempo */
+    .hero-bands .animate-marquee {
+      animation-duration: 70s;
+    }
+    .hero-bands .animate-marquee-rev {
+      animation-duration: 82s;
+    }
+    .hero-bands > div:nth-child(3) {
+      animation-duration: 96s;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero-card img {
+        transition: filter 0.25s;
+      }
+    }
+  </style>
 </BaseLayout>

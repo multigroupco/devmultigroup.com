@@ -2,7 +2,8 @@
 // generic persistence with cache invalidation. Add a column → add a field here.
 
 import { all, first, run, uuid, nowSec, slugify } from "./db";
-import { invalidateMany, NS } from "./cache";
+import { invalidate, invalidateMany, NS } from "./cache";
+import { indexRow, unindexRow } from "./search";
 
 export type FieldType =
   | "text"
@@ -34,6 +35,7 @@ export interface Resource {
   table: string;
   icon: string;
   ns: string[]; // cache namespaces to invalidate on write
+  searchable?: boolean; // index published/active rows into Vectorize for /api/search
   fields: Field[];
   listColumns: { name: string; label: string }[];
   defaultSort: string;
@@ -66,6 +68,7 @@ export const RESOURCES: Record<string, Resource> = {
     table: "events",
     icon: "calendar",
     ns: [NS.events, NS.home],
+    searchable: true,
     defaultSort: "COALESCE(starts_at, 9999999999) DESC",
     listColumns: [
       { name: "title", label: "Title" },
@@ -102,6 +105,7 @@ export const RESOURCES: Record<string, Resource> = {
     table: "posts",
     icon: "pen",
     ns: [NS.posts, NS.home],
+    searchable: true,
     defaultSort: "COALESCE(published_at, created_at) DESC",
     listColumns: [
       { name: "title", label: "Title" },
@@ -137,6 +141,7 @@ export const RESOURCES: Record<string, Resource> = {
     table: "links",
     icon: "link",
     ns: [NS.links, NS.home],
+    searchable: true,
     defaultSort: "sort_order ASC",
     listColumns: [
       { name: "label", label: "Label" },
@@ -163,11 +168,13 @@ export const RESOURCES: Record<string, Resource> = {
     table: "recordings",
     icon: "play",
     ns: [NS.recordings, NS.home],
+    searchable: true,
     defaultSort: "sort_order ASC",
     listColumns: [
       { name: "title", label: "Title" },
       { name: "category", label: "Category" },
       { name: "video_count", label: "Videos" },
+      { name: "duration_minutes", label: "Mins" },
       { name: "is_active", label: "Active" },
     ],
     fields: [
@@ -178,6 +185,7 @@ export const RESOURCES: Record<string, Resource> = {
       { name: "cover_image", label: "Cover image", type: "image", help: "Playlist thumbnail. Paste a YouTube thumbnail URL or upload." },
       { name: "category", label: "Category", type: "select", options: opt("event", "bootcamp", "talk", "series") },
       { name: "video_count", label: "Video count", type: "number" },
+      { name: "duration_minutes", label: "Total minutes", type: "number", help: "Sum of all video lengths in minutes. Shown as hours on the site." },
       { name: "sort_order", label: "Sort order", type: "number" },
       { name: "is_active", label: "Active", type: "boolean" },
     ],
@@ -216,6 +224,7 @@ export const RESOURCES: Record<string, Resource> = {
     table: "team_members",
     icon: "users",
     ns: [NS.team, NS.home],
+    searchable: true,
     defaultSort: "sort_order ASC, name ASC",
     listColumns: [
       { name: "name", label: "Name" },
@@ -243,6 +252,7 @@ export const RESOURCES: Record<string, Resource> = {
     table: "communities",
     icon: "users",
     ns: [NS.communities, NS.home],
+    searchable: true,
     defaultSort: "sort_order ASC, name ASC",
     listColumns: [
       { name: "name", label: "Name" },
@@ -300,6 +310,7 @@ export const SETTINGS_FIELDS: Field[] = [
   { name: "stat_members", label: "Members stat", type: "text", help: "e.g. 15,000+" },
   { name: "stat_recordings", label: "Recordings stat", type: "text", help: "e.g. 17+" },
   { name: "stat_companies", label: "Companies stat", type: "text", help: "e.g. 25+" },
+  { name: "stat_speakers", label: "Speakers stat", type: "text", help: "e.g. 200+" },
   { name: "stat_cities", label: "Cities stat", type: "text" },
 ];
 
@@ -391,12 +402,22 @@ export async function saveRow(
 
   await run(env.DB, sql, params);
   await invalidateMany(env, res.ns);
+  // Keep the search index in step: upsert published/active rows, drop drafts.
+  // indexRow never throws and no-ops without Vectorize (e.g. local dev).
+  if (res.searchable) {
+    await indexRow(env, res.key, id, values);
+    await invalidate(env, NS.search);
+  }
   return id;
 }
 
 export async function deleteRow(env: Env, res: Resource, id: string): Promise<void> {
   await run(env.DB, `DELETE FROM ${res.table} WHERE id=?`, [id]);
   await invalidateMany(env, res.ns);
+  if (res.searchable) {
+    await unindexRow(env, res.key, id);
+    await invalidate(env, NS.search);
+  }
 }
 
 export async function saveSettings(env: Env, form: FormData): Promise<void> {

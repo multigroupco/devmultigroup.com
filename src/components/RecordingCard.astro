@@ -14,7 +14,7 @@ const thumb = imageSrc(rec.cover_image) || (ytId ? `/yt/${ytId}` : "");
 const href = rec.youtube_url || (ytId ? ytPlaylistUrl(ytId) : "#");
 ---
 
-<a href={href} target="_blank" rel="noopener noreferrer" class="card card-hover relative overflow-hidden block group">
+<a id={`rec-${rec.id}`} href={href} target="_blank" rel="noopener noreferrer" class="card card-hover relative overflow-hidden block group scroll-mt-24">
   <div class="relative aspect-video overflow-hidden skeleton">
     {thumb && (
       <img

@@ -11,7 +11,9 @@ import SiteBackground from "@/components/SiteBackground.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import ContactModal from "@/components/ContactModal.astro";
+import SearchPalette from "@/components/SearchPalette.astro";
 import EventBanner from "@/components/EventBanner.astro";
+import PageLoader from "@/components/PageLoader.astro";
 import { ClientRouter } from "astro:transitions";
 
 import { tryEnv } from "@/lib/runtime";
@@ -147,13 +149,55 @@ const structured = [orgLd, ...extra, ...(breadcrumbLd ? [breadcrumbLd] : [])];
     <ClientRouter />
   </head>
   <body>
+    <PageLoader />
     <SiteBackground />
     {site.bannerEnabled && banner && !hideBanner && !bare && <EventBanner event={banner} />}
-    {!bare && <Header />}
+    {!bare && <Header variant={Astro.url.pathname.startsWith("/academy") ? "academy" : "multigroup"} />}
     <main id="main">
       <slot />
     </main>
     {!bare && <Footer />}
     {!bare && <ContactModal />}
+    {!bare && <SearchPalette />}
+
+    <script is:inline>
+      (() => {
+        const clearSkeleton = (img) => {
+          const sk = img.closest(".skeleton") || img.parentElement;
+          if (sk) sk.classList.remove("skeleton");
+        };
+        const fail = (img) => {
+          img.style.display = "none";
+          clearSkeleton(img);
+        };
+        // reveal only once fully decoded, so nothing paints in progressively
+        const reveal = (img) => {
+          const show = () => {
+            img.classList.add("is-loaded");
+            clearSkeleton(img);
+          };
+          if (img.decode) img.decode().then(show).catch(show);
+          else show();
+        };
+        const initImgReveal = () => {
+          document.querySelectorAll("img.img-reveal").forEach((img) => {
+            if (img.dataset.revealBound) return;
+            img.dataset.revealBound = "1";
+            // already cached (e.g. bfcache or view-transition return)
+            if (img.complete) {
+              img.naturalWidth > 0 ? reveal(img) : fail(img);
+              return;
+            }
+            img.addEventListener("load", () => reveal(img), { once: true });
+            img.addEventListener("error", () => fail(img), { once: true });
+          });
+        };
+        if (!window.__dmgImgReveal) {
+          window.__dmgImgReveal = true;
+          document.addEventListener("astro:page-load", initImgReveal);
+        }
+        initImgReveal();
+      })();
+    </script>
   </body>
 </html>

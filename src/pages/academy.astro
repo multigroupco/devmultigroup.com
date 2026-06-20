@@ -7,6 +7,8 @@ import Icon from "@/components/Icon.astro";
 import { getEnv } from "@/lib/runtime";
 import { listEvents, listRecordings } from "@/lib/content";
 import { GATHIN, SOCIALS, BRAND } from "@/lib/site";
+import { formatDayLabel, formatTime } from "@/lib/format";
+import { imageSrc } from "@/lib/ui";
 
 const env = getEnv(Astro.locals);
 const [upcoming, past, recs] = await Promise.all([
@@ -21,6 +23,17 @@ const programs = [
   { title: "GenAI Temelleri", text: "Google Gemini ile LLM'ler, prompt yazımı ve ajanlar.", icon: "cpu" },
   { title: "Web Temelleri", text: "Tarayıcıdan üretim seviyesi uygulamalara.", icon: "code" },
 ];
+
+// hero: feature the next academy bootcamp (Events-style)
+const featured = upcoming[0] ?? null;
+// the "yaklaşanlar" grid lists upcoming events OTHER than the featured one — so
+// when the featured bootcamp is the only upcoming, the section is hidden.
+const moreUpcoming = upcoming.slice(1);
+const fcover = featured ? imageSrc(featured.cover_image) : "";
+const fday = featured ? formatDayLabel(featured.starts_at) : null;
+const ftime = featured ? formatTime(featured.starts_at) : "";
+const fwhere = featured ? (featured.is_online ? "Çevrimiçi" : featured.city) : "";
+const freg = featured ? featured.registration_url || GATHIN.multiacademy : "";
 
 const academyLd = {
   "@context": "https://schema.org",
@@ -59,52 +72,85 @@ const academyLd = {
   jsonLd={academyLd}
   breadcrumbs={[{ name: "Akademi", item: `${BRAND.url}/academy` }]}
 >
-  <section class="container-x pt-14 pb-8">
-    <div class="card relative overflow-hidden p-8 md:p-12">
-      <div class="absolute -right-16 -top-16 w-72 h-72 rounded-full blur-3xl opacity-50" style="background:radial-gradient(circle, rgba(255,255,255,.06), transparent 70%)"></div>
-      <div class="relative max-w-2xl">
-        <h1 class="text-4xl md:text-5xl font-semibold leading-tight">Üreterek öğren, işe hazır çık.</h1>
-        <p class="text-ink-dim mt-5 leading-relaxed">
-          MultiAcademy, uygulamalı ve mentör eşliğindeki bootcamp'ler düzenliyor — katılımı ücretsiz ve
-          gerçek projeler üzerine kurulu. Gerçekten üreten insanlarla birlikte öğren.
-        </p>
-        <div class="flex flex-wrap gap-3 mt-7">
-          <a href={GATHIN.multiacademy} target="_blank" rel="noopener noreferrer" class="btn btn-primary">
-            <Icon name="calendar" size={17} /> Akademi etkinlikleri
-          </a>
-          <a href="https://academy.devmultigroup.com" target="_blank" rel="noopener noreferrer" class="btn btn-ghost">
-            <Icon name="globe" size={16} /> academy.devmultigroup.com
-          </a>
-          <a href={SOCIALS.multiacademy.instagram} target="_blank" rel="noopener noreferrer" class="btn btn-ghost">
-            <Icon name="instagram" size={16} /> @devmultiacademy
-          </a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="container-x py-10">
-    <SectionHeader title="Neler öğretiyoruz" />
-    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-      {
-        programs.map((p) => (
-          <div class="card card-hover p-6">
-            <span class="grid place-items-center w-11 h-11 rounded-xl mb-4 bg-white/5 text-ink-text">
-              <Icon name={p.icon} size={21} />
-            </span>
-            <h3 class="font-display text-lg font-semibold">{p.title}</h3>
-            <p class="text-ink-dim text-sm mt-2 leading-relaxed">{p.text}</p>
+  {
+    featured ? (
+      <>
+        <section class="relative isolate overflow-hidden">
+          <div class="absolute inset-0 -z-10" aria-hidden="true">
+            {fcover && (
+              <div class="container-x relative h-full hidden lg:block">
+                <div class="absolute right-8 top-1/2 -translate-y-1/2 w-[40%] max-w-[34rem] aspect-[16/9] rounded-3xl overflow-hidden skeleton">
+                  <img src={fcover} alt="" loading="eager" decoding="async" class="img-reveal w-full h-full object-cover" />
+                </div>
+              </div>
+            )}
+            <div class="absolute inset-0 bg-gradient-to-r from-ink-950 via-ink-950/80 to-transparent to-[54%]" />
           </div>
-        ))
-      }
-    </div>
-  </section>
+          <div class="container-x pt-16 pb-12 md:pt-20 md:pb-16">
+            <p class="text-sm text-ink-dim font-medium uppercase tracking-[0.18em] mb-6 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-white animate-pulse" /> MultiAcademy · Sıradaki bootcamp
+            </p>
+            <div class="max-w-3xl lg:max-w-none lg:pr-[44%]">
+              <div class="min-w-0">
+                <h1 class="text-3xl md:text-5xl font-semibold leading-[1.06]">{featured.title}</h1>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-sm text-ink-dim">
+                  <span class="inline-flex items-center gap-1.5"><Icon name="calendar" size={15} /> {fday?.weekday} {fday?.day} {fday?.month}{ftime && ` · ${ftime}`}</span>
+                  {fwhere && <span class="inline-flex items-center gap-1.5"><Icon name="map-pin" size={15} /> {fwhere}</span>}
+                </div>
+                <div class="ev-countdown flex items-center gap-2.5 mt-6" data-countdown={featured.starts_at} aria-label="Etkinliğe kalan süre">
+                  {[
+                    { k: "d", label: "gün" },
+                    { k: "h", label: "saat" },
+                    { k: "m", label: "dk" },
+                    { k: "s", label: "sn" },
+                  ].map((u) => (
+                    <div class="flex flex-col items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-xl bg-ink-950/55 backdrop-blur border border-line">
+                      <span class="font-display text-xl md:text-2xl font-semibold tabular-nums leading-none" data-cd={u.k}>--</span>
+                      <span class="text-[0.58rem] font-mono uppercase tracking-wide text-ink-faint mt-1">{u.label}</span>
+                    </div>
+                  ))}
+                </div>
+                <div class="flex flex-wrap items-center gap-3 mt-6">
+                  <a href={freg} target="_blank" rel="noopener noreferrer" class="btn btn-primary"><Icon name="arrow-up-right" size={16} /> Kayıt ol</a>
+                  <a href={`/academy/${featured.slug}`} class="btn btn-ghost">Detaylar</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </>
+    ) : (
+      <section class="container-x pt-14 pb-8">
+        <div class="card relative overflow-hidden p-8 md:p-12">
+          <div class="absolute -right-16 -top-16 w-72 h-72 rounded-full blur-3xl opacity-50" style="background:radial-gradient(circle, rgba(255,255,255,.06), transparent 70%)"></div>
+          <div class="relative max-w-2xl">
+            <h1 class="text-4xl md:text-5xl font-semibold leading-tight">Üreterek öğren, işe hazır çık.</h1>
+            <p class="text-ink-dim mt-5 leading-relaxed">
+              MultiAcademy, uygulamalı ve mentör eşliğindeki bootcamp'ler düzenliyor — katılımı ücretsiz ve
+              gerçek projeler üzerine kurulu. Gerçekten üreten insanlarla birlikte öğren.
+            </p>
+            <div class="flex flex-wrap gap-3 mt-7">
+              <a href={GATHIN.multiacademy} target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+                <Icon name="calendar" size={17} /> Akademi etkinlikleri
+              </a>
+              <a href="https://academy.devmultigroup.com" target="_blank" rel="noopener noreferrer" class="btn btn-ghost">
+                <Icon name="globe" size={16} /> academy.devmultigroup.com
+              </a>
+              <a href={SOCIALS.multiacademy.instagram} target="_blank" rel="noopener noreferrer" class="btn btn-ghost">
+                <Icon name="instagram" size={16} /> @devmultiacademy
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   {
-    upcoming.length > 0 && (
+    moreUpcoming.length > 0 && (
       <section class="container-x py-8">
         <SectionHeader title="Akademide yaklaşanlar" />
-        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">{upcoming.map((e) => <EventCard event={e} />)}</div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">{moreUpcoming.map((e) => <EventCard event={e} />)}</div>
       </section>
     )
   }
@@ -126,4 +172,47 @@ const academyLd = {
       </section>
     )
   }
+
+  <script is:inline>
+    (() => {
+      const pad = (n) => String(n).padStart(2, "0");
+      const init = () => {
+        document.querySelectorAll("[data-countdown]").forEach((el) => {
+          if (el.dataset.cdBound) return;
+          el.dataset.cdBound = "1";
+          const target = parseInt(el.dataset.countdown, 10) || 0;
+          const set = (k, v) => {
+            const n = el.querySelector('[data-cd="' + k + '"]');
+            if (n) n.textContent = v;
+          };
+          const tick = () => {
+            let rem = target - Math.floor(Date.now() / 1000);
+            if (rem <= 0) {
+              set("d", "00"); set("h", "00"); set("m", "00"); set("s", "00");
+              el.classList.add("is-done");
+              if (el.__cd) { clearInterval(el.__cd); el.__cd = null; }
+              return;
+            }
+            const d = Math.floor(rem / 86400); rem %= 86400;
+            const h = Math.floor(rem / 3600); rem %= 3600;
+            const m = Math.floor(rem / 60);
+            const s = rem % 60;
+            set("d", pad(d)); set("h", pad(h)); set("m", pad(m)); set("s", pad(s));
+          };
+          tick();
+          el.__cd = setInterval(tick, 1000);
+        });
+      };
+      if (!window.__dmgCountdown) {
+        window.__dmgCountdown = true;
+        document.addEventListener("astro:page-load", init);
+        document.addEventListener("astro:before-swap", () => {
+          document.querySelectorAll("[data-countdown]").forEach((el) => {
+            if (el.__cd) clearInterval(el.__cd);
+          });
+        });
+      }
+      init();
+    })();
+  </script>
 </BaseLayout>

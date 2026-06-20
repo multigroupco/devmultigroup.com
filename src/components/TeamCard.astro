@@ -28,7 +28,7 @@ const Wrap = primary ? "a" : "div";
 const wrapAttrs = primary ? { href: primary, target: "_blank", rel: "noopener noreferrer" } : {};
 ---
 
-<Wrap {...wrapAttrs} class="card card-hover p-3.5 flex flex-col group">
+<Wrap id={`m-${member.id}`} {...wrapAttrs} class="card card-hover p-3.5 flex flex-col group scroll-mt-24">
   <div class="relative aspect-square rounded-xl overflow-hidden bg-ink-900 ring-1 ring-line">
     {
       avatar ? (

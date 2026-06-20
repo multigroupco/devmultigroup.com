@@ -8,7 +8,7 @@ import { COMPANIES, BRAND } from "@/lib/site";
 const companiesLd = {
   "@context": "https://schema.org",
   "@type": "ItemList",
-  name: "Developer MultiGroup partner şirketleri",
+  name: "Developer MultiGroup iş birlikleri",
   numberOfItems: COMPANIES.length,
   itemListElement: COMPANIES.map((c, i) => ({
     "@type": "ListItem",
@@ -31,16 +31,16 @@ const bwaiHref = "https://gathin.com/events/build-with-ai-program-2026-649";
 ---
 
 <BaseLayout
-  title="Partner Şirketler & İş Birlikleri"
+  title="İş Birlikleri"
   description="Developer MultiGroup'un birlikte ürettiği markalar — Google, Wite, Lodos, Trendyol, Hepsiburada, Akbank ve daha fazlası. Ortak workshop ve programlar."
-  canonicalPath="/companies"
+  canonicalPath="/partnerships"
   jsonLd={companiesLd}
-  breadcrumbs={[{ name: "Şirketler", item: `${BRAND.url}/companies` }]}
+  breadcrumbs={[{ name: "İş Birlikleri", item: `${BRAND.url}/partnerships` }]}
 >
   <section class="container-x pt-14 pb-8">
     <div class="grid lg:grid-cols-[1.25fr_0.75fr] gap-10 lg:gap-12 items-center">
       <div>
-        <p class="text-sm text-ink-faint uppercase tracking-[0.18em] mb-4">Partner · Şirketler</p>
+        <p class="text-sm text-ink-faint uppercase tracking-[0.18em] mb-4">Partner · İş Birlikleri</p>
         <h1 class="text-4xl md:text-5xl font-semibold leading-[1.05]">
           Yol boyunca <span class="text-grad">birlikte ürettiğimiz</span> markalar.
         </h1>
@@ -53,7 +53,7 @@ const bwaiHref = "https://gathin.com/events/build-with-ai-program-2026-649";
         <div class="flex flex-wrap gap-x-9 gap-y-4">
           <div>
             <div class="font-display text-3xl font-semibold text-grad tabular-nums">25+</div>
-            <div class="text-ink-faint text-xs mt-1 font-mono uppercase tracking-wide">şirket</div>
+            <div class="text-ink-faint text-xs mt-1 font-mono uppercase tracking-wide">iş birliği</div>
           </div>
           <div>
             <div class="font-display text-3xl font-semibold text-grad tabular-nums">4</div>

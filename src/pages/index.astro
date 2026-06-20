@@ -5,7 +5,7 @@ import EventCard from "@/components/EventCard.astro";
 import CompanyStrip from "@/components/CompanyStrip.astro";
 import RecordingCard from "@/components/RecordingCard.astro";
 import PostCard from "@/components/PostCard.astro";
-import Stat from "@/components/Stat.astro";
+import ImpactStrip from "@/components/ImpactStrip.astro";
 import Icon from "@/components/Icon.astro";
 import { tryEnv } from "@/lib/runtime";
 import {
@@ -37,6 +37,18 @@ if (env) {
   ]); } catch { /* pre-seed */ }
 }
 
+const photos = [
+  "/main/main-1.jpg",
+  "/main/main-2.jpg",
+  "/main/main-3.jpg",
+  "/main/main-4.jpg",
+  "/main/main-5.jpg",
+];
+// hero background: horizontal photo bands flowing behind the centered text
+const rev = [...photos].reverse();
+const strip = [...photos, ...photos, ...photos, ...photos];
+const stripB = [...rev, ...rev, ...rev, ...rev];
+
 const social = [
   { icon: "instagram", href: SOCIALS.multigroup.instagram, label: "Instagram" },
   { icon: "twitter", href: SOCIALS.multigroup.twitter, label: "X" },
@@ -45,16 +57,6 @@ const social = [
   { icon: "github", href: SOCIALS.multigroup.github, label: "GitHub" },
 ];
 
-const photos = [
-  "/main/main-1.jpg",
-  "/main/main-2.jpg",
-  "/main/main-3.jpg",
-  "/main/main-4.jpg",
-  "/main/main-5.jpg",
-];
-const colA = [photos[0], photos[2], photos[4]];
-const colB = [photos[1], photos[3], photos[2]];
-
 // academy band: tech icons on a slowly rotating orbit ring
 const orbit = ["smartphone", "code", "cpu", "layers", "sparkles", "globe"];
 const orbitPts = orbit.map((icon, i) => {
@@ -62,15 +64,18 @@ const orbitPts = orbit.map((icon, i) => {
   return { icon, x: Math.round(144 + 112 * Math.cos(a)), y: Math.round(144 + 112 * Math.sin(a)) };
 });
 const site = resolveSite(settings);
-recordings = recordings.slice(0, 3);
 
-const pillars = [
-  { icon: "sparkles", title: "Mobil & iOS", text: "Swift, Jetpack Compose ve modern mobil geliştirme.", span: "md:col-span-2" },
-  { icon: "globe", title: "Web", text: "Frontend, backend ve URL'ye giden her şey.", span: "md:col-span-1" },
-  { icon: "layers", title: "Yapay Zekâ & GenAI", text: "LLM'ler, ajanlar ve uygulamalı makine öğrenmesi.", span: "md:col-span-1" },
-  { icon: "users", title: "Kariyer", text: "Yol haritaları, mülakatlar ve mühendis olarak büyümek.", span: "md:col-span-1" },
-  { icon: "shopping-bag", title: "MultiStore", text: "Topluluk merch'i, kıyafet ve sürprizler.", span: "md:col-span-1", soon: true },
+// scroll-revealed KPI strip (real metrics, biggest first)
+const kpis = [
+  { value: site.members, label: "Geliştirici" },
+  { value: site.events, label: "Etkinlik" },
+  { value: site.speakers, label: "Konuşmacı" },
+  { value: `${communities.length || 36}`, label: "Partner topluluk" },
+  { value: site.recordings, label: "Kayıtlı seri" },
+  { value: site.companies, label: "İş birliği" },
 ];
+
+recordings = recordings.slice(0, 3);
 ---
 
 <BaseLayout
@@ -96,65 +101,65 @@ const pillars = [
   }}
 >
   <!-- ───────────────────────── hero ───────────────────────── -->
-  <section class="container-x pt-12 md:pt-16 pb-12 md:pb-16">
-    <div class="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-14 items-center">
-      <!-- metin -->
-      <div class="animate-rise text-center lg:text-left">
-        <p class="text-sm text-ink-faint mb-5 uppercase tracking-[0.18em]">2020'den beri · Türkiye</p>
-        <h1 class="text-[2.6rem] leading-[1.05] sm:text-6xl lg:text-[4.2rem] font-semibold tracking-tight">
-          Where developers<br />
-          <span class="text-grad">become together.</span>
-        </h1>
-        <p class="text-ink-dim text-lg mt-6 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-          {BRAND.short}; 2020'den beri iOS, web, yapay zekâ ve daha fazlasında üreten
-          geliştiricilerin topluluğu — buluşmalar, konferanslar, bootcamp'ler ve
-          mühendisleri birlikte büyüten bir akademi.
-        </p>
-        <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3 mt-8">
-          <a href={GATHIN.multigroup} target="_blank" rel="noopener noreferrer" class="btn btn-primary">
-            <Icon name="calendar" size={17} /> Etkinliğe katıl
-          </a>
-          <a href="/about" class="btn btn-ghost">Hikâyemiz <Icon name="arrow-right" size={16} /></a>
+  <section class="relative isolate overflow-hidden min-h-[calc(100svh-4rem)] flex items-center">
+    <!-- arkadan akan foto bandları -->
+    <div class="hero-bg absolute inset-0 -z-10" aria-hidden="true">
+      <div class="hero-bands absolute inset-0 flex flex-col justify-center gap-3 md:gap-4 mask-fade-x">
+        <div class="flex gap-3 md:gap-4 w-max animate-marquee">
+          {strip.map((src) => (
+            <div class="hero-card card overflow-hidden h-24 sm:h-32 md:h-40 aspect-[4/3] shrink-0">
+              <img src={src} alt="" loading="eager" decoding="async" class="w-full h-full object-cover" />
+            </div>
+          ))}
         </div>
-        <div class="flex items-center justify-center lg:justify-start gap-2 mt-6">
-          {
-            social.map((s) => (
-              <a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} class="grid place-items-center w-10 h-10 rounded-full border border-line text-ink-dim hover:text-ink-text hover:border-line-strong transition-colors">
-                <Icon name={s.icon} size={18} />
-              </a>
-            ))
-          }
+        <div class="flex gap-3 md:gap-4 w-max animate-marquee-rev">
+          {stripB.map((src) => (
+            <div class="hero-card card overflow-hidden h-24 sm:h-32 md:h-40 aspect-[4/3] shrink-0">
+              <img src={src} alt="" loading="eager" decoding="async" class="w-full h-full object-cover" />
+            </div>
+          ))}
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-6 mt-10 max-w-xl mx-auto lg:mx-0">
-          <Stat value={site.events} label="Etkinlik" align="text-center lg:text-left" />
-          <Stat value={site.members} label="Üye" align="text-center lg:text-left" />
-          <Stat value={`${communities.length || 35}+`} label="Topluluk" align="text-center lg:text-left" />
-          <Stat value={site.companies} label="Şirket" align="text-center lg:text-left" />
+        <div class="flex gap-3 md:gap-4 w-max animate-marquee">
+          {strip.map((src) => (
+            <div class="hero-card card overflow-hidden h-24 sm:h-32 md:h-40 aspect-[4/3] shrink-0">
+              <img src={src} alt="" loading="eager" decoding="async" class="w-full h-full object-cover" />
+            </div>
+          ))}
         </div>
       </div>
+      <!-- okunabilirlik için sabit karartma (hover'ı engellememesi için pointer-events yok) -->
+      <div class="absolute inset-0 pointer-events-none bg-gradient-to-b from-ink-950/40 via-transparent to-ink-950/72"></div>
+      <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse 64% 66% at 50% 46%, rgba(0,0,0,.62), rgba(0,0,0,.35) 50%, transparent 80%)"></div>
+      <!-- bottom fade to solid black so there's no seam into the next section on scroll -->
+      <div class="absolute inset-x-0 bottom-0 h-32 pointer-events-none bg-gradient-to-t from-ink-950 to-transparent"></div>
+    </div>
 
-      <!-- topluluk foto duvarı (dikey kayan) -->
-      <div class="relative h-[22rem] sm:h-[26rem] lg:h-[34rem] overflow-hidden mask-fade-y animate-rise" style="animation-delay:.1s">
-        <div class="grid grid-cols-2 gap-3 h-full">
-          <div class="flex flex-col gap-3 animate-marquee-up">
-            {
-              [...colA, ...colA].map((src) => (
-                <div class="card overflow-hidden aspect-[4/3] shrink-0">
-                  <img src={src} alt="Developer MultiGroup topluluğu" loading="eager" decoding="async" class="w-full h-full object-cover" />
-                </div>
-              ))
-            }
-          </div>
-          <div class="flex flex-col gap-3 animate-marquee-down">
-            {
-              [...colB, ...colB].map((src) => (
-                <div class="card overflow-hidden aspect-[4/3] shrink-0">
-                  <img src={src} alt="Developer MultiGroup topluluğu" loading="eager" decoding="async" class="w-full h-full object-cover" />
-                </div>
-              ))
-            }
-          </div>
-        </div>
+    <!-- ortaya hizalı içerik (boş alanlar arkadaki foto hover'ına geçsin diye pointer-events yok) -->
+    <div class="hero-content container-x text-center w-full animate-rise pointer-events-none">
+      <p class="text-sm text-ink-dim font-medium mb-5 uppercase tracking-[0.18em]">2020'den beri · Türkiye</p>
+      <h1 class="text-[2.6rem] leading-[1.05] sm:text-6xl lg:text-[4.6rem] font-semibold tracking-tight max-w-4xl mx-auto">
+        Where developers<br />
+        <span class="text-grad">become together.</span>
+      </h1>
+      <p class="text-ink-dim text-lg mt-6 max-w-xl mx-auto leading-relaxed">
+        {BRAND.short}; 2020'den beri iOS, web, yapay zekâ ve daha fazlasında üreten
+        geliştiricilerin topluluğu — buluşmalar, konferanslar, bootcamp'ler ve
+        mühendisleri birlikte büyüten bir akademi.
+      </p>
+      <div class="flex flex-wrap items-center justify-center gap-3 mt-8 pointer-events-auto">
+        <a href={GATHIN.multigroup} target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+          <Icon name="calendar" size={17} /> Etkinliğe katıl
+        </a>
+        <a href="/about" class="btn btn-ghost">Hikâyemiz <Icon name="arrow-right" size={16} /></a>
+      </div>
+      <div class="flex items-center justify-center gap-2.5 mt-8 pointer-events-auto">
+        {
+          social.map((s) => (
+            <a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} class="grid place-items-center w-10 h-10 rounded-full border border-line bg-white/[0.04] backdrop-blur-[6px] text-ink-dim hover:text-ink-text hover:bg-white/[0.09] hover:border-line-strong transition-colors">
+              <Icon name={s.icon} size={18} />
+            </a>
+          ))
+        }
       </div>
     </div>
   </section>
@@ -167,6 +172,13 @@ const pillars = [
     <CompanyStrip />
   </section>
 
+  <!-- ───────────────────── impact / KPI strip ───────────────────── -->
+  <ImpactStrip
+    eyebrow="2020'den beri · Etki"
+    title="Sadece bir topluluk değil."
+    items={kpis}
+  />
+
   <!-- ───────────────────── upcoming events ───────────────────── -->
   {
     upcoming.length > 0 && (
@@ -178,28 +190,6 @@ const pillars = [
       </section>
     )
   }
-
-  <!-- ───────────────────── alanlar / bento ───────────────────── -->
-  <section class="container-x py-9">
-    <SectionHeader
-      title="Tek topluluk, birçok alan"
-      description="MultiGroup, odaklı toplulukların çatısı. Kendi alanını bul."
-    />
-    <div class="grid md:grid-cols-3 gap-4 mt-8">
-      {
-        pillars.map((p) => (
-          <div class:list={["card card-hover p-6 flex flex-col relative", p.span]}>
-            {p.soon && <span class="badge-soon absolute top-4 right-4">Çok Yakında</span>}
-            <span class="grid place-items-center w-11 h-11 rounded-xl mb-4 bg-white/5 text-ink-text">
-              <Icon name={p.icon} size={21} />
-            </span>
-            <h3 class="font-display text-lg font-semibold">{p.title}</h3>
-            <p class="text-ink-dim text-sm mt-1.5 leading-relaxed">{p.text}</p>
-          </div>
-        ))
-      }
-    </div>
-  </section>
 
   <!-- ───────────────────── academy band ───────────────────── -->
   <section class="container-x py-8">
@@ -286,4 +276,29 @@ const pillars = [
       </div>
     </div>
   </section>
+
+  <style>
+    /* hero metnini foto bandının üstünde okunur kıl (lift) */
+    .hero-content {
+      text-shadow: 0 2px 28px rgba(0, 0, 0, 0.62);
+    }
+    /* hero foto bandları: dinlenmede sönük, hover ettiğin fotoğraf aydınlanır */
+    .hero-card img {
+      filter: brightness(0.4) saturate(0.92);
+      transition: filter 0.45s var(--ease-out-soft), transform 0.6s var(--ease-out-soft);
+    }
+    .hero-card:hover img {
+      filter: brightness(1.08) saturate(1);
+      transform: scale(1.04);
+    }
+    /* hover edilen sıra dursun ki resmin üstünde kalabilesin */
+    .hero-bands > div:hover {
+      animation-play-state: paused;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero-card img {
+        transition: filter 0.25s;
+      }
+    }
+  </style>
 </BaseLayout>
