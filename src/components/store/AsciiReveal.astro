@@ -1,0 +1,212 @@
+---
+// ASCII → image reveal for store product photos. The photo's COLOURED ASCII map
+// fades in while its characters "encrypt" (flicker through random glyphs, each
+// already tinted with the photo's colour) and settle in random — non-directional
+// — order into the final ASCII, then the canvas crossfades to the real photo.
+// Same-origin images only (R2 /store/media). Respects prefers-reduced-motion.
+// Include once per store page; targets every `img[data-ascii]`.
+---
+
+<style is:global>
+  img[data-ascii] {
+    opacity: 0;
+    /* also transition `scale` (Tailwind v4 group-hover:scale-* sets the scale
+       property, not transform); without it this higher-specificity rule
+       clobbers the card's Tailwind transition → the hover zoom snaps instantly. */
+    transition: opacity 0.55s var(--ease-out-soft, ease), scale 0.5s var(--ease-out-soft, ease);
+  }
+  img[data-ascii].is-loaded {
+    opacity: 1;
+  }
+  .ascii-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.5s var(--ease-out-soft, ease);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    img[data-ascii] {
+      opacity: 1;
+      transition: none;
+    }
+    .ascii-canvas {
+      display: none !important;
+    }
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    if (window.__storeAsciiV4) {
+      window.__storeAsciiInit && window.__storeAsciiInit();
+      return;
+    }
+    window.__storeAsciiV4 = true;
+
+    const RAMP = "@%#*+=-:. "; // dark → light
+    const SCRAMBLE = "01<>[]{}()/\\|=+*#%&$".split("");
+    const ENCRYPT_MS = 760; // colour-ascii flickers + settles (random order)
+    const FADE_MS = 500; // dissolve duration (matches the canvas CSS transition)
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const active = new Set();
+    let rafId = null;
+
+    const targetChar = (l) => RAMP[Math.min(RAMP.length - 1, Math.floor(l * RAMP.length))];
+
+    function build(img) {
+      const parent = img.parentElement;
+      if (!parent) return null;
+      const rect = parent.getBoundingClientRect();
+      if (!rect.width || !rect.height) return null;
+
+      const cols = Math.max(32, Math.min(64, Math.round(rect.width / 7)));
+      const cellW = rect.width / cols;
+      const cellH = cellW / 0.6; // monospace glyph aspect
+      const rows = Math.max(1, Math.floor(rect.height / cellH));
+
+      const s = document.createElement("canvas");
+      s.width = cols;
+      s.height = rows;
+      const sctx = s.getContext("2d", { willReadFrequently: true });
+      sctx.drawImage(img, 0, 0, cols, rows);
+      let data;
+      try {
+        data = sctx.getImageData(0, 0, cols, rows).data;
+      } catch {
+        return null; // tainted → caller falls back to plain reveal
+      }
+
+      const n = cols * rows;
+      const col = new Array(n);
+      const tch = new Array(n); // final target char
+      const thr = new Float32Array(n); // random settle threshold (no sweep)
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const i = y * cols + x;
+          const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
+          const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+          col[i] = "rgb(" + r + "," + g + "," + b + ")";
+          tch[i] = targetChar(lum);
+          thr[i] = Math.random();
+        }
+      }
+
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const canvas = document.createElement("canvas");
+      canvas.className = "ascii-canvas";
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+      ctx.textBaseline = "top";
+      ctx.font = Math.ceil(cellH) + "px ui-monospace, monospace";
+      parent.appendChild(canvas);
+
+      return { img, canvas, ctx, cols, rows, cellW, cellH, col, tch, thr, w: rect.width, h: rect.height, start: 0 };
+    }
+
+    function frame(rev, now) {
+      if (!rev.start) rev.start = now;
+      const t = now - rev.start;
+      const p = t / ENCRYPT_MS; // global settle progress
+      const flip = Math.floor(now / 55);
+      const { ctx, cols, rows, cellW, cellH, col, tch, thr } = rev;
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, rev.w, rev.h);
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const i = y * cols + x;
+          // every glyph is tinted with the photo's colour — settled cells show
+          // their final char, the rest flicker through scramble glyphs.
+          const ch = p >= thr[i] ? tch[i] : SCRAMBLE[(i * 9 + x + flip * 7) % SCRAMBLE.length];
+          if (ch === " ") continue;
+          ctx.fillStyle = col[i];
+          ctx.fillText(ch, x * cellW, y * cellH);
+        }
+      }
+      return t >= ENCRYPT_MS;
+    }
+
+    function tick(now) {
+      for (const rev of [...active]) {
+        let done = false;
+        try { done = frame(rev, now); } catch { done = true; }
+        if (done) {
+          active.delete(rev);
+          // The ascii canvas is fully opaque (black fill + glyphs), so the photo
+          // is hidden behind it. Make the photo solid *instantly* (transition off,
+          // still hidden) — then dissolve only the canvas. The image is revealed
+          // in one smooth motion: no static hold, no two semi-transparent layers
+          // cross-fading (which read as a second "decrypt" blend).
+          const im = rev.img, cv = rev.canvas;
+          im.style.transition = "none";
+          im.classList.add("is-loaded");
+          void im.offsetHeight; // commit the instant opacity before restoring transition
+          im.style.transition = ""; // back to the CSS rule (keeps hover scale)
+          cv.style.opacity = "0"; // dissolve the ascii → reveals the solid photo
+          setTimeout(() => cv.remove(), FADE_MS + 80);
+        }
+      }
+      rafId = active.size ? requestAnimationFrame(tick) : null;
+    }
+
+    function startReveal(img) {
+      const rev = build(img);
+      if (!rev) {
+        img.classList.add("is-loaded");
+        return;
+      }
+      active.add(rev);
+      if (!rafId) rafId = requestAnimationFrame(tick);
+      // smooth fade-in of the (already encrypting) colour ascii
+      requestAnimationFrame(() => requestAnimationFrame(() => { rev.canvas.style.opacity = "1"; }));
+    }
+
+    const io =
+      "IntersectionObserver" in window
+        ? new IntersectionObserver(
+            (entries) => {
+              for (const e of entries) {
+                if (e.isIntersecting) {
+                  io.unobserve(e.target);
+                  whenReady(e.target);
+                }
+              }
+            },
+            { rootMargin: "120px" },
+          )
+        : null;
+
+    function whenReady(img) {
+      if (img.dataset.asciiRun) return;
+      img.dataset.asciiRun = "1";
+      const go = () => (img.complete && img.naturalWidth ? startReveal(img) : img.classList.add("is-loaded"));
+      if (img.complete && img.naturalWidth) go();
+      else {
+        img.addEventListener("load", go, { once: true });
+        img.addEventListener("error", () => img.classList.add("is-loaded"), { once: true });
+      }
+    }
+
+    const init = () => {
+      document.querySelectorAll("img[data-ascii]").forEach((img) => {
+        if (img.dataset.asciiBound) return;
+        img.dataset.asciiBound = "1";
+        if (reduce) {
+          img.classList.add("is-loaded");
+          return;
+        }
+        if (io) io.observe(img);
+        else whenReady(img);
+      });
+    };
+    window.__storeAsciiInit = init;
+    document.addEventListener("astro:page-load", init);
+    init();
+  })();
+</script>

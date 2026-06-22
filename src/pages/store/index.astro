@@ -1,0 +1,130 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Icon from "@/components/Icon.astro";
+import ProductCard from "@/components/store/ProductCard.astro";
+import StoreSearch from "@/components/store/StoreSearch.astro";
+import StoreComingSoon from "@/components/store/StoreComingSoon.astro";
+import AsciiReveal from "@/components/store/AsciiReveal.astro";
+import { getEnv } from "@/lib/runtime";
+import { listProducts } from "@/lib/store/catalog";
+import { parseImages, storeImageSrc } from "@/lib/store/db";
+import { money } from "@/lib/store/format";
+
+const env = getEnv(Astro.locals);
+const cat = Astro.url.searchParams.get("cat") || "";
+
+const products = await listProducts(env, { category: cat || undefined, limit: 60 });
+
+// Global zero-state: the store has no products at all yet → "çok yakında" screen.
+// (Only do the extra count query when the current view is empty AND filtered.)
+const storeEmpty =
+  products.length === 0 && (!cat || (await listProducts(env, { limit: 1 })).length === 0);
+
+// Featured spotlight (only on the unfiltered entrance) — the store window.
+const featured =
+  !storeEmpty && !cat ? ((await listProducts(env, { featured: true, limit: 1 }))[0] ?? products[0]) : null;
+const heroImg = featured ? storeImageSrc(parseImages(featured.images)[0]) : "";
+const heroRemaining = featured ? Number(featured.remaining ?? 0) : 0;
+
+const CATS = [
+  { key: "", label: "Tümü" },
+  { key: "giyim", label: "Giyim" },
+  { key: "yasam", label: "Yaşam" },
+  { key: "koleksiyon", label: "Koleksiyon" },
+];
+const CAT_LABEL: Record<string, string> = { giyim: "Giyim", yasam: "Yaşam", koleksiyon: "Koleksiyon" };
+const gridTitle = cat ? CAT_LABEL[cat] : "Koleksiyon";
+---
+
+<BaseLayout
+  title="Mağaza"
+  description="Developer MultiGroup mağazası — topluluk merch'i: tişört, çıkartma ve koleksiyon parçaları."
+  canonicalPath="/store"
+  breadcrumbs={[{ name: "Mağaza", item: "https://devmultigroup.com/store" }]}
+>
+  {storeEmpty && <StoreComingSoon />}
+  {!storeEmpty && (
+  <Fragment>
+  <!-- featured product — the hero (hidden while searching) -->
+  {
+    featured && (
+      <section data-when-idle class="container-x pt-10 md:pt-16">
+        <div class="card overflow-hidden grid md:grid-cols-2">
+          <a
+            href={`/store/p/${featured.slug}`}
+            class="relative block aspect-square md:aspect-auto md:min-h-[26rem] bg-ink-950 group"
+          >
+            {heroImg ? (
+              <img src={heroImg} alt={featured.name} decoding="async" data-ascii class="absolute inset-0 w-full h-full object-cover transition duration-500 group-hover:scale-[1.03]" />
+            ) : (
+              <div class="absolute inset-0 grid place-items-center p-10 text-center">
+                <span class="font-mono text-sm text-ink-faint break-words leading-relaxed">{featured.name}</span>
+              </div>
+            )}
+            <span class="absolute top-4 left-4 chip chip-media z-[3]">{CAT_LABEL[featured.category] ?? featured.category}</span>
+            {heroRemaining <= 0 && <span class="absolute top-4 right-4 chip chip-media z-[3]">TÜKENDİ</span>}
+            {heroRemaining > 0 && heroRemaining <= 3 && <span class="absolute top-4 right-4 chip chip-media z-[3]">Son {heroRemaining}</span>}
+          </a>
+
+          <div class="p-7 md:p-10 flex flex-col justify-center">
+            <p class="font-mono text-xs uppercase tracking-[0.18em] text-ink-faint">Öne çıkan</p>
+            <h2 class="font-display text-3xl md:text-4xl font-semibold mt-3 leading-tight">{featured.name}</h2>
+            {featured.tagline && <p class="font-mono text-sm text-ink-faint mt-2">{featured.tagline}</p>}
+            {featured.description && <p class="text-ink-dim mt-4 leading-relaxed line-clamp-3 max-w-md">{featured.description}</p>}
+            <div class="mt-6 flex items-end gap-3">
+              <span class="font-display text-3xl text-grad tabular-nums">{money(featured.base_price_minor)}</span>
+              <span class="text-xs text-ink-faint font-mono mb-1.5">KDV dahil</span>
+            </div>
+            <div class="mt-6 flex flex-wrap items-center gap-3">
+              <a href={`/store/p/${featured.slug}`} class="btn btn-primary">
+                <Icon name="shopping-bag" size={16} /> İncele ve ayır
+              </a>
+              <a href="#urunler" class="btn btn-ghost">Tüm koleksiyon</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <!-- catalog -->
+  <section id="urunler" class="container-x py-12 md:py-16 scroll-mt-24">
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-7">
+      <div class="flex items-baseline gap-3">
+        <h2 class="text-2xl md:text-3xl font-semibold">{gridTitle}</h2>
+        <span class="font-mono text-sm text-ink-faint tabular-nums">{products.length} ürün</span>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        {
+          CATS.map((c) => (
+            <a
+              href={c.key ? `/store?cat=${c.key}` : "/store"}
+              class:list={["chip transition-colors", cat === c.key ? "text-ink-text border-line-strong" : "hover:text-ink-text"]}
+            >
+              {c.label}
+            </a>
+          ))
+        }
+        <StoreSearch />
+      </div>
+    </div>
+
+    {
+      products.length === 0 ? (
+        <div class="card p-12 text-center text-ink-dim">
+          Bu kategoride şu an ürün yok. <a href="/store" class="text-ink-text">Tümünü gör →</a>
+        </div>
+      ) : (
+        <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+          {products.map((p) => (
+            <ProductCard product={p} />
+          ))}
+        </div>
+      )
+    }
+  </section>
+
+  <AsciiReveal />
+  </Fragment>
+  )}
+</BaseLayout>

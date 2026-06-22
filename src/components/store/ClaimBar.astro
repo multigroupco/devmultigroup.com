@@ -1,0 +1,20 @@
+---
+// Slim scarcity meter — a thin white line filling toward capacity. Reads as
+// stock/momentum (store), not a KPI dashboard.
+interface Props {
+  reserved: number;
+  capacity: number;
+  label?: string;
+}
+const { reserved, capacity, label = "ayrıldı" } = Astro.props;
+const pct = capacity > 0 ? Math.min(100, Math.round((reserved / capacity) * 100)) : 0;
+---
+
+<div class="flex items-center gap-3">
+  <div class="relative h-1 flex-1 min-w-[5rem] rounded-full bg-white/[0.08] overflow-hidden">
+    <div class="absolute inset-y-0 left-0 rounded-full bg-white/70" style={`width:${pct}%`}></div>
+  </div>
+  <span class="font-mono text-xs text-ink-dim whitespace-nowrap tabular-nums">
+    {reserved}/{capacity} {label}
+  </span>
+</div>

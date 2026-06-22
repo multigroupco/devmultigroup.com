@@ -1,0 +1,61 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import Icon from "@/components/Icon.astro";
+import Field from "@/components/admin/Field.astro";
+import { getEnv } from "@/lib/runtime";
+import { getStoreResource, getRow, saveRow, deleteRow, loadOptions, fieldValue, type StoreField } from "@/lib/store/admin";
+
+const env = getEnv(Astro.locals);
+const { resource = "", id = "" } = Astro.params;
+const res = getStoreResource(resource);
+if (!res) return Astro.redirect("/admin/store");
+const isNew = id === "new";
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  if (form.get("_action") === "delete" && !isNew) {
+    await deleteRow(env, res, id);
+    return Astro.redirect(`/admin/store/${res.key}`);
+  }
+  await saveRow(env, res, form);
+  return Astro.redirect(`/admin/store/${res.key}`);
+}
+
+const row = isNew ? null : await getRow(env, res, id);
+if (!isNew && !row) return Astro.redirect(`/admin/store/${res.key}`);
+
+// Resolve dynamic select options (drops / products / events).
+const fields = await Promise.all(
+  res.fields.map(async (f: StoreField) => (f.optionsFrom ? { ...f, options: await loadOptions(env, f.optionsFrom) } : f)),
+);
+---
+
+<AdminLayout title={`${isNew ? "Yeni" : "Düzenle"} · ${res.singular}`}>
+  <a href={`/admin/store/${res.key}`} class="inline-flex items-center gap-1.5 text-sm text-ink-dim hover:text-ink-text mb-6">
+    <Icon name="arrow-right" size={15} class="rotate-180" /> {res.label}
+  </a>
+
+  <h1 class="text-3xl font-semibold mb-7">{isNew ? `Yeni ${res.singular.toLowerCase()}` : `${res.singular} düzenle`}</h1>
+
+  <form method="POST" enctype="multipart/form-data" class="space-y-6">
+    <input type="hidden" name="id" value={isNew ? "" : id} />
+
+    <div class="grid md:grid-cols-2 gap-5">
+      {fields.map((f) => <Field field={f} value={fieldValue(res, f as StoreField, row)} />)}
+    </div>
+
+    <div class="flex items-center gap-3 pt-4 border-t border-line">
+      <button type="submit" name="_action" value="save" class="btn btn-primary">
+        <Icon name="check" size={16} /> {isNew ? "Oluştur" : "Kaydet"}
+      </button>
+      <a href={`/admin/store/${res.key}`} class="btn btn-ghost">Vazgeç</a>
+      {
+        !isNew && (
+          <button type="submit" name="_action" value="delete" formnovalidate onclick="return confirm('Kalıcı olarak silinsin mi?')" class="btn btn-ghost ml-auto !text-coral hover:!border-coral/40">
+            <Icon name="close" size={16} /> Sil
+          </button>
+        )
+      }
+    </div>
+  </form>
+</AdminLayout>

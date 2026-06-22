@@ -1,0 +1,113 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import Icon from "@/components/Icon.astro";
+import { getEnv } from "@/lib/runtime";
+import { getOrderById, getOrderItems, advanceOrder, type OrderAction } from "@/lib/store/orders";
+import { money, formatDateTime } from "@/lib/store/format";
+
+const env = getEnv(Astro.locals);
+const { id = "" } = Astro.params;
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const action = String(form.get("_action") || "") as OrderAction;
+  const method = String(form.get("method") || "");
+  if (action) await advanceOrder(env, id, action, method);
+  return Astro.redirect(`/admin/store/orders/${id}`);
+}
+
+const order = await getOrderById(env, id);
+if (!order) return Astro.redirect("/admin/store");
+const items = await getOrderItems(env, order.id);
+
+const STATUS: Record<string, string> = { reserved: "Alındı", paid: "Ödendi", delivered: "Teslim edildi", cancelled: "İptal edildi" };
+const PAY: Record<string, string> = { unpaid: "Ödenmedi", paid: "Ödendi", refunded: "İade" };
+---
+
+<AdminLayout title={order.order_no}>
+  <a href="/admin/store" class="inline-flex items-center gap-1.5 text-sm text-ink-dim hover:text-ink-text mb-6">
+    <Icon name="arrow-right" size={15} class="rotate-180" /> Mağaza
+  </a>
+
+  <header class="flex flex-wrap items-center justify-between gap-4 mb-7">
+    <div>
+      <h1 class="text-3xl font-semibold font-mono">{order.order_no}</h1>
+      <div class="flex items-center gap-2 mt-2">
+        <span class="chip">{STATUS[order.status]}</span>
+        <span class="chip text-ink-faint">{PAY[order.payment_status]}{order.payment_method ? ` · ${order.payment_method}` : ""}</span>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      {
+        order.status === "reserved" && (
+          <form method="POST" class="flex items-center gap-2">
+            <select name="method" class="bg-ink-900 border border-line rounded-xl px-3 py-2 text-sm">
+              <option value="cash">Nakit</option>
+              <option value="eft">EFT/Havale</option>
+            </select>
+            <button name="_action" value="pay" class="btn btn-primary !py-2.5"><Icon name="check" size={15} /> Ödendi</button>
+          </form>
+        )
+      }
+      {
+        order.status === "paid" && (
+          <form method="POST">
+            <button name="_action" value="deliver" class="btn btn-primary !py-2.5"><Icon name="check" size={15} /> Teslim et</button>
+          </form>
+        )
+      }
+      {
+        order.status === "delivered" && (
+          <form method="POST">
+            <button name="_action" value="reopen" class="btn btn-ghost !py-2.5">Geri al</button>
+          </form>
+        )
+      }
+      {
+        order.status !== "cancelled" && order.status !== "delivered" && (
+          <form method="POST">
+            <button name="_action" value="cancel" formnovalidate onclick="return confirm('Sipariş iptal edilsin mi? Kontenjan iade edilir.')" class="btn btn-ghost !py-2.5 !text-coral hover:!border-coral/40">
+              İptal
+            </button>
+          </form>
+        )
+      }
+    </div>
+  </header>
+
+  <div class="grid md:grid-cols-2 gap-6">
+    <div class="card p-5">
+      <h2 class="font-semibold mb-3">Ürünler</h2>
+      <div class="divide-y divide-line-soft">
+        {
+          items.map((it) => (
+            <div class="flex items-center justify-between py-2.5 text-sm">
+              <span class="text-ink-dim">
+                {it.snapshot_name}
+                {it.snapshot_variant && <span class="text-ink-faint"> · {it.snapshot_variant}</span>}
+                <span class="text-ink-faint"> ×{it.qty}</span>
+              </span>
+              <span class="font-mono tabular-nums text-ink-text">{money(it.line_total_minor)}</span>
+            </div>
+          ))
+        }
+      </div>
+      <div class="border-t border-line mt-3 pt-3 space-y-1 text-sm text-ink-dim">
+        <div class="flex justify-between"><span>Ara toplam</span><span class="font-mono tabular-nums">{money(order.subtotal_minor)}</span></div>
+        <div class="flex justify-between text-ink-faint"><span>KDV (dahil)</span><span class="font-mono tabular-nums">{money(order.vat_minor)}</span></div>
+        <div class="flex justify-between text-ink-text pt-1"><span>Toplam</span><span class="font-mono tabular-nums text-grad">{money(order.total_minor)}</span></div>
+      </div>
+    </div>
+
+    <div class="card p-5 text-sm">
+      <h2 class="font-semibold mb-3">Alıcı</h2>
+      <dl class="space-y-2">
+        <div class="flex justify-between gap-4"><dt class="text-ink-faint">Ad</dt><dd class="text-ink-text text-right">{order.buyer_name}</dd></div>
+        <div class="flex justify-between gap-4"><dt class="text-ink-faint">E-posta</dt><dd class="text-ink-text text-right break-all">{order.buyer_email}</dd></div>
+        <div class="flex justify-between gap-4"><dt class="text-ink-faint">Oluşturuldu</dt><dd class="text-ink-text text-right">{formatDateTime(order.created_at)}</dd></div>
+      </dl>
+      {order.notes && <p class="mt-4 pt-3 border-t border-line-soft text-ink-dim">{order.notes}</p>}
+    </div>
+  </div>
+</AdminLayout>

@@ -1,0 +1,51 @@
+---
+import Icon from "@/components/Icon.astro";
+// Compact storefront search — lives in the catalog header next to the category
+// tags. Filters the catalog grid client-side (by name/tagline/category) and
+// hides the idle blocks (featured spotlight) while a query is active.
+---
+
+<div class="relative w-full sm:w-52">
+  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none">
+    <Icon name="search" size={15} />
+  </span>
+  <input
+    id="store-q"
+    type="search"
+    autocomplete="off"
+    enterkeyhint="search"
+    placeholder="Ara…"
+    class="w-full bg-ink-900 border border-line rounded-full pl-9 pr-3.5 py-2 text-sm text-ink-text placeholder:text-ink-faint focus:border-line-strong outline-none transition-colors"
+  />
+</div>
+
+<script is:inline>
+  (() => {
+    const init = () => {
+      const input = document.getElementById("store-q");
+      if (!input || input.dataset.bound) return;
+      input.dataset.bound = "1";
+      const apply = () => {
+        const q = input.value.trim().toLowerCase();
+        const idle = document.querySelectorAll("[data-when-idle]");
+        const cards = document.querySelectorAll("[data-product]");
+        if (!q) {
+          idle.forEach((el) => (el.style.display = ""));
+          cards.forEach((el) => (el.style.display = ""));
+          return;
+        }
+        idle.forEach((el) => (el.style.display = "none"));
+        cards.forEach((el) => {
+          el.style.display = (el.dataset.search || "").includes(q) ? "" : "none";
+        });
+      };
+      input.addEventListener("input", apply);
+      input.addEventListener("search", apply);
+    };
+    if (!window.__storeSearch) {
+      window.__storeSearch = true;
+      document.addEventListener("astro:page-load", init);
+    }
+    init();
+  })();
+</script>

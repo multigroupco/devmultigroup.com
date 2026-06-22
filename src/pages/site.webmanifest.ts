@@ -11,8 +11,8 @@ export const GET: APIRoute = () => {
     background_color: "#0d0d0e",
     theme_color: "#0d0d0e",
     icons: [
-      { src: "/dmg-logo.webp", sizes: "192x192", type: "image/webp", purpose: "any" },
-      { src: "/dmg-logo.webp", sizes: "512x512", type: "image/webp", purpose: "any" },
+      { src: "/favicon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/favicon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
     ],
   };
   return new Response(JSON.stringify(manifest), {

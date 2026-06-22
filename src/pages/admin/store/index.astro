@@ -1,0 +1,119 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import Icon from "@/components/Icon.astro";
+import ImpactStrip from "@/components/ImpactStrip.astro";
+import { getEnv } from "@/lib/runtime";
+import { STORE_RESOURCES, countRows } from "@/lib/store/admin";
+import { listOrders, getAdminCounts, advanceOrder, type OrderAction } from "@/lib/store/orders";
+import { money, formatDateTime } from "@/lib/store/format";
+
+const env = getEnv(Astro.locals);
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  const id = String(form.get("orderId") || "");
+  const action = String(form.get("_action") || "") as OrderAction;
+  const method = String(form.get("method") || "");
+  if (id && action) await advanceOrder(env, id, action, method);
+  return Astro.redirect("/admin/store");
+}
+
+const [counts, orders] = await Promise.all([getAdminCounts(env), listOrders(env, { status: "all", limit: 100 })]);
+const queue = orders.filter((o) => o.status === "reserved" || o.status === "paid");
+
+const resCounts = await Promise.all(Object.values(STORE_RESOURCES).map((r) => countRows(env, r.table).catch(() => 0)));
+const resCards = Object.values(STORE_RESOURCES).map((r, i) => ({ ...r, count: resCounts[i] }));
+
+const kpis = [
+  { value: String(counts.reserved), label: "Bekleyen" },
+  { value: String(counts.paid), label: "Teslim bekliyor" },
+  { value: String(counts.delivered), label: "Teslim edildi" },
+  { value: String(counts.lowStock), label: "Stok azaldı" },
+];
+
+const STATUS: Record<string, string> = { reserved: "Ayrıldı", paid: "Ödendi", delivered: "Teslim", cancelled: "İptal" };
+---
+
+<AdminLayout title="Mağaza">
+  <header class="mb-6">
+    <h1 class="text-3xl font-semibold">Mağaza</h1>
+    <p class="text-ink-dim mt-2 text-sm">Etkinlikte teslim ön sipariş mağazası. Bugün ne yapılmalı?</p>
+  </header>
+
+  <div class="-mx-5 md:-mx-8"><ImpactStrip items={kpis} /></div>
+
+  <div class="grid sm:grid-cols-3 gap-4 mb-10">
+    {
+      resCards.map((c) => (
+        <a href={`/admin/store/${c.key}`} class="card card-hover p-5 flex items-center gap-4">
+          <span class="grid place-items-center w-11 h-11 rounded-xl bg-white/5 shrink-0">
+            <Icon name={c.icon} size={20} />
+          </span>
+          <span class="flex-1">
+            <span class="block font-display font-semibold">{c.label}</span>
+            <span class="block text-ink-faint text-sm">{c.count} kayıt</span>
+          </span>
+          <Icon name="chevron-right" size={18} class="text-ink-faint" />
+        </a>
+      ))
+    }
+  </div>
+
+  <section>
+    <h2 class="text-xl font-semibold mb-4">Teslim kuyruğu</h2>
+    {
+      queue.length === 0 ? (
+        <div class="card p-10 text-center text-ink-dim">Bekleyen ön sipariş yok. 🎉</div>
+      ) : (
+        <div class="card overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-line text-ink-faint text-left">
+                <th class="px-4 py-3 font-mono text-xs uppercase tracking-wide">Bilet</th>
+                <th class="px-4 py-3 font-mono text-xs uppercase tracking-wide">Alıcı</th>
+                <th class="px-4 py-3 font-mono text-xs uppercase tracking-wide">Durum</th>
+                <th class="px-4 py-3 font-mono text-xs uppercase tracking-wide">Tutar</th>
+                <th class="px-4 py-3 font-mono text-xs uppercase tracking-wide">Tarih</th>
+                <th class="px-4 py-3 text-right font-mono text-xs uppercase tracking-wide">İşlem</th>
+              </tr>
+            </thead>
+            <tbody>
+              {queue.map((o) => (
+                <tr class="border-b border-line-soft hover:bg-white/[0.02]">
+                  <td class="px-4 py-3">
+                    <a href={`/admin/store/orders/${o.id}`} class="font-mono text-ink-text hover:text-violet">{o.order_no}</a>
+                  </td>
+                  <td class="px-4 py-3 text-ink-dim">
+                    {o.buyer_name}
+                    <span class="block text-ink-faint text-xs">{o.buyer_email}</span>
+                  </td>
+                  <td class="px-4 py-3"><span class="chip">{STATUS[o.status]}</span></td>
+                  <td class="px-4 py-3 tabular-nums text-ink-dim">{money(o.total_minor)}</td>
+                  <td class="px-4 py-3 text-ink-faint text-xs whitespace-nowrap">{formatDateTime(o.created_at)}</td>
+                  <td class="px-4 py-3">
+                    <div class="flex items-center justify-end gap-2">
+                      {o.status === "reserved" && (
+                        <form method="POST">
+                          <input type="hidden" name="orderId" value={o.id} />
+                          <input type="hidden" name="method" value="cash" />
+                          <button name="_action" value="pay" class="btn btn-ghost !py-1.5 !px-3 text-xs">Ödendi</button>
+                        </form>
+                      )}
+                      {o.status === "paid" && (
+                        <form method="POST">
+                          <input type="hidden" name="orderId" value={o.id} />
+                          <button name="_action" value="deliver" class="btn btn-primary !py-1.5 !px-3 text-xs">Teslim et</button>
+                        </form>
+                      )}
+                      <a href={`/admin/store/orders/${o.id}`} class="text-ink-faint hover:text-ink-text"><Icon name="chevron-right" size={16} /></a>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
+    }
+  </section>
+</AdminLayout>

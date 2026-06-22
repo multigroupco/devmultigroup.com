@@ -16,7 +16,13 @@
     "events:gen": "node scripts/gen-events.mjs > scripts/events.sql",
     "db:seed:local": "wrangler d1 execute devmultigroup-db --local --file=./scripts/seed.sql && wrangler d1 execute devmultigroup-db --local --file=./scripts/events.sql && wrangler d1 execute devmultigroup-db --local --file=./scripts/events-archive.sql && wrangler d1 execute devmultigroup-db --local --file=./scripts/recordings-archive.sql && wrangler d1 execute devmultigroup-db --local --file=./scripts/recordings-durations.sql",
     "db:seed:remote": "wrangler d1 execute devmultigroup-db --remote --file=./scripts/seed.sql && wrangler d1 execute devmultigroup-db --remote --file=./scripts/events.sql && wrangler d1 execute devmultigroup-db --remote --file=./scripts/events-archive.sql && wrangler d1 execute devmultigroup-db --remote --file=./scripts/recordings-archive.sql && wrangler d1 execute devmultigroup-db --remote --file=./scripts/recordings-durations.sql",
-    "db:reset:local": "wrangler d1 execute devmultigroup-db --local --command \"SELECT name FROM sqlite_master WHERE type='table'\""
+    "db:reset:local": "wrangler d1 execute devmultigroup-db --local --command \"SELECT name FROM sqlite_master WHERE type='table'\"",
+    "store:migrate:local": "wrangler d1 migrations apply devmultigroup-store-db --local",
+    "store:migrate:remote": "wrangler d1 migrations apply devmultigroup-store-db --remote",
+    "store:schema:local": "wrangler d1 execute devmultigroup-store-db --local --file=./migrations-store/0001_store_init.sql",
+    "store:seed:local": "wrangler d1 execute devmultigroup-store-db --local --file=./scripts/store-seed.sql",
+    "store:seed:images:local": "bash scripts/store-seed-images.sh",
+    "store:reset:local": "wrangler d1 execute devmultigroup-store-db --local --command \"SELECT name FROM sqlite_master WHERE type='table'\""
   },
   "dependencies": {
     "@astrojs/rss": "4.0.18",

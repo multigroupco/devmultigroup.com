@@ -21,6 +21,7 @@ export const NAV: NavItem[] = [
   { label: "Akademi", href: "/academy" },
   { label: "Kayıtlar", href: "/recordings" },
   { label: "Blog", href: "/blog" },
+  { label: "Mağaza", href: "/store" },
   { label: "Ekip", href: "/team" },
   {
     label: "Partner",
@@ -50,6 +51,7 @@ export const FOOTER_NAV: { label: string; href: string }[] = [
   { label: "Kayıtlar", href: "/recordings" },
   { label: "Blog", href: "/blog" },
   { label: "Ekip", href: "/team" },
+  { label: "Mağaza", href: "/store" },
   { label: "Bağlantılar", href: "/links" },
 ];
 
@@ -78,7 +80,52 @@ export const SOCIALS = {
     linkedin: "https://www.linkedin.com/company/multiacademy-dev/",
     youtube: "https://www.youtube.com/@devmultigroup",
   },
+  multistore: {
+    instagram: "https://www.instagram.com/devmultistore/",
+  },
+  multiculture: {
+    instagram: "https://www.instagram.com/devmulticulture/",
+  },
 } as const;
+
+/** Sub-brands under the MultiGroup umbrella, shown in the footer's
+ *  "Powered By MultiGroup" column. MultiCulture is intentionally a separate
+ *  lane — only an Instagram, no site link for now. */
+export const SUBBRANDS: {
+  strong: string;
+  tail: string;
+  desc: string;
+  href?: string;
+  hrefLabel?: string;
+  socials: { icon: string; href: string; label: string }[];
+}[] = [
+  {
+    strong: "Multi",
+    tail: "Academy",
+    desc: "Öğrenme kolu — ücretsiz bootcamp'ler ve uygulamalı programlar.",
+    href: "/academy",
+    hrefLabel: "Akademi",
+    socials: [
+      { icon: "instagram", href: SOCIALS.multiacademy.instagram, label: "MultiAcademy Instagram" },
+      { icon: "linkedin", href: SOCIALS.multiacademy.linkedin, label: "MultiAcademy LinkedIn" },
+      { icon: "youtube", href: SOCIALS.multiacademy.youtube, label: "MultiAcademy YouTube" },
+    ],
+  },
+  {
+    strong: "Multi",
+    tail: "Store",
+    desc: "Ürün kolu — topluluk merch'i, etkinlikte teslim ön sipariş drop'ları.",
+    href: "/store",
+    hrefLabel: "Mağaza",
+    socials: [{ icon: "instagram", href: SOCIALS.multistore.instagram, label: "MultiStore Instagram" }],
+  },
+  {
+    strong: "Multi",
+    tail: "Culture",
+    desc: "Topluluğun kültür ve yaşam kolu.",
+    socials: [{ icon: "instagram", href: SOCIALS.multiculture.instagram, label: "MultiCulture Instagram" }],
+  },
+];
 
 export interface SiteConfig {
   title: string;

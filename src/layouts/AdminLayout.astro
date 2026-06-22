@@ -44,6 +44,9 @@ const active = (href: string) => path === href || path.startsWith(href + "/");
               </a>
             ))
           }
+          <a href="/admin/store" class:list={["admin-nav", active("/admin/store") && "admin-nav-active"]}>
+            <Icon name="shopping-bag" size={17} /> Mağaza
+          </a>
           <a href="/admin/settings" class:list={["admin-nav", active("/admin/settings") && "admin-nav-active"]}>
             <Icon name="sparkles" size={17} /> Settings
           </a>

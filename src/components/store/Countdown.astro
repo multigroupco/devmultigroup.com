@@ -1,0 +1,48 @@
+---
+import { formatDateTime } from "@/lib/store/format";
+interface Props {
+  target: number | null;
+  label?: string;
+}
+const { target, label } = Astro.props;
+---
+
+{
+  target && (
+    <span class="inline-flex items-center gap-2 font-mono text-sm" data-countdown={target}>
+      {label && <span class="text-ink-faint">{label}</span>}
+      <span class="tabular-nums text-ink-text" data-cd-out>
+        {formatDateTime(target)}
+      </span>
+    </span>
+  )
+}
+
+<script is:inline>
+  (() => {
+    const fmt = (t) => {
+      let diff = t - Math.floor(Date.now() / 1000);
+      if (diff <= 0) return "kapandı";
+      const d = Math.floor(diff / 86400);
+      diff -= d * 86400;
+      const h = Math.floor(diff / 3600);
+      diff -= h * 3600;
+      const m = Math.floor(diff / 60);
+      const s = diff - m * 60;
+      const p = (n) => String(n).padStart(2, "0");
+      return (d > 0 ? d + "g " : "") + p(h) + ":" + p(m) + ":" + p(s);
+    };
+    const tick = () =>
+      document.querySelectorAll("[data-countdown]").forEach((el) => {
+        const t = Number(el.getAttribute("data-countdown"));
+        const out = el.querySelector("[data-cd-out]");
+        if (out) out.textContent = fmt(t);
+      });
+    if (!window.__storeCountdown) {
+      window.__storeCountdown = true;
+      setInterval(tick, 1000);
+      document.addEventListener("astro:page-load", tick);
+    }
+    tick();
+  })();
+</script>

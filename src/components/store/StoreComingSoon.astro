@@ -1,0 +1,238 @@
+---
+// StoreComingSoon — zero-state for /store when there are no products yet.
+//
+// Direction: "ascii-flower". The <AsciiFlower /> brand mark is the centerpiece,
+// large and centered. Type beneath it is restrained: a mono eyebrow ("MAĞAZA"),
+// a confident "Çok yakında" headline (one word in text-grad), one line of sub,
+// and a single quiet CTA back to the community/events. Maximal negative space,
+// gallery-like calm — the flower carries the emotion.
+//
+// Rendered as the INNER content of <BaseLayout>, which already provides the page
+// shell (header, footer, grain, animated bg blobs, ClientRouter). No page chrome
+// is added here.
+import AsciiFlower from "@/components/AsciiFlower.astro";
+import BinaryBackdrop from "@/components/store/BinaryBackdrop.astro";
+import Icon from "@/components/Icon.astro";
+import { BRAND, SOCIALS } from "@/lib/site";
+
+// "haberdar ol" is a real mailto — no fake form, no invented endpoint.
+const NOTIFY_MAILTO =
+  "mailto:support@devmultigroup.com?subject=" +
+  encodeURIComponent("Mağaza açılışından haberdar et") +
+  "&body=" +
+  encodeURIComponent(
+    "Merhaba, Developer MultiGroup mağazası açıldığında bana haber verir misiniz?",
+  );
+---
+
+<section class="store-soon container-x">
+  <!-- dim binary backdrop, radial-masked; decorative, fades at the edges -->
+  <div class="soon-binary" aria-hidden="true">
+    <BinaryBackdrop rows={28} cols={78} density={0.26} />
+  </div>
+
+  <div class="soon-inner">
+    <!-- centerpiece: the rotating 3D ASCII flower brand mark -->
+    <div class="flower-stage animate-rise">
+      <AsciiFlower />
+    </div>
+
+    <!-- mono eyebrow -->
+    <p class="soon-eyebrow font-mono animate-rise" style="animation-delay: 80ms">
+      MAĞAZA
+    </p>
+
+    <!-- the headline: confident, one word in text-grad -->
+    <h1 class="soon-head animate-rise" style="animation-delay: 140ms">
+      <span class="text-grad">Çok</span> yakında
+    </h1>
+
+    <!-- one restrained line of sub -->
+    <p class="soon-sub animate-rise" style="animation-delay: 210ms">
+      Topluluk merch'i hazırlanıyor — tişört, çıkartma ve koleksiyon parçaları.
+    </p>
+
+    <!-- single quiet CTA back to events, plus a real mailto for "haberdar ol" -->
+    <div class="soon-actions animate-rise" style="animation-delay: 280ms">
+      <a href="/events" class="btn btn-primary">
+        Topluluğa dön
+        <Icon name="arrow-right" size={16} class="soon-arrow" />
+      </a>
+      <a href={NOTIFY_MAILTO} class="soon-notify font-mono">
+        <Icon name="mail" size={13} class="soon-notify-ic" />
+        haberdar ol
+      </a>
+    </div>
+
+    <!-- quiet motto (kept English) + store instagram -->
+    <div class="soon-foot animate-rise" style="animation-delay: 360ms">
+      <p class="soon-motto font-mono">{BRAND.tagline}</p>
+      <a
+        href={SOCIALS.multistore.instagram}
+        target="_blank"
+        rel="me noopener noreferrer"
+        class="soon-ig"
+        aria-label="MultiStore Instagram"
+        title="MultiStore Instagram"
+      >
+        <Icon name="instagram" size={16} />
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .store-soon {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    min-height: 80vh;
+    display: grid;
+    place-items: center;
+    padding-block: 5rem 6rem;
+  }
+  @media (min-width: 768px) {
+    .store-soon {
+      padding-block: 7rem;
+    }
+  }
+
+  /* binary backdrop sits behind everything, very dim. BinaryBackdrop's own mask
+     is centred at 78% x (it was authored for a right-aligned hero) — recentre it
+     so the texture pools symmetrically behind this centred lockup. */
+  .soon-binary {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  .soon-binary :global(.binary-bg) {
+    -webkit-mask-image: radial-gradient(120% 115% at 50% 44%, #000 28%, transparent 84%);
+    mask-image: radial-gradient(120% 115% at 50% 44%, #000 28%, transparent 84%);
+  }
+
+  .soon-inner {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* centerpiece — the flower's own wrapper caps at 300px; give it a breathing
+     stage with a soft white halo, and center it. */
+  .flower-stage {
+    position: relative;
+    width: clamp(13rem, 44vw, 19rem);
+  }
+  .flower-stage::before {
+    content: "";
+    position: absolute;
+    inset: -14%;
+    z-index: -1;
+    background: radial-gradient(
+      circle at 50% 47%,
+      rgba(255, 255, 255, 0.06),
+      transparent 68%
+    );
+    pointer-events: none;
+  }
+  .flower-stage :global(.flower-wrap) {
+    margin-inline: auto;
+  }
+
+  .soon-eyebrow {
+    margin-top: 2.3rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.42em;
+    /* the 0.42em tracking adds trailing space on the right — nudge to recenter */
+    text-indent: 0.42em;
+    color: var(--color-ink-faint);
+  }
+
+  .soon-head {
+    margin-top: 1rem;
+    font-family: var(--font-display);
+    font-weight: 600;
+    line-height: 0.98;
+    letter-spacing: -0.03em;
+    font-size: clamp(2.6rem, 8.5vw, 5rem);
+    text-wrap: balance;
+  }
+
+  .soon-sub {
+    margin-top: 1.35rem;
+    max-width: 30rem;
+    color: var(--color-ink-dim);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .soon-actions {
+    margin-top: 2.4rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem 1.1rem;
+  }
+  .soon-arrow {
+    transition: transform 0.25s var(--ease-out-soft);
+  }
+  .btn-primary:hover .soon-arrow {
+    transform: translateX(3px);
+  }
+  .soon-notify {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.42rem;
+    padding: 0.45rem 0.55rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+    color: var(--color-ink-faint);
+    transition: color 0.2s var(--ease-out-soft);
+  }
+  .soon-notify:hover {
+    color: var(--color-ink-text);
+  }
+  .soon-notify-ic {
+    opacity: 0.7;
+  }
+
+  .soon-foot {
+    margin-top: 3.4rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.05rem;
+  }
+  .soon-motto {
+    font-size: 0.68rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--color-ink-faint);
+  }
+  .soon-ig {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-line);
+    color: var(--color-ink-faint);
+    transition:
+      color 0.22s var(--ease-out-soft),
+      border-color 0.22s var(--ease-out-soft),
+      background-color 0.22s var(--ease-out-soft);
+  }
+  .soon-ig:hover {
+    color: var(--color-ink-text);
+    border-color: var(--color-line-strong);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  /* the .animate-rise utility already collapses to a static frame under
+     reduced-motion (global handler); the inline delays become harmless. */
+</style>

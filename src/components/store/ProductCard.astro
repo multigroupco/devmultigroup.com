@@ -1,0 +1,55 @@
+---
+import { parseImages, storeImageSrc } from "@/lib/store/db";
+import { money } from "@/lib/store/format";
+import type { ProductCard } from "@/lib/store/catalog";
+
+interface Props {
+  product: ProductCard;
+}
+const { product } = Astro.props;
+
+const img = storeImageSrc(parseImages(product.images)[0]);
+const remaining = Number(product.remaining ?? 0);
+const soldOut = remaining <= 0;
+const low = !soldOut && remaining <= 3;
+const CAT: Record<string, string> = { giyim: "Giyim", yasam: "Yaşam", koleksiyon: "Koleksiyon" };
+const catLabel = CAT[product.category] ?? product.category;
+const search = `${product.name} ${product.tagline} ${catLabel}`.toLowerCase();
+---
+
+<a
+  href={`/store/p/${product.slug}`}
+  data-product
+  data-search={search}
+  class:list={["card card-hover group relative overflow-hidden flex flex-col", soldOut && "opacity-70"]}
+>
+  <div class:list={["relative aspect-square overflow-hidden bg-ink-950", img && "skeleton"]}>
+    {
+      img ? (
+        <img
+          src={img}
+          alt={product.name}
+          loading="lazy"
+          decoding="async"
+          class="img-reveal absolute inset-0 w-full h-full object-cover transition duration-500 group-hover:scale-[1.04]"
+        />
+      ) : (
+        <div class="absolute inset-0 grid place-items-center p-6 text-center">
+          <span class="font-mono text-xs text-ink-faint break-words leading-relaxed">{product.name}</span>
+        </div>
+      )
+    }
+    <span class="absolute top-3 left-3 chip chip-media z-[3]">{catLabel}</span>
+    {soldOut && <span class="absolute top-3 right-3 chip chip-media z-[3]">TÜKENDİ</span>}
+    {low && <span class="absolute top-3 right-3 chip chip-media z-[3]">Son {remaining}</span>}
+  </div>
+
+  <div class="p-4 flex flex-col flex-1">
+    <h3 class="font-display font-semibold leading-snug line-clamp-2">{product.name}</h3>
+    {product.tagline && <p class="font-mono text-xs text-ink-faint mt-1.5 line-clamp-1">{product.tagline}</p>}
+    <div class="mt-3 flex items-center justify-between gap-2">
+      <span class="font-display text-lg text-grad tabular-nums">{money(product.base_price_minor)}</span>
+      {product.variant_count > 0 && <span class="text-xs text-ink-faint font-mono shrink-0">{product.variant_count} beden</span>}
+    </div>
+  </div>
+</a>

@@ -1,0 +1,274 @@
+---
+// Rotating 3D ASCII flower. The MultiGroup flower mark is sampled into a
+// constant-thickness extruded prism (boxy cross-section, not an oval lens) and
+// tumbled on two axes, then rendered as depth-shaded ASCII to a <pre>
+// (donut.c style). Drag to spin it any direction (with inertia). Pauses
+// off-screen; static frame for prefers-reduced-motion.
+---
+
+<div class="flower-wrap" data-flower-wrap aria-hidden="true">
+  <pre class="flower" data-ascii-flower></pre>
+</div>
+
+<style>
+  .flower-wrap {
+    width: 100%;
+    max-width: 300px;
+    aspect-ratio: 1 / 1;
+    cursor: grab;
+    touch-action: none;
+  }
+  .flower-wrap.grabbing {
+    cursor: grabbing;
+  }
+  .flower {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    color: var(--color-ink-text, #ededee);
+    white-space: pre;
+    line-height: 1;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    text-shadow: 0 0 14px rgba(255, 255, 255, 0.08);
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    if (window.__asciiFlower) {
+      window.__asciiFlowerInit && window.__asciiFlowerInit();
+      return;
+    }
+    window.__asciiFlower = true;
+
+    const ROWS = 44;
+    const COLS = 74; // chars are ~0.55 as wide as tall → more cols keeps it round
+    const CHAR_ASPECT = 0.55;
+    const RAMP = " .:-=+*oc#%@";
+    const FL = 3.4; // perspective focal length
+    const DOME = 0.3; // dome depth (front-to-back thickness)
+    const DZ = 0.08; // uniform z fill spacing → one solid volume, no layer banding
+    // auto motion = a face-centred sway (not a full 360° spin) so the flower
+    // stays a recognizable 3/4 view and never turns fully edge-on.
+    const AMP_Y = 0.72; // ±~41° left/right sway
+    const AMP_X = 0.16; // gentle vertical bob
+    const BASE_X = 0.3; // fixed 3/4 tilt
+    const SPY = 0.009; // sway speeds — different rates → organic, non-looping
+    const SPX = 0.013;
+    const EASE = 0.05; // follow the sway / ease back after a drag
+    const DRAG_K = 0.011;
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // Geometry depends only on the (shared) logo image, so it is computed ONCE
+    // and reused by every flower on the page. Each flower keeps its own motion
+    // state so multiple instances (e.g. the footer mark + the store zero-state)
+    // animate, drag and pause independently.
+    let pts = null;
+    let imgRequested = false;
+    let waiting = []; // instances queued until the points are ready
+
+    function buildPoints(img) {
+      const SW = 86;
+      const SH = Math.max(1, Math.round((SW * img.height) / img.width));
+      const c = document.createElement("canvas");
+      c.width = SW;
+      c.height = SH;
+      const ctx = c.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, SW, SH);
+      let data;
+      try {
+        data = ctx.getImageData(0, 0, SW, SH).data;
+      } catch {
+        return null;
+      }
+      const raw = [];
+      let mx = 0, my = 0;
+      for (let y = 0; y < SH; y++) {
+        for (let x = 0; x < SW; x++) {
+          if (data[(y * SW + x) * 4 + 3] > 96) {
+            const nx = (x - SW / 2) / (SW / 2);
+            const ny = -(y - SH / 2) / (SW / 2);
+            raw.push([nx, ny]);
+            mx += nx;
+            my += ny;
+          }
+        }
+      }
+      if (!raw.length) return null;
+      mx /= raw.length;
+      my /= raw.length; // centroid → recenter so it spins cleanly
+      let maxR = 1e-4;
+      for (const p of raw) {
+        p[0] -= mx;
+        p[1] -= my;
+        const r = Math.hypot(p[0], p[1]);
+        if (r > maxR) maxR = r;
+      }
+      // solid biconvex dome — fill each column through z at a uniform spacing so
+      // it reads as ONE rounded 3D volume: no stacked-layer banding, and no
+      // hollow "joined only at the rim" gap from the old two-shell version.
+      const out = [];
+      const step = raw.length > 820 ? Math.ceil(raw.length / 820) : 1;
+      for (let i = 0; i < raw.length; i += step) {
+        const [nx, ny] = raw[i];
+        const r = Math.hypot(nx, ny) / maxR;
+        const dz = DOME * Math.sqrt(Math.max(0, 1 - r * r));
+        if (dz < DZ) {
+          out.push([nx, ny, 0]);
+          continue;
+        }
+        for (let z = -dz; z <= dz + 1e-6; z += DZ) out.push([nx, ny, z]);
+      }
+      return out;
+    }
+
+    // Load the (shared) logo once; queue any instances that ask before it's ready.
+    function loadPoints(cb) {
+      if (pts) { cb(); return; }
+      waiting.push(cb);
+      if (imgRequested) return;
+      imgRequested = true;
+      const img = new Image();
+      img.onload = () => {
+        pts = buildPoints(img);
+        if (!pts) return;
+        const q = waiting;
+        waiting = [];
+        q.forEach((f) => f());
+      };
+      img.onerror = () => {};
+      img.src = "/logo-small-white.png";
+    }
+
+    function render(inst) {
+      const pre = inst.pre, w = inst.w;
+      if (!pre || !w || !pts) return;
+      const size = w.clientWidth || 280;
+      const fontPx = size / ROWS;
+      pre.style.fontSize = fontPx + "px";
+      pre.style.lineHeight = fontPx + "px";
+
+      const buf = new Array(ROWS);
+      for (let r = 0; r < ROWS; r++) buf[r] = new Array(COLS).fill(" ");
+      const zb = new Float32Array(COLS * ROWS).fill(-Infinity);
+      const cy_ = Math.cos(inst.rotY), sy_ = Math.sin(inst.rotY), cx_ = Math.cos(inst.rotX), sx_ = Math.sin(inst.rotX);
+      const cX = COLS / 2, cY = ROWS / 2;
+      const spread = (ROWS / 2) * 0.86;
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i];
+        // rotate Y then X
+        const rx = p[0] * cy_ + p[2] * sy_;
+        const rz = -p[0] * sy_ + p[2] * cy_;
+        const ty = p[1] * cx_ - rz * sx_;
+        const tz = p[1] * sx_ + rz * cx_;
+        const persp = FL / (FL - tz);
+        const col = Math.round(cX + (rx * persp * spread) / CHAR_ASPECT);
+        const row = Math.round(cY - ty * persp * spread);
+        if (col < 0 || col >= COLS || row < 0 || row >= ROWS) continue;
+        const idx = row * COLS + col;
+        if (tz > zb[idx]) {
+          zb[idx] = tz;
+          const shade = Math.max(0, Math.min(1, (tz + 1) / 2));
+          buf[row][col] = RAMP[1 + Math.floor(shade * (RAMP.length - 2))];
+        }
+      }
+      let s = "";
+      for (let r = 0; r < ROWS; r++) s += buf[r].join("") + (r < ROWS - 1 ? "\n" : "");
+      pre.textContent = s;
+    }
+
+    function tick(inst) {
+      if (!pts || !inst.pre.isConnected) {
+        inst.rafId = null;
+        return;
+      }
+      inst.phaseY += SPY;
+      inst.phaseX += SPX;
+      if (!inst.dragging) {
+        const tgtY = AMP_Y * Math.sin(inst.phaseY);
+        const tgtX = BASE_X + AMP_X * Math.sin(inst.phaseX);
+        inst.rotY += (tgtY - inst.rotY) * EASE;
+        inst.rotX += (tgtX - inst.rotX) * EASE;
+      }
+      render(inst);
+      inst.rafId = inst.visible && !reduce ? requestAnimationFrame(() => tick(inst)) : null;
+    }
+
+    function ensureRunning(inst) {
+      if (inst.visible && !reduce && !inst.rafId && pts) inst.rafId = requestAnimationFrame(() => tick(inst));
+    }
+
+    function attachDrag(inst) {
+      const w = inst.w;
+      w.addEventListener("pointerdown", (e) => {
+        inst.dragging = true;
+        inst.lastX = e.clientX;
+        inst.lastY = e.clientY;
+        w.classList.add("grabbing");
+        try { w.setPointerCapture(e.pointerId); } catch {}
+      });
+      w.addEventListener("pointermove", (e) => {
+        if (!inst.dragging) return;
+        inst.rotY += (e.clientX - inst.lastX) * DRAG_K;
+        inst.rotX += (e.clientY - inst.lastY) * DRAG_K;
+        inst.lastX = e.clientX;
+        inst.lastY = e.clientY;
+        if (!inst.rafId) render(inst); // reduced-motion / paused: redraw on drag
+      });
+      const end = () => {
+        if (!inst.dragging) return;
+        inst.dragging = false;
+        w.classList.remove("grabbing");
+        ensureRunning(inst); // resume auto-spin with fling inertia
+      };
+      w.addEventListener("pointerup", end);
+      w.addEventListener("pointercancel", end);
+    }
+
+    function initOne(w) {
+      const pre = w.querySelector("[data-ascii-flower]");
+      if (!pre || pre.dataset.bound) return;
+      pre.dataset.bound = "1";
+      const inst = {
+        w, pre,
+        rotX: 0.3, rotY: 0, phaseX: 0, phaseY: 0,
+        dragging: false, lastX: 0, lastY: 0,
+        visible: false, rafId: null, io: null,
+      };
+      attachDrag(inst);
+
+      const begin = () => {
+        if (reduce) {
+          render(inst);
+          return;
+        }
+        if ("IntersectionObserver" in window) {
+          inst.io = new IntersectionObserver(
+            (es) => {
+              inst.visible = es[0].isIntersecting;
+              ensureRunning(inst);
+            },
+            { rootMargin: "80px" },
+          );
+          inst.io.observe(w);
+        } else {
+          inst.visible = true;
+          ensureRunning(inst);
+        }
+      };
+
+      loadPoints(begin);
+    }
+
+    function init() {
+      document.querySelectorAll("[data-flower-wrap]").forEach(initOne);
+    }
+
+    window.__asciiFlowerInit = init;
+    document.addEventListener("astro:page-load", init);
+    init();
+  })();
+</script>

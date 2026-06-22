@@ -129,8 +129,8 @@ const structured = [orgLd, ...extra, ...(breadcrumbLd ? [breadcrumbLd] : [])];
     <meta name="theme-color" content="#0d0d0e" />
     <meta name="generator" content={Astro.generator} />
     <link rel="icon" href="/favicon.ico" sizes="any" />
-    <link rel="icon" href="/dmg-logo.webp" type="image/webp" />
-    <link rel="apple-touch-icon" href="/dmg-logo.webp" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="alternate" type="application/rss+xml" title={`${BRAND.short} Blog`} href="/rss.xml" />
     <Seo
@@ -152,7 +152,7 @@ const structured = [orgLd, ...extra, ...(breadcrumbLd ? [breadcrumbLd] : [])];
     <PageLoader />
     <SiteBackground />
     {site.bannerEnabled && banner && !hideBanner && !bare && <EventBanner event={banner} />}
-    {!bare && <Header variant={Astro.url.pathname.startsWith("/academy") ? "academy" : "multigroup"} />}
+    {!bare && <Header variant={Astro.url.pathname.startsWith("/academy") ? "academy" : Astro.url.pathname.startsWith("/store") ? "store" : "multigroup"} />}
     <main id="main">
       <slot />
     </main>

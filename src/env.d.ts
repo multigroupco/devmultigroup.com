@@ -33,6 +33,12 @@ interface Env {
   AI_GATEWAY_ID?: string;
   /** Resend API key for contact-form email delivery (set via `wrangler secret`). */
   RESEND_API_KEY?: string;
+  /** MultiGroup Store database (SEPARATE D1): commerce now, Better Auth in v1. */
+  STORE_DB: D1Database;
+  /** Object storage for store product images (served via /store/media/<key>). */
+  STORE_MEDIA: R2Bucket;
+  /** Better Auth session signing secret — v1 (customer accounts). */
+  BETTER_AUTH_SECRET?: string;
 }
 
 type Runtime = import("@astrojs/cloudflare").Runtime<Env>;

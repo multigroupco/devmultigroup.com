@@ -1,0 +1,77 @@
+---
+import AdminLayout from "@/layouts/AdminLayout.astro";
+import Icon from "@/components/Icon.astro";
+import { getEnv } from "@/lib/runtime";
+import { getStoreResource, listRows } from "@/lib/store/admin";
+import { money, formatDate } from "@/lib/store/format";
+
+const env = getEnv(Astro.locals);
+const { resource = "" } = Astro.params;
+const res = getStoreResource(resource);
+if (!res) return Astro.redirect("/admin/store");
+
+const rows = await listRows(env, res);
+
+const MONEY = new Set(["base_price_minor", "price_modifier_minor", "total_minor"]);
+const DATE = new Set(["opens_at", "closes_at", "pickup_at", "created_at", "updated_at"]);
+const BOOL = new Set(["is_active", "is_featured"]);
+function display(col: string, val: unknown): string {
+  if (val == null || val === "") return "—";
+  if (MONEY.has(col)) return money(Number(val));
+  if (DATE.has(col)) return formatDate(Number(val));
+  if (BOOL.has(col)) return Number(val) === 1 ? "Evet" : "Hayır";
+  const s = String(val);
+  return s.length > 48 ? s.slice(0, 48) + "…" : s;
+}
+---
+
+<AdminLayout title={res.label}>
+  <a href="/admin/store" class="inline-flex items-center gap-1.5 text-sm text-ink-dim hover:text-ink-text mb-5">
+    <Icon name="arrow-right" size={15} class="rotate-180" /> Mağaza
+  </a>
+  <header class="flex items-center justify-between gap-4 mb-7">
+    <h1 class="text-3xl font-semibold">{res.label}</h1>
+    <a href={`/admin/store/${res.key}/new`} class="btn btn-primary !py-2.5">
+      <Icon name="sparkles" size={16} /> Yeni {res.singular.toLowerCase()}
+    </a>
+  </header>
+
+  {
+    rows.length === 0 ? (
+      <div class="card p-12 text-center text-ink-dim">
+        Henüz kayıt yok. <a href={`/admin/store/${res.key}/new`} class="text-violet">İlkini oluştur →</a>
+      </div>
+    ) : (
+      <div class="card overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-line text-ink-faint text-left">
+              {res.listColumns.map((c) => <th class="px-4 py-3 font-medium font-mono text-xs uppercase tracking-wide">{c.label}</th>)}
+              <th class="px-4 py-3 w-10" />
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr class="border-b border-line-soft hover:bg-white/[0.02] transition-colors">
+                {res.listColumns.map((c, i) => (
+                  <td class="px-4 py-3">
+                    {i === 0 ? (
+                      <a href={`/admin/store/${res.key}/${row.id}`} class="font-medium text-ink-text hover:text-violet transition-colors">
+                        {display(c.name, row[c.name])}
+                      </a>
+                    ) : (
+                      <span class="text-ink-dim">{display(c.name, row[c.name])}</span>
+                    )}
+                  </td>
+                ))}
+                <td class="px-4 py-3 text-right">
+                  <a href={`/admin/store/${res.key}/${row.id}`} class="text-ink-faint hover:text-ink-text"><Icon name="pen" size={15} /></a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+</AdminLayout>

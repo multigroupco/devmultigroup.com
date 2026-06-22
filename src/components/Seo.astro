@@ -54,7 +54,7 @@ const seg = (path.split("/").filter(Boolean)[0] || "").toLowerCase();
 // workers.dev staging URL before the apex cutover. canonical/og:url stay on the apex.
 const imgOrigin = (Astro.url?.origin || siteOrigin).replace(/\/$/, "");
 const ogImage =
-  image && image !== "/og-default.png"
+  image
     ? image.startsWith("http")
       ? image
       : imgOrigin + image

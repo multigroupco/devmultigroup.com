@@ -1,0 +1,23 @@
+---
+import Icon from "@/components/Icon.astro";
+// The de-commercialising values line: modest margin funds community events,
+// VAT shown plainly, pickup at events. Quiet, factual, no dark patterns.
+const items: { icon: string; text: string }[] = [
+  { icon: "users", text: "Gelir topluluk etkinliklerine gidiyor" },
+  { icon: "map-pin", text: "Etkinlikte teslim — kargo yok" },
+  { icon: "check", text: "Fiyatlar KDV dahil" },
+];
+---
+
+<div class="container-x">
+  <div class="card flex flex-wrap items-center justify-center gap-x-8 gap-y-3 px-5 py-4 text-sm text-ink-dim">
+    {
+      items.map((it) => (
+        <span class="inline-flex items-center gap-2">
+          <Icon name={it.icon} size={16} class="text-ink-faint" />
+          {it.text}
+        </span>
+      ))
+    }
+  </div>
+</div>

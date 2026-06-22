@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* Hanken Grotesk — the logo's wordmark typeface (its round, open "G" matches the
+   dmg-logo lockup). Self-hosted variable font for the navbar wordmarks
+   ("Multi" 700 + tail 300). (Prod: subset + woff2 to shrink the ttf.) */
+@font-face {
+  font-family: "Hanken Grotesk";
+  src: url("/fonts/HankenGrotesk-Variable.ttf") format("truetype-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ───────────────────────────────────────────────────────────────────────────
    devmultigroup.com — design system
    "Where Developers Become Together"
@@ -255,6 +266,18 @@
     border: 1px solid var(--color-line);
     color: var(--color-ink-dim);
     background: rgba(255, 255, 255, 0.02);
+  }
+
+  /* chip variant for placement OVER imagery (product photos): a solid, blurred
+     dark pill so the label stays legible against any image — the default
+     translucent .chip border alone vanishes on a busy photo. */
+  .chip-media {
+    color: var(--color-ink-text);
+    border-color: rgba(255, 255, 255, 0.24);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px) saturate(118%);
+    -webkit-backdrop-filter: blur(8px) saturate(118%);
+    box-shadow: 0 1px 10px rgba(0, 0, 0, 0.45);
   }
 
   /* soft glassy green "coming soon" badge */

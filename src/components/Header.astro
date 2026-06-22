@@ -3,17 +3,22 @@ import Icon from "./Icon.astro";
 import { NAV, BRAND, JOIN_FORM } from "@/lib/site";
 
 interface Props {
-  variant?: "multigroup" | "academy";
+  variant?: "multigroup" | "academy" | "store";
 }
 const { variant = "multigroup" } = Astro.props;
 
 // brand variants — same collapse/spin logic, just different mark + wordmark.
 // w = full display width (px), wordLeft = where the wordmark begins (mark slot).
+// `store` reuses the MultiGroup flower (identical mark + spin) but renders a text
+// wordmark ("Multi" bold + "Store" light) matching the dmg-logo two-weight style.
 const BRANDS = {
-  multigroup: { name: BRAND.name, href: "/", mark: "/logo-small-white.png", word: "/dmg-logo.webp", w: 135, wordLeft: 28, h: 28, spin: 180 },
-  academy: { name: "MultiAcademy", href: "/", mark: "/multiacademy-mark-white.png", word: "/multiacademy-logo.png", w: 157, wordLeft: 19, h: 32, spin: 360 },
+  multigroup: { name: BRAND.name, href: "/", mark: "/logo-small-white.png", word: "/dmg-logo.webp", w: 160, wordLeft: 28, h: 28, spin: 180, wordText: { strong: "Multi", rest: "Group" }, wordSize: "1.39rem" },
+  academy: { name: "MultiAcademy", href: "/", mark: "/logo-small-white.png", word: "/dmg-logo.webp", w: 190, wordLeft: 28, h: 28, spin: 180, wordText: { strong: "Multi", rest: "Academy" }, wordSize: "1.39rem" },
+  store: { name: "MultiStore", href: "/", mark: "/logo-small-white.png", word: "/dmg-logo.webp", w: 158, wordLeft: 28, h: 28, spin: 180, wordText: { strong: "Multi", rest: "Store" }, wordSize: "1.39rem" },
 } as const;
 const brand = BRANDS[variant];
+const wordText = "wordText" in brand ? brand.wordText : null;
+const wordSize = "wordSize" in brand ? brand.wordSize : "1.36rem";
 
 const path = Astro.url.pathname;
 const isActive = (href: string) =>
@@ -22,12 +27,18 @@ const isActive = (href: string) =>
 
 <header id="site-header" class="site-header">
   <div class="container-x flex items-center justify-between gap-4 h-16">
-    <a href={brand.href} class="brand shrink-0" aria-label={brand.name} style={`--brand-w:${brand.w}px;--brand-word-left:${brand.wordLeft}px;--brand-h:${brand.h}px;--brand-spin:${brand.spin}deg`}>
+    <a href={brand.href} class="brand shrink-0" aria-label={brand.name} style={`--brand-w:${brand.w}px;--brand-word-left:${brand.wordLeft}px;--brand-h:${brand.h}px;--brand-spin:${brand.spin}deg;--store-word-size:${wordSize}`}>
       <span class="brand-mark">
         <img src={brand.mark} alt="" height="28" aria-hidden="true" />
       </span>
       <span class="brand-word">
-        <img src={brand.word} alt={brand.name} height="28" />
+        {
+          wordText ? (
+            <span class="brand-word-text"><b>{wordText.strong}</b>{wordText.rest}</span>
+          ) : (
+            <img src={brand.word} alt={brand.name} height="28" />
+          )
+        }
       </span>
     </a>
 
@@ -164,7 +175,10 @@ const isActive = (href: string) =>
      footprint so the collapse never shifts the nav links. */
   .brand {
     position: relative;
-    width: var(--brand-w, 135px); /* fixed slot: mark + wordmark */
+    /* Constant footprint across all variants so the nav never shifts between
+       MultiGroup / Store / Academy. The mark + wordmark are left-aligned inside
+       it; --brand-w only sizes the internal wordmark slot (and the image word). */
+    width: var(--brand-box, 196px);
     height: var(--brand-h, 28px);
     flex: none;
   }
@@ -197,6 +211,21 @@ const isActive = (href: string) =>
     width: var(--brand-w, 135px);
     max-width: none;
     margin-left: calc(-1 * var(--brand-word-left, 28px)); /* hide the mark; show only the wordmark */
+  }
+  /* text wordmark (store variant) — Geist (the logo typeface): "Multi" 700 +
+     "Store" 300, mirroring the dmg-logo lockup. Tune --store-word-size to match. */
+  .brand-word-text {
+    display: block;
+    white-space: nowrap;
+    font-family: "Hanken Grotesk", var(--font-display), system-ui, sans-serif;
+    font-weight: 300;
+    font-size: var(--store-word-size, 1.39rem);
+    line-height: var(--brand-h, 28px);
+    letter-spacing: -0.01em;
+    color: #fff;
+  }
+  .brand-word-text b {
+    font-weight: 700;
   }
   .site-header.scrolled .brand-mark {
     transform: rotate(var(--brand-spin, 180deg));
