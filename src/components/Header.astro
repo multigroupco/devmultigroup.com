@@ -51,6 +51,8 @@ const isActive = (href: string) =>
                 href={item.href}
                 class:list={["nav-link inline-flex items-center gap-1", isActive(item.href) && "nav-link-active"]}
                 aria-haspopup="true"
+                data-track="nav_click"
+                data-track-props={JSON.stringify({ location: "header", nav_label: item.label, href: item.href })}
               >
                 {item.label}
                 <Icon name="chevron-right" size={13} class="dd-caret" />
@@ -77,6 +79,8 @@ const isActive = (href: string) =>
             <a
               href={item.href}
               class:list={["nav-link", isActive(item.href) && "nav-link-active"]}
+              data-track="nav_click"
+              data-track-props={JSON.stringify({ location: "header", nav_label: item.label, href: item.href })}
             >
               {item.label}
             </a>
@@ -92,7 +96,7 @@ const isActive = (href: string) =>
       <button type="button" data-contact="newsletter" class="btn btn-ghost hidden sm:inline-flex !rounded-xl !p-2.5" aria-label="Bültene abone ol" title="Bültene abone ol">
         <Icon name="bell" size={16} />
       </button>
-      <a href={JOIN_FORM} target="_blank" rel="noopener noreferrer" class="btn btn-ghost group hidden sm:inline-flex !rounded-xl !py-2 !px-3.5 text-sm" data-ga="join_click" data-ga-params={JSON.stringify({ location: "header" })}>
+      <a href={JOIN_FORM} target="_blank" rel="noopener noreferrer" class="btn btn-ghost group hidden sm:inline-flex !rounded-xl !py-2 !px-3.5 text-sm" data-track="join_click" data-track-props={JSON.stringify({ location: "header" })}>
         Aramıza katıl
         <span class="relative inline-flex w-[15px] h-[15px]">
           <Icon name="user-check" size={15} class="absolute inset-0 transition-all duration-200 group-hover:opacity-0 group-hover:scale-50" />
@@ -120,7 +124,7 @@ const isActive = (href: string) =>
                     <span class="dd-soon">yakında</span>
                   </span>
                 ) : (
-                  <a href={c.href} class:list={["mnav-link", isActive(c.href) && "text-grad"]}>
+                  <a href={c.href} class:list={["mnav-link", isActive(c.href) && "text-grad"]} data-track="nav_click" data-track-props={JSON.stringify({ location: "header", nav_label: c.label, href: c.href })}>
                     {c.label}
                     <Icon name="chevron-right" size={16} />
                   </a>
@@ -128,7 +132,7 @@ const isActive = (href: string) =>
               )}
             </div>
           ) : (
-            <a href={item.href} class:list={["mnav-link", isActive(item.href) && "text-grad"]}>
+            <a href={item.href} class:list={["mnav-link", isActive(item.href) && "text-grad"]} data-track="nav_click" data-track-props={JSON.stringify({ location: "header", nav_label: item.label, href: item.href })}>
               {item.label}
               <Icon name="chevron-right" size={16} />
             </a>
@@ -136,7 +140,7 @@ const isActive = (href: string) =>
         )
       }
       <button type="button" data-search-open class="btn btn-ghost mt-3 justify-center !rounded-xl"><Icon name="search" size={16} /> Ara</button>
-      <a href={JOIN_FORM} target="_blank" rel="noopener noreferrer" class="btn btn-ghost mt-2 justify-center !rounded-xl" data-ga="join_click" data-ga-params={JSON.stringify({ location: "mobile_nav" })}><Icon name="user-check" size={16} /> Aramıza katıl</a>
+      <a href={JOIN_FORM} target="_blank" rel="noopener noreferrer" class="btn btn-ghost mt-2 justify-center !rounded-xl" data-track="join_click" data-track-props={JSON.stringify({ location: "mobile-nav" })}><Icon name="user-check" size={16} /> Aramıza katıl</a>
       <button type="button" data-contact="newsletter" class="btn btn-ghost mt-2 justify-center !rounded-xl"><Icon name="bell" size={16} /> Bültene abone ol</button>
     </nav>
   </div>

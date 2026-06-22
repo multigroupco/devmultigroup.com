@@ -160,7 +160,7 @@ const teamLd = team.length
     <div class="card p-8 md:p-10 text-center">
       <h2 class="font-display text-2xl font-semibold">Topluluğa destek olmak ister misin?</h2>
       <p class="text-ink-dim mt-3 max-w-lg mx-auto">Ekibimize katıl — organizatör, konuşmacı veya mentor olarak topluluğa destek ol.</p>
-      <a href={JOIN_FORM} target="_blank" rel="noopener noreferrer" class="btn btn-primary group mt-6">Aramıza katıl<span class="relative inline-flex w-4 h-4"><Icon name="user-check" size={16} class="absolute inset-0 transition-all duration-200 group-hover:opacity-0 group-hover:scale-50" /><Icon name="arrow-up-right" size={16} class="absolute inset-0 opacity-0 scale-50 transition-all duration-200 group-hover:opacity-100 group-hover:scale-100" /></span></a>
+      <a href={JOIN_FORM} target="_blank" rel="noopener noreferrer" data-track="join_click" data-track-props={JSON.stringify({location:"team"})} class="btn btn-primary group mt-6">Aramıza katıl<span class="relative inline-flex w-4 h-4"><Icon name="user-check" size={16} class="absolute inset-0 transition-all duration-200 group-hover:opacity-0 group-hover:scale-50" /><Icon name="arrow-up-right" size={16} class="absolute inset-0 opacity-0 scale-50 transition-all duration-200 group-hover:opacity-100 group-hover:scale-100" /></span></a>
     </div>
   </section>
 

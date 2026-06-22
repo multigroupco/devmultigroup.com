@@ -19,6 +19,7 @@ const cards = recs
       img: imageSrc(r.cover_image) || (ytId ? `/yt/${ytId}` : ""),
       href: r.youtube_url || (ytId ? ytPlaylistUrl(ytId) : "#"),
       title: r.title,
+      category: r.category,
       videos: r.video_count,
       hours: r.duration_minutes ? hours(r.duration_minutes) : 0,
     };
@@ -99,7 +100,14 @@ if (other.length) sections.push({ key: "other", label: "Daha fazla", items: othe
             </>
           ))}
         </dl>
-        <a href={SOCIALS.multigroup.youtube} target="_blank" rel="noopener noreferrer" class="btn btn-primary mt-8">
+        <a
+          href={SOCIALS.multigroup.youtube}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn btn-primary mt-8"
+          data-track="cta_click"
+          data-track-props={JSON.stringify({ cta_id: "recordings_youtube", page: "recordings", href: SOCIALS.multigroup.youtube })}
+        >
           <Icon name="youtube" size={18} /> Kanalı ziyaret et
         </a>
       </div>
@@ -116,6 +124,8 @@ if (other.length) sections.push({ key: "other", label: "Daha fazla", items: othe
                   class="cf-card"
                   data-i={i}
                   aria-label={c.title}
+                  data-track="recording_play"
+                  data-track-props={JSON.stringify({ recording_title: c.title, recording_category: c.category, video_count: c.videos, page: "recordings_coverflow" })}
                 >
                   <div class="cf-inner card">
                     <img src={c.img} alt="" loading="lazy" decoding="async" class="cf-img" />
@@ -157,7 +167,7 @@ if (other.length) sections.push({ key: "other", label: "Daha fazla", items: othe
         <section class="container-x py-6">
           <h2 class="font-display text-xl font-semibold mb-5">{s.label}</h2>
           <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {s.items.map((r) => <RecordingCard rec={r} />)}
+            {s.items.map((r) => <RecordingCard rec={r} page="recordings" />)}
           </div>
         </section>
       ))

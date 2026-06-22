@@ -1,0 +1,56 @@
+---
+// Opt-out KVKK/GDPR consent notice. Rendered (hidden) in <body>; the analytics
+// bootstrap in Analytics.astro reveals it on astro:page-load only when the
+// visitor has made no prior choice and isn't sending Do-Not-Track. The buttons
+// carry data-consent="granted|denied" — the bootstrap's delegated listener
+// persists the choice and (de)activates GA + PostHog accordingly. No client
+// script lives here, so it survives view transitions without re-binding.
+---
+
+<div id="dmg-consent" class="consent" role="dialog" aria-live="polite" aria-label="Çerez tercihi" hidden>
+  <div class="consent-card card">
+    <p class="consent-text">
+      Deneyimini iyileştirmek ve topluluğu büyütmek için analiz çerezleri
+      kullanıyoruz. İstediğin zaman reddedebilirsin.
+    </p>
+    <div class="consent-actions">
+      <button type="button" class="btn btn-ghost" data-consent="denied">Reddet</button>
+      <button type="button" class="btn btn-primary" data-consent="granted">Kabul et</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .consent {
+    position: fixed;
+    left: 50%;
+    bottom: 1rem;
+    transform: translateX(-50%);
+    z-index: 80;
+    width: min(40rem, calc(100vw - 2rem));
+  }
+  .consent[hidden] { display: none; }
+  .consent-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.9rem 1.1rem;
+    box-shadow: 0 18px 50px -12px rgba(0, 0, 0, 0.85);
+  }
+  .consent-text {
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: var(--color-ink-dim);
+  }
+  .consent-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+  .consent-actions .btn { padding-inline: 1rem; font-size: 0.82rem; }
+  @media (max-width: 30rem) {
+    .consent-card { flex-direction: column; align-items: stretch; }
+    .consent-actions { justify-content: flex-end; }
+  }
+</style>

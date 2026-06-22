@@ -111,8 +111,8 @@ const academyLd = {
                   ))}
                 </div>
                 <div class="flex flex-wrap items-center gap-3 mt-6">
-                  <a href={freg} target="_blank" rel="noopener noreferrer" class="btn btn-primary"><Icon name="arrow-up-right" size={16} /> Kayıt ol</a>
-                  <a href={`/academy/${featured.slug}`} class="btn btn-ghost">Detaylar</a>
+                  <a href={freg} target="_blank" rel="noopener noreferrer" class="btn btn-primary" data-track="event_register_click" data-track-props={JSON.stringify({ event_slug: featured.slug, event_title: featured.title, event_community: "multiacademy", location: "academy_featured" })}><Icon name="arrow-up-right" size={16} /> Kayıt ol</a>
+                  <a href={`/academy/${featured.slug}`} class="btn btn-ghost" data-track="event_card_click" data-track-props={JSON.stringify({ event_slug: featured.slug, page: "academy" })}>Detaylar</a>
                 </div>
               </div>
             </div>
@@ -130,13 +130,13 @@ const academyLd = {
               gerçek projeler üzerine kurulu. Gerçekten üreten insanlarla birlikte öğren.
             </p>
             <div class="flex flex-wrap gap-3 mt-7">
-              <a href={GATHIN.multiacademy} target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+              <a href={GATHIN.multiacademy} target="_blank" rel="noopener noreferrer" class="btn btn-primary" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "academy_events", page: "academy", href: GATHIN.multiacademy })}>
                 <Icon name="calendar" size={17} /> Akademi etkinlikleri
               </a>
-              <a href="https://academy.devmultigroup.com" target="_blank" rel="noopener noreferrer" class="btn btn-ghost">
+              <a href="https://academy.devmultigroup.com" target="_blank" rel="noopener noreferrer" class="btn btn-ghost" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "academy_external", page: "academy", href: "https://academy.devmultigroup.com" })}>
                 <Icon name="globe" size={16} /> academy.devmultigroup.com
               </a>
-              <a href={SOCIALS.multiacademy.instagram} target="_blank" rel="noopener noreferrer" class="btn btn-ghost">
+              <a href={SOCIALS.multiacademy.instagram} target="_blank" rel="noopener noreferrer" class="btn btn-ghost" data-track="social_click" data-track-props={JSON.stringify({ platform: "instagram", location: "academy" })}>
                 <Icon name="instagram" size={16} /> @devmultiacademy
               </a>
             </div>
@@ -150,7 +150,7 @@ const academyLd = {
     moreUpcoming.length > 0 && (
       <section class="container-x py-8">
         <SectionHeader title="Akademide yaklaşanlar" />
-        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">{moreUpcoming.map((e) => <EventCard event={e} />)}</div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">{moreUpcoming.map((e) => <EventCard event={e} page="academy" />)}</div>
       </section>
     )
   }
@@ -159,7 +159,7 @@ const academyLd = {
     recs.length > 0 && (
       <section class="container-x py-8">
         <SectionHeader title="Bootcamp kayıtları" href="/recordings" hrefLabel="Tüm kayıtlar" />
-        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">{recs.map((r) => <RecordingCard rec={r} />)}</div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">{recs.map((r) => <RecordingCard rec={r} page="academy" />)}</div>
       </section>
     )
   }
@@ -168,7 +168,7 @@ const academyLd = {
     past.length > 0 && (
       <section class="container-x py-8">
         <SectionHeader title="Geçmiş programlar" />
-        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">{past.map((e) => <EventCard event={e} />)}</div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">{past.map((e) => <EventCard event={e} page="academy" />)}</div>
       </section>
     )
   }

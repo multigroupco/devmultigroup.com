@@ -14,14 +14,16 @@ devmultigroup.com/
 ├── CODEMAP.md                    This file.
 │
 ├── docs/
-│   └── GO-LIVE.md                Production cutover checklist: domain, Access, GA4, Search Console, content.
+│   ├── GO-LIVE.md                Production cutover checklist: domain, Access, GA4, Search Console, content.
+│   └── ANALYTICS.md              Tracking layer guide: GA4 + PostHog + Sentry, event taxonomy, consent, server capture, config, go-live.
 │
 ├── migrations/
 │   └── 0001_init.sql             D1 schema: settings, events, posts, links, recordings, gallery_items, team_members, social_posts (+indexes).
 │
 ├── scripts/
 │   ├── postbuild.mjs             Writes dist/.assetsignore (_worker.js, _routes.json) — REQUIRED or wrangler rejects the worker.
-│   └── seed.sql                  Idempotent Turkish seed data from verified public sources.
+│   ├── seed.sql                  Idempotent Turkish seed data from verified public sources.
+│   └── analytics-settings.sql    Upserts the browser-side analytics keys (posthog/sentry/master switch) into D1 settings.
 │
 ├── public/                       Static assets: dmg-logo.webp, favicon.ico, og-default.png, brand logos.
 │
@@ -46,6 +48,9 @@ devmultigroup.com/
     │   ├── ui.ts                 imageSrc (R2 key → /media), category/community accent mapping, Turkish category labels, YouTube url/id helpers.
     │   ├── format.ts             Date/time/number formatting in Europe/Istanbul (formatDate/Time/DateTime/DayLabel, isUpcoming, iso, formatCount).
     │   ├── markdown.ts           renderMarkdown (trusted, via marked) + excerptFrom plain-text extractor.
+    │   ├── events.ts             Canonical analytics event-name taxonomy (EVENTS) — single source of truth for client + server.
+    │   ├── analytics-server.ts   Server-side PostHog /capture (captureServer) for redirect/form handlers; email is distinct_id only, no raw IP.
+    │   ├── sentry.ts             Dependency-free Sentry envelope sender for Worker SSR errors (parseDsn, captureServerException); DSN from env.
     │   └── runtime.ts            getEnv/tryEnv (read Astro.locals.runtime.env) + siteUrl.
     │
     ├── components/               ── UI KIT ──
@@ -64,7 +69,8 @@ devmultigroup.com/
     │   ├── Icon.astro            Inline SVG icon set (brand glyphs + stroked UI icons), currentColor.
     │   ├── SiteBackground.astro  Fixed full-screen backdrop: animated blur blobs, film grain, vignette (z -10).
     │   ├── Seo.astro             <head> SEO: title/description/canonical, robots, OG + Twitter cards, GSC verification meta.
-    │   ├── Analytics.astro       GA4 gtag snippet — rendered only when a measurement id is set.
+    │   ├── Analytics.astro       Tracking-layer bootstrap (head): consent-gated GA4 + PostHog + Sentry browser; window.track() fans GA4+PostHog; delegated [data-track]/[data-ga] listener; one pageview per astro:page-load.
+    │   ├── ConsentBanner.astro   Opt-out KVKK/GDPR notice (body, hidden); data-consent buttons toggled by the Analytics bootstrap.
     │   ├── JsonLd.astro          Emits a JSON-LD <script> from a passed schema.org object/array.
     │   └── admin/
     │       └── Field.astro       Shared admin form control rendering every Field type (text/textarea/markdown/select/boolean/datetime/number/image/tags/color) + image preview/upload.

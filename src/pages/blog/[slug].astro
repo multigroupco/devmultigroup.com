@@ -100,7 +100,7 @@ const articleLd = post
       ]}
     >
       <article class="container-x pt-10 pb-6 max-w-3xl">
-        <a href="/blog" class="inline-flex items-center gap-1.5 text-sm text-ink-dim hover:text-ink-text mb-7">
+        <a href="/blog" class="inline-flex items-center gap-1.5 text-sm text-ink-dim hover:text-ink-text mb-7" data-track="nav_click" data-track-props={JSON.stringify({ location: "blog_detail", nav_label: "Tüm yazılar", href: "/blog" })}>
           <Icon name="arrow-right" size={15} class="rotate-180" /> Tüm yazılar
         </a>
         <h1 class="text-3xl md:text-5xl font-semibold leading-tight">{post.title}</h1>
@@ -142,7 +142,7 @@ const articleLd = post
         {tags.length > 0 && (
           <div class="flex flex-wrap gap-2 mt-10 pt-6 border-t border-line">
             {tags.map((t) => (
-              <a href={`/blog/tag/${encodeURIComponent(t)}`} class="chip hover:text-ink-text">#{t}</a>
+              <a href={`/blog/tag/${encodeURIComponent(t)}`} class="chip hover:text-ink-text" data-track="blog_filter" data-track-props={JSON.stringify({ filter_type: "tag", value: t })}>#{t}</a>
             ))}
           </div>
         )}
@@ -152,7 +152,7 @@ const articleLd = post
         <section class="container-x py-8">
           <h2 class="font-display text-lg font-semibold mb-5 text-ink-dim">Okumaya devam et</h2>
           <div class="grid md:grid-cols-3 gap-4">
-            {related.map((p) => <PostCard post={p} />)}
+            {related.map((p) => <PostCard post={p} page="blog_related" />)}
           </div>
         </section>
       )}

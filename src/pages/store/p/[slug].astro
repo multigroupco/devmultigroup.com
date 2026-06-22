@@ -38,6 +38,16 @@ const sheet = [
 
 const err = Astro.url.searchParams.get("err");
 const inputCls = "w-full bg-ink-900 border border-line rounded-xl px-3.5 py-2.5 text-sm text-ink-text placeholder:text-ink-faint focus:border-violet outline-none transition-colors";
+
+// Analytics context for the product-detail funnel (view → variant → reserve).
+const productView = {
+  product_id: product.id,
+  product_name: product.name,
+  price_minor: product.base_price_minor,
+  category: product.category,
+  stock_remaining: remaining,
+  sold_out: soldOut,
+};
 ---
 
 <BaseLayout
@@ -160,4 +170,40 @@ const inputCls = "w-full bg-ink-900 border border-line rounded-xl px-3.5 py-2.5 
   </section>
 
   <AsciiReveal />
+
+  <script is:inline define:vars={{ pv: productView }}>
+    (function () {
+      // Re-runs on each view-transition navigation, so the view fires once per
+      // product page; listeners bind to this page's (fresh) form element.
+      try { window.track && window.track("store_product_view", pv); } catch (e) {}
+      var form = document.querySelector('form[action="/api/store/reserve"]');
+      if (!form) return;
+      var qty = form.querySelector('input[name="qty"]');
+      function variant() {
+        var r = form.querySelector('input[name="variantId"]:checked');
+        var label = r ? ((r.closest("label") || {}).innerText || "").trim() : "";
+        return { id: r ? r.value : "", label: label };
+      }
+      form.addEventListener("change", function (e) {
+        if (e.target && (e.target.name === "variantId" || e.target.name === "qty")) {
+          var v = variant();
+          try {
+            window.track && window.track("store_variant_select", {
+              product_id: pv.product_id, variant_id: v.id, variant_label: v.label,
+              qty: Number((qty && qty.value) || 1),
+            });
+          } catch (err) {}
+        }
+      });
+      form.addEventListener("submit", function () {
+        var v = variant();
+        try {
+          window.track && window.track("store_reserve_submit", {
+            product_id: pv.product_id, product_name: pv.product_name, variant_id: v.id,
+            qty: Number((qty && qty.value) || 1), price_minor: pv.price_minor,
+          });
+        } catch (err) {}
+      });
+    })();
+  </script>
 </BaseLayout>

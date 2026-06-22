@@ -162,6 +162,45 @@ banner in `PostCard.astro` (`/blog/banner/${slug}.svg` when no cover).
 - Sign-out links to `/cdn-cgi/access/logout`. There are **no app-side passwords** by
   design.
 
+## Analytics & observability
+
+Full tracking layer over **GA4 + PostHog + Sentry**, consent-gated. See
+[`docs/ANALYTICS.md`](./docs/ANALYTICS.md) for the complete map. Essentials:
+
+- **Apex-only:** the whole layer (client + server) is inert unless the request
+  host is `devmultigroup.com` (`BRAND.domain`). Staging `workers.dev`, CF previews,
+  `www.*`, and localhost send nothing — it self-activates after the apex cutover.
+  Gated in three places: `BaseLayout` (client), `captureServer` (server PostHog),
+  `middleware` (server Sentry). This also retires the old "GA fires on staging" caveat.
+- **One dispatcher:** `window.track(name, props)` (in
+  [`src/components/Analytics.astro`](./src/components/Analytics.astro)) fans out to
+  GA4 **and** PostHog. `window.dmgTrack` is a back-compat alias. Sentry only gets
+  errors, never product events.
+- **Emit via** `data-track="event"` (+ `data-track-props` JSON) on any element —
+  one delegated listener handles it (and the legacy `data-ga`) — **or** call
+  `window.track(...)` from an inline script. Cards (`EventCard`/`PostCard`/
+  `RecordingCard`/`store/ProductCard`/`LinkButton`) self-instrument; pass a `page`
+  (or `group`) context prop, don't add `data-track` to them.
+- **Names** are the canonical `EVENTS` in [`src/lib/events.ts`](./src/lib/events.ts)
+  (stable snake_case English; copy stays Turkish). SPA-aware: one `page_view` per
+  `astro:page-load`.
+- **Server capture** (no client render): `captureServer()` in
+  [`src/lib/analytics-server.ts`](./src/lib/analytics-server.ts) → PostHog `/capture`
+  via `ctx.waitUntil`, from `/go/[id]`, `/api/contact`, `/api/subscribe`,
+  `/api/store/reserve`. Email is **only** a `distinct_id`; raw IP is not forwarded.
+- **Server errors:** [`src/middleware.ts`](./src/middleware.ts) wraps SSR and sends
+  exceptions to Sentry via the dependency-free envelope sender in
+  [`src/lib/sentry.ts`](./src/lib/sentry.ts) (DSN from `env.SENTRY_DSN`), then
+  re-throws. No `@sentry/*` dependency — intentionally, to avoid wrapping the
+  pinned adapter's generated worker.
+- **Consent:** opt-out + DNT, banner in
+  [`src/components/ConsentBanner.astro`](./src/components/ConsentBanner.astro);
+  reject disables GA + PostHog (incl. replay); Sentry stays (essential).
+- **Config:** browser keys (`ga_measurement_id`, `posthog_key`, `posthog_host`,
+  `sentry_dsn`, `analytics_enabled`) in D1 `settings` via `resolveSite`; server
+  keys (`SENTRY_DSN`, `POSTHOG_KEY/HOST`) in `wrangler.jsonc` vars (public ingest
+  ids). Seed settings with `npm run analytics:settings:{local,remote}`.
+
 ## Design system
 
 The AMOLED monochrome theme lives entirely in
@@ -289,3 +328,8 @@ Console, and Access finalisation.
 - Datetime handling assumes **fixed UTC+3 (no DST)** — correct for Turkey, but don't
   reuse that assumption for other timezones.
 - Keep copy **Turkish**; keep the **English motto** as-is.
+- **Analytics is dependency-free** — no `@sentry/*` / `posthog-js` npm packages;
+  client SDKs load via snippet/loader, server capture speaks the HTTP APIs
+  directly. Don't add those deps (they'd risk wrapping the pinned adapter worker).
+  Emit events through `window.track` / `data-track`, never a second pageview path.
+  Seeding analytics settings is a direct D1 write → bump `cv:settings`/`cv:home`.

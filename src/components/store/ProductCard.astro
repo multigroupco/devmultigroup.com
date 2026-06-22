@@ -15,12 +15,20 @@ const low = !soldOut && remaining <= 3;
 const CAT: Record<string, string> = { giyim: "Giyim", yasam: "Yaşam", koleksiyon: "Koleksiyon" };
 const catLabel = CAT[product.category] ?? product.category;
 const search = `${product.name} ${product.tagline} ${catLabel}`.toLowerCase();
+const trackProps = JSON.stringify({
+  product_id: product.id,
+  product_name: product.name,
+  price_minor: product.base_price_minor,
+  category: product.category,
+});
 ---
 
 <a
   href={`/store/p/${product.slug}`}
   data-product
   data-search={search}
+  data-track="store_product_click"
+  data-track-props={trackProps}
   class:list={["card card-hover group relative overflow-hidden flex flex-col", soldOut && "opacity-70"]}
 >
   <div class:list={["relative aspect-square overflow-hidden bg-ink-950", img && "skeleton"]}>

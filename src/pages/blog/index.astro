@@ -101,13 +101,15 @@ const blogLd = {
       <>
         <section class="container-x pb-2">
           <div class="grid lg:grid-cols-2 gap-6 lg:gap-8 items-stretch">
-            <PostCard post={posts[0]} featured />
+            <PostCard post={posts[0]} featured page="blog" />
             {posts.length > 1 && (
               <div class="flex flex-col">
                 {posts.slice(1, 4).map((p, i) => (
                   <a
                     href={`/blog/${p.slug}`}
                     class:list={["group flex gap-4 py-4", i > 0 && "border-t border-line"]}
+                    data-track="blog_post_click"
+                    data-track-props={JSON.stringify({ post_slug: p.slug, post_title: p.title, post_category: p.category, page: "blog" })}
                   >
                     <div class="relative w-28 sm:w-36 aspect-[16/10] rounded-xl overflow-hidden shrink-0 skeleton">
                       <img
@@ -149,6 +151,8 @@ const blogLd = {
                   data-cat={p.category}
                   data-date={String(p.published_at ?? p.created_at)}
                   data-read={String(p.reading_minutes)}
+                  data-track="blog_post_click"
+                  data-track-props={JSON.stringify({ post_slug: p.slug, post_title: p.title, post_category: p.category, page: "blog" })}
                 >
                   <div class="relative w-20 sm:w-24 aspect-[16/10] rounded-lg overflow-hidden shrink-0 skeleton">
                     <img
@@ -216,7 +220,18 @@ const blogLd = {
           }
         }
 
-        if (search) search.addEventListener("input", () => { state.q = search.value; apply(); });
+        let sdeb;
+        if (search) search.addEventListener("input", () => {
+          state.q = search.value;
+          apply();
+          clearTimeout(sdeb);
+          sdeb = setTimeout(() => {
+            const q = state.q.trim();
+            if (q.length < 2) return;
+            const count = items.filter((el) => el.style.display !== "none").length;
+            try { window.track && window.track("search_submit", { query: q, result_count: count, surface: "blog" }); } catch (e) {}
+          }, 400);
+        });
 
         document.querySelectorAll(".blog-dd").forEach((dd) => {
           const btn = dd.querySelector(".blog-dd-btn");
@@ -230,10 +245,17 @@ const blogLd = {
             opt.addEventListener("click", () => {
               dd.querySelectorAll(".blog-dd-opt").forEach((o) => o.classList.remove("is-active"));
               opt.classList.add("is-active");
-              if (dd.dataset.dd === "filter") state.cat = opt.dataset.cat;
+              const isFilter = dd.dataset.dd === "filter";
+              if (isFilter) state.cat = opt.dataset.cat;
               else state.sort = opt.dataset.sort;
               dd.classList.remove("open");
               apply();
+              try {
+                window.track && window.track("blog_filter", {
+                  filter_type: isFilter ? "category" : "sort",
+                  value: isFilter ? opt.dataset.cat : opt.dataset.sort,
+                });
+              } catch (e) {}
             });
           });
         });

@@ -88,8 +88,8 @@ const restUpcoming = featured ? upcoming.slice(1) : upcoming;
                 ))}
               </div>
               <div class="flex flex-wrap items-center gap-3 mt-6">
-                <a href={freg} target="_blank" rel="noopener noreferrer" class="btn btn-primary"><Icon name="arrow-up-right" size={16} /> Kayıt ol</a>
-                <a href={`/events/${featured.slug}`} class="btn btn-ghost">Detaylar</a>
+                <a href={freg} target="_blank" rel="noopener noreferrer" class="btn btn-primary" data-track="event_register_click" data-track-props={JSON.stringify({ event_slug: featured.slug, event_title: featured.title, event_community: featured.community, location: "events_featured" })}><Icon name="arrow-up-right" size={16} /> Kayıt ol</a>
+                <a href={`/events/${featured.slug}`} class="btn btn-ghost" data-track="event_card_click" data-track-props={JSON.stringify({ event_slug: featured.slug, page: "events" })}>Detaylar</a>
               </div>
             </div>
           </div>
@@ -109,7 +109,7 @@ const restUpcoming = featured ? upcoming.slice(1) : upcoming;
           <span class="w-2 h-2 rounded-full bg-magenta animate-pulse" /> Yaklaşan
         </h2>
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {restUpcoming.map((e) => <EventCard event={e} />)}
+          {restUpcoming.map((e) => <EventCard event={e} page="events" />)}
         </div>
       </section>
     )
@@ -140,7 +140,7 @@ const restUpcoming = featured ? upcoming.slice(1) : upcoming;
       past.length > 0 ? (
         <>
           <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {past.map((e) => <EventCard event={e} />)}
+            {past.map((e) => <EventCard event={e} page="events" />)}
           </div>
           {lastPage > 1 && (
             <nav class="flex items-center justify-center gap-4 mt-10" aria-label="Sayfalama">

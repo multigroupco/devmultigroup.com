@@ -1,11 +1,16 @@
 import { defineMiddleware } from "astro:middleware";
+import { tryEnv } from "./lib/runtime";
+import { captureServerException } from "./lib/sentry";
+import { isApexHost } from "./lib/site";
 
 // The one host whose pages should be indexable. Every other host that serves
 // this Worker (the workers.dev staging URL, www, CF preview deploys) is kept out
 // of the search index via X-Robots-Tag so it never competes with the apex —
 // canonical tags already point at the apex. Flip nothing here at cutover: once
 // devmultigroup.com serves this Worker, the guard simply stops matching.
-const CANONICAL_HOST = "devmultigroup.com";
+// Canonical-host detection is shared (isApexHost) so the noindex guard, the
+// SSR Sentry capture, the client analytics gate (BaseLayout) and the server
+// PostHog gate (analytics-server) all agree on one definition of "the apex".
 
 // Cloudflare Access fronts /admin at the network edge and injects the
 // authenticated user's email. This middleware surfaces that email to pages and
@@ -18,6 +23,28 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const dev = import.meta.env.DEV;
   const { pathname, host } = context.url;
 
+  // Render the route, capturing any SSR exception to Sentry before re-throwing
+  // so Astro still renders its 500. Capture is fire-and-forget via waitUntil and
+  // skipped in dev to keep local errors out of the dashboard.
+  const render = async (): Promise<Response> => {
+    try {
+      return await next();
+    } catch (err) {
+      // Apex-only error capture: skip dev and any non-canonical host (staging
+      // workers.dev / CF previews / www) so only devmultigroup.com reports.
+      if (!dev && isApexHost(host)) {
+        const env = tryEnv(context.locals);
+        const wait = context.locals?.runtime?.ctx?.waitUntil?.bind(context.locals.runtime.ctx);
+        if (env) {
+          const p = captureServerException(env, err, { request: context.request });
+          if (wait) wait(p);
+          else await p;
+        }
+      }
+      throw err;
+    }
+  };
+
   let response: Response;
   if (pathname.startsWith("/admin")) {
     if (!email && !dev) {
@@ -29,10 +56,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
       if (!context.locals.adminEmail) {
         context.locals.adminEmail = dev ? "dev@localhost" : null;
       }
-      response = await next();
+      response = await render();
     }
   } else {
-    response = await next();
+    response = await render();
   }
 
   const h = response.headers;
@@ -45,7 +72,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   if (!dev) h.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
 
   // Keep non-canonical hosts (staging/preview/www) out of the index.
-  if (!dev && host !== CANONICAL_HOST) {
+  if (!dev && !isApexHost(host)) {
     h.set("X-Robots-Tag", "noindex, nofollow");
   }
 

@@ -39,6 +39,18 @@ interface Env {
   STORE_MEDIA: R2Bucket;
   /** Better Auth session signing secret — v1 (customer accounts). */
   BETTER_AUTH_SECRET?: string;
+
+  /** Sentry DSN for SERVER-SIDE (Worker SSR) error capture. Read straight from
+   *  env — never D1 — so error reporting survives a database outage. The browser
+   *  DSN lives in D1 settings (`sentry_dsn`). See src/lib/sentry.ts. */
+  SENTRY_DSN?: string;
+  /** Environment tag attached to Sentry events (defaults to production). */
+  SENTRY_ENVIRONMENT?: string;
+  /** Release tag attached to Sentry events (optional). */
+  SENTRY_RELEASE?: string;
+  /** Optional env fallbacks for server-side PostHog capture; D1 settings win. */
+  POSTHOG_KEY?: string;
+  POSTHOG_HOST?: string;
 }
 
 type Runtime = import("@astrojs/cloudflare").Runtime<Env>;

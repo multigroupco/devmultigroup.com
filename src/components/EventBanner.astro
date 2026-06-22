@@ -13,6 +13,9 @@ const href =
   (event.community === "multiacademy" ? GATHIN.multiacademy : GATHIN.multigroup);
 const when = formatDate(event.starts_at);
 const label = when ? `${event.title} · ${when}` : event.title;
+const bannerBase = { event_id: event.id, event_title: event.title, event_community: event.community };
+const bannerTextTrack = JSON.stringify({ ...bannerBase, location: "banner_text" });
+const bannerCtaTrack = JSON.stringify({ ...bannerBase, location: "banner_cta" });
 ---
 
 <div id="event-banner" class="event-banner" data-banner-id={event.id}>
@@ -23,11 +26,13 @@ const label = when ? `${event.title} · ${when}` : event.title;
       rel="noopener noreferrer"
       class="banner-link"
       aria-label={`${event.title} — Gathin'de kayıt ol`}
+      data-track="event_register_click"
+      data-track-props={bannerTextTrack}
     >
       <span class="pulse-dot" aria-hidden="true"></span>
       <span class="banner-marquee"><span class="banner-text">{label}</span></span>
     </a>
-    <a href={href} target="_blank" rel="noopener noreferrer" class="banner-cta">
+    <a href={href} target="_blank" rel="noopener noreferrer" class="banner-cta" data-track="event_register_click" data-track-props={bannerCtaTrack}>
       <span class="hidden sm:inline">Gathin'de&nbsp;</span>kayıt ol
       <Icon name="arrow-up-right" size={14} />
     </a>
@@ -151,6 +156,7 @@ const label = when ? `${event.title} · ${when}` : event.title;
           e.preventDefault();
           el.style.display = "none";
           try { localStorage.setItem(key, id || "1"); } catch {}
+          try { window.track && window.track("event_banner_dismiss", { event_id: id }); } catch {}
         };
     };
     if (!window.__dmgBanner) {

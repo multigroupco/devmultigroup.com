@@ -1,5 +1,7 @@
 import type { APIRoute } from "astro";
 import { getEnv } from "@/lib/runtime";
+import { captureServer } from "@/lib/analytics-server";
+import { EVENTS } from "@/lib/events";
 
 export const prerender = false;
 
@@ -93,6 +95,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
   } catch {
     return json({ ok: false, error: "Gönderilemedi, lütfen tekrar dene." }, 502);
   }
+
+  // Analytics: lead captured. Email is used only as distinct_id (never a prop).
+  const track = captureServer(env, EVENTS.contactSubmit, {
+    request,
+    distinctId: email.toLowerCase(),
+    properties: { form_type: type, has_org: !!org },
+  });
+  const ctx = (locals as App.Locals).runtime?.ctx;
+  if (ctx?.waitUntil) ctx.waitUntil(track);
 
   return json({ ok: true });
 };

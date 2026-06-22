@@ -6,8 +6,16 @@ import type { PostRow } from "@/lib/types";
 interface Props {
   post: PostRow;
   featured?: boolean;
+  /** Analytics context: which page/section the card is rendered on. */
+  page?: string;
 }
-const { post, featured = false } = Astro.props;
+const { post, featured = false, page } = Astro.props;
+const trackProps = JSON.stringify({
+  post_slug: post.slug,
+  post_title: post.title,
+  post_category: post.category,
+  page,
+});
 // Real cover if set, otherwise a dynamically generated monochrome banner
 // (which already prints the category — so no chip overlay here).
 const cover = imageSrc(post.cover_image) || `/blog/banner/${post.slug}.svg`;
@@ -35,7 +43,7 @@ const href = `/blog/${post.slug}`;
       <p class="text-[0.65rem] uppercase tracking-wide text-ink-faint font-mono mb-2">{categoryLabel(post.category)}</p>
     )}
     <h3 class:list={["font-display font-semibold leading-snug", featured ? "text-xl md:text-2xl" : "text-lg"]}>
-      <a href={href} class="after:absolute after:inset-0">{post.title}</a>
+      <a href={href} class="after:absolute after:inset-0" data-track="blog_post_click" data-track-props={trackProps}>{post.title}</a>
     </h3>
     {!featured && post.excerpt && <p class="text-ink-dim text-sm mt-2 line-clamp-3">{post.excerpt}</p>}
     <div class:list={["flex items-center gap-2 text-xs text-ink-faint", featured ? "mt-5" : "mt-4"]}>

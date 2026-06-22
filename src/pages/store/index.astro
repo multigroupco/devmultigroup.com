@@ -76,7 +76,12 @@ const gridTitle = cat ? CAT_LABEL[cat] : "Koleksiyon";
               <span class="text-xs text-ink-faint font-mono mb-1.5">KDV dahil</span>
             </div>
             <div class="mt-6 flex flex-wrap items-center gap-3">
-              <a href={`/store/p/${featured.slug}`} class="btn btn-primary">
+              <a
+                href={`/store/p/${featured.slug}`}
+                class="btn btn-primary"
+                data-track="store_product_click"
+                data-track-props={JSON.stringify({ product_id: featured.id, product_name: featured.name, price_minor: featured.base_price_minor, category: featured.category })}
+              >
                 <Icon name="shopping-bag" size={16} /> İncele ve ayır
               </a>
               <a href="#urunler" class="btn btn-ghost">Tüm koleksiyon</a>
@@ -100,6 +105,8 @@ const gridTitle = cat ? CAT_LABEL[cat] : "Koleksiyon";
             <a
               href={c.key ? `/store?cat=${c.key}` : "/store"}
               class:list={["chip transition-colors", cat === c.key ? "text-ink-text border-line-strong" : "hover:text-ink-text"]}
+              data-track="cta_click"
+              data-track-props={JSON.stringify({ cta_id: "store_category", category: c.key, page: "store" })}
             >
               {c.label}
             </a>

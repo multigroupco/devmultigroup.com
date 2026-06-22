@@ -5,16 +5,24 @@ import type { RecordingRow } from "@/lib/types";
 
 interface Props {
   rec: RecordingRow;
+  /** Analytics context: which page/section the card is rendered on. */
+  page?: string;
 }
-const { rec } = Astro.props;
+const { rec, page } = Astro.props;
 const ytId = rec.playlist_id || ytPlaylistId(rec.youtube_url);
 // Real YouTube playlist cover (first video thumbnail) resolved on demand,
 // falling back to the gradient behind it if it can't be fetched.
 const thumb = imageSrc(rec.cover_image) || (ytId ? `/yt/${ytId}` : "");
 const href = rec.youtube_url || (ytId ? ytPlaylistUrl(ytId) : "#");
+const trackProps = JSON.stringify({
+  recording_title: rec.title,
+  recording_category: rec.category,
+  video_count: rec.video_count,
+  page,
+});
 ---
 
-<a id={`rec-${rec.id}`} href={href} target="_blank" rel="noopener noreferrer" class="card card-hover relative overflow-hidden block group scroll-mt-24">
+<a id={`rec-${rec.id}`} href={href} target="_blank" rel="noopener noreferrer" class="card card-hover relative overflow-hidden block group scroll-mt-24" data-track="recording_play" data-track-props={trackProps}>
   <div class="relative aspect-video overflow-hidden skeleton">
     {thumb && (
       <img

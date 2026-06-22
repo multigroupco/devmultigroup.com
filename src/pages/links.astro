@@ -57,7 +57,7 @@ const social = [
         <div class="flex items-center justify-center gap-2 mt-5">
           {
             social.map((s) => (
-              <a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.icon} class="grid place-items-center w-10 h-10 rounded-full border border-line text-ink-dim hover:text-ink-text hover:border-line-strong transition-colors">
+              <a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.icon} data-track="social_click" data-track-props={JSON.stringify({ platform: s.icon, location: "links" })} class="grid place-items-center w-10 h-10 rounded-full border border-line text-ink-dim hover:text-ink-text hover:border-line-strong transition-colors">
                 <Icon name={s.icon} size={18} />
               </a>
             ))
@@ -73,7 +73,7 @@ const social = [
           ) : (
             orderedGroups.map((g) => (
               <section class="space-y-2.5">
-                {grouped.get(g)!.map((l) => <LinkButton link={l} />)}
+                {grouped.get(g)!.map((l) => <LinkButton link={l} group={LABELS[g] || g} />)}
               </section>
             ))
           )

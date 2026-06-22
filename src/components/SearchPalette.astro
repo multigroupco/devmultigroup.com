@@ -149,11 +149,12 @@ import Icon from "./Icon.astro";
     const EMPTY =
       '<div class="sr-msg"><span class="sr-msg-title">Ne arıyorsun?</span><span class="sr-msg-sub">Etkinlik, yazı, kayıt, bağlantı, ekip, topluluk…</span></div>';
 
-    function open() {
+    function open(source) {
       const e = el();
       if (!e) return;
       e.classList.add("open");
       e.setAttribute("aria-hidden", "false");
+      try { window.track && window.track("search_open", { trigger_source: source || "button" }); } catch (err) {}
       document.getElementById("mobile-nav")?.classList.remove("open");
       document.documentElement.style.overflow = "hidden";
       const i = input();
@@ -221,7 +222,11 @@ import Icon from "./Icon.astro";
       try {
         const r = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: controller.signal });
         const j = await r.json();
-        if (input()?.value.trim() === q) render(j.results || []);
+        if (input()?.value.trim() === q) {
+          const results = j.results || [];
+          render(results);
+          try { window.track && window.track("search_submit", { query: q, result_count: results.length, surface: "palette" }); } catch (err2) {}
+        }
       } catch (err) {
         if (err.name !== "AbortError") {
           b.innerHTML = '<div class="sr-msg">Arama şu an kullanılamıyor.</div>';
@@ -237,10 +242,20 @@ import Icon from "./Icon.astro";
 
       // Open/close triggers + result clicks (delegated, survives view transitions).
       document.addEventListener("click", (e) => {
-        if (e.target.closest("[data-search-open]")) { e.preventDefault(); open(); return; }
+        if (e.target.closest("[data-search-open]")) { e.preventDefault(); open("button"); return; }
         if (e.target.closest("[data-search-close]")) { e.preventDefault(); close(); return; }
         // result click: close (clears scroll lock) then let ClientRouter navigate
-        if (e.target.closest("[data-sr]")) close();
+        const sr = e.target.closest("[data-sr]");
+        if (sr) {
+          try {
+            window.track && window.track("search_result_click", {
+              result_title: sr.querySelector(".sr-title")?.textContent || "",
+              result_url: sr.getAttribute("href") || "",
+              query: (input()?.value || "").trim(),
+            });
+          } catch (err) {}
+          close();
+        }
       });
 
       document.addEventListener("input", (e) => {
@@ -254,14 +269,14 @@ import Icon from "./Icon.astro";
         // ⌘K / Ctrl-K toggles from anywhere
         if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
           e.preventDefault();
-          isOpen() ? close() : open();
+          isOpen() ? close() : open("shortcut");
           return;
         }
         // "/" opens when not already typing in a field
         if (e.key === "/" && !isOpen()) {
           const t = e.target;
           const typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
-          if (!typing) { e.preventDefault(); open(); return; }
+          if (!typing) { e.preventDefault(); open("slash"); return; }
         }
         if (!isOpen()) return;
         if (e.key === "Escape") { e.preventDefault(); close(); }

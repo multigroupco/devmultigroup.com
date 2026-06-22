@@ -15,6 +15,17 @@ const items = await getOrderItems(env, order.id);
 
 const STATUS: Record<string, string> = { reserved: "Alındı", paid: "Ödendi", delivered: "Teslim edildi", cancelled: "İptal edildi" };
 const PAY: Record<string, string> = { unpaid: "Ödeme bekleniyor", paid: "Ödendi", refunded: "İade edildi" };
+
+// Client-side GA4 mirror of the reservation conversion. PostHog already has the
+// authoritative store_reserve_success from the /api/store/reserve Worker; this
+// gives GA4 a real page context. Deduped per order via sessionStorage.
+const reserveConv = {
+  order_no: order.order_no,
+  order_status: order.status,
+  payment_status: order.payment_status,
+  total_minor: order.total_minor,
+  items_qty: items.reduce((n, it) => n + (it.qty || 0), 0),
+};
 ---
 
 <BaseLayout title={`Sipariş ${order.order_no}`} description="Sipariş özeti" canonicalPath={`/store/ticket/${order.order_no}`} noindex={true}>
@@ -67,4 +78,23 @@ const PAY: Record<string, string> = { unpaid: "Ödeme bekleniyor", paid: "Ödend
       <a href="/store" class="btn btn-ghost">Mağazaya dön</a>
     </div>
   </section>
+
+  <script is:inline define:vars={{ conv: reserveConv }}>
+    (function () {
+      var fired = false;
+      function fire() {
+        if (fired) return;
+        try {
+          var k = "dmg_rs_" + conv.order_no;
+          if (sessionStorage.getItem(k)) { fired = true; return; }
+          sessionStorage.setItem(k, "1");
+        } catch (e) {}
+        fired = true;
+        // GA4-only mirror (PostHog has the server-side conversion already).
+        try { if (window.gtag) window.gtag("event", "store_reserve_success", conv); } catch (e) {}
+      }
+      document.addEventListener("astro:page-load", fire);
+      fire();
+    })();
+  </script>
 </BaseLayout>

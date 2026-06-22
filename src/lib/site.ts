@@ -14,6 +14,18 @@ export const BRAND = {
     "Developer MultiGroup; iOS, web, yapay zekâ ve daha fazlasında geliştiricilerin birlikte büyüdüğü gönüllü bir Türk yazılım topluluğu — buluşmalar, konferanslar ve akademisiyle ücretsiz bootcamp'ler.",
 } as const;
 
+/** The one canonical, indexable apex host. Analytics + the noindex guard key off
+ *  this. Single source of truth for every host comparison (middleware, layout,
+ *  server capture). */
+export const CANONICAL_HOST = BRAND.domain;
+
+/** True when a request host IS the canonical apex, tolerating a trailing FQDN dot
+ *  ("devmultigroup.com.") and case. URL.host already lowercases + strips :443/:80,
+ *  so only the trailing dot needs normalizing. */
+export function isApexHost(host: string | null | undefined): boolean {
+  return !!host && host.replace(/\.$/, "").toLowerCase() === CANONICAL_HOST;
+}
+
 export type NavChild = { label: string; href: string; soon?: boolean };
 export type NavItem = { label: string; href: string; children?: NavChild[] };
 export const NAV: NavItem[] = [
@@ -133,6 +145,14 @@ export interface SiteConfig {
   description: string;
   gaMeasurementId: string;
   gscVerification: string;
+  /** PostHog project (public) API key — `phc_…`. Empty disables PostHog. */
+  posthogKey: string;
+  /** PostHog ingestion host (US cloud by default). */
+  posthogHost: string;
+  /** Sentry browser DSN (public). Empty disables client error monitoring. */
+  sentryDsn: string;
+  /** Master kill-switch: "0" turns off ALL analytics regardless of keys. */
+  analyticsEnabled: boolean;
   bannerEnabled: boolean;
   members: string;
   cities: string;
@@ -150,6 +170,10 @@ export function resolveSite(settings: Settings): SiteConfig {
     description: settings.site_description || BRAND.description,
     gaMeasurementId: settings.ga_measurement_id || "",
     gscVerification: settings.gsc_verification || "",
+    posthogKey: settings.posthog_key || "",
+    posthogHost: (settings.posthog_host || "https://us.i.posthog.com").replace(/\/$/, ""),
+    sentryDsn: settings.sentry_dsn || "",
+    analyticsEnabled: (settings.analytics_enabled ?? "1") !== "0",
     bannerEnabled: (settings.banner_enabled ?? "1") !== "0",
     members: settings.stat_members || "15.000+",
     cities: settings.stat_cities || "İstanbul",

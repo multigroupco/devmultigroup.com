@@ -116,10 +116,10 @@ const faqLd = {
             Öğrenme kolumuz, gerçek ürünler geliştirmiş mentörlerle ücretsiz, yoğun
             bootcamp'ler düzenliyor — Modern iOS'tan GenAI temellerine kadar.
           </p>
-          <a href="/academy" class="btn btn-primary mt-6">Akademiyi keşfet <Icon name="arrow-right" size={16} /></a>
+          <a href="/academy" class="btn btn-primary mt-6" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "academy", page: "about", href: "/academy" })}>Akademiyi keşfet <Icon name="arrow-right" size={16} /></a>
         </div>
         <div class="flex md:justify-end">
-          <a href={GATHIN.multigroup} target="_blank" rel="noopener noreferrer" class="btn btn-ghost">
+          <a href={GATHIN.multigroup} target="_blank" rel="noopener noreferrer" class="btn btn-ghost" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "events_gathin", page: "about", href: GATHIN.multigroup })}>
             <Icon name="calendar" size={16} /> Tüm etkinliklere göz at
           </a>
         </div>

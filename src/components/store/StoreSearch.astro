@@ -25,6 +25,7 @@ import Icon from "@/components/Icon.astro";
       const input = document.getElementById("store-q");
       if (!input || input.dataset.bound) return;
       input.dataset.bound = "1";
+      let tdeb;
       const apply = () => {
         const q = input.value.trim().toLowerCase();
         const idle = document.querySelectorAll("[data-when-idle]");
@@ -35,9 +36,16 @@ import Icon from "@/components/Icon.astro";
           return;
         }
         idle.forEach((el) => (el.style.display = "none"));
+        let shown = 0;
         cards.forEach((el) => {
-          el.style.display = (el.dataset.search || "").includes(q) ? "" : "none";
+          const match = (el.dataset.search || "").includes(q);
+          el.style.display = match ? "" : "none";
+          if (match) shown++;
         });
+        clearTimeout(tdeb);
+        tdeb = setTimeout(() => {
+          try { window.track && window.track("search_submit", { query: q, result_count: shown, surface: "store" }); } catch (e) {}
+        }, 400);
       };
       input.addEventListener("input", apply);
       input.addEventListener("search", apply);

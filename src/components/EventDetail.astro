@@ -146,7 +146,7 @@ const eventLd =
               <p class="font-display font-semibold">Sen de orada olmak ister misin?</p>
               <p class="text-ink-dim text-sm">Katılım ücretsiz — Gathin'de kayıt ol.</p>
             </div>
-            <a href={reg} target="_blank" rel="noopener noreferrer" class="btn btn-primary shrink-0" data-ga="event_register" data-ga-params={JSON.stringify({ event: event.slug, location: "hero" })}>
+            <a href={reg} target="_blank" rel="noopener noreferrer" class="btn btn-primary shrink-0" data-track="event_register_click" data-track-props={JSON.stringify({ event_slug: event.slug, event_title: event.title, event_community: event.community, location: "hero" })}>
               Kayıt ol <Icon name="arrow-up-right" size={16} />
             </a>
           </div>
@@ -166,7 +166,7 @@ const eventLd =
         )}
 
         <div class="mt-10 pt-6 border-t border-line flex flex-wrap gap-3">
-          <a href={reg} target="_blank" rel="noopener noreferrer" class="btn btn-ghost" data-ga="event_register" data-ga-params={JSON.stringify({ event: event.slug, location: "footer" })}>
+          <a href={reg} target="_blank" rel="noopener noreferrer" class="btn btn-ghost" data-track="event_register_click" data-track-props={JSON.stringify({ event_slug: event.slug, event_title: event.title, event_community: event.community, location: "footer" })}>
             <Icon name="external" size={16} /> {upcoming ? "Gathin'de kayıt ol" : "Gathin'de görüntüle"}
           </a>
           <a href={base} class="btn btn-ghost">{academy ? "Daha fazla program" : "Daha fazla etkinlik"}</a>

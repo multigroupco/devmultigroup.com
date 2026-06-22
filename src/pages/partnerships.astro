@@ -100,7 +100,7 @@ const bwaiHref = "https://gathin.com/events/build-with-ai-program-2026-649";
       <div class="grid sm:grid-cols-3 gap-3 mt-6">
         {
           wite.map((w) => (
-            <a href={w.href} target="_blank" rel="noopener noreferrer" class="group relative block rounded-xl overflow-hidden ring-1 ring-line card-hover">
+            <a href={w.href} target="_blank" rel="noopener noreferrer" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: `wite-${w.oturum.toLowerCase().replace(/\s+/g, "-")}`, page: "partnerships", href: w.href })} class="group relative block rounded-xl overflow-hidden ring-1 ring-line card-hover">
               <img src={w.img} alt={`${w.title} — ${w.oturum}`} loading="lazy" class="w-full aspect-video object-cover transition duration-500 group-hover:scale-[1.03]" />
               <div class="absolute inset-0 grid place-items-center bg-black/0 group-hover:bg-black/45 transition-colors">
                 <span class="flex items-center gap-1.5 text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition">
@@ -129,7 +129,7 @@ const bwaiHref = "https://gathin.com/events/build-with-ai-program-2026-649";
       <div class="grid sm:grid-cols-3 gap-4 mt-6">
         {
           lodos.map((l) => (
-            <a href={l.url} target="_blank" rel="noopener noreferrer" class="group rounded-xl overflow-hidden ring-1 ring-line card-hover block">
+            <a href={l.url} target="_blank" rel="noopener noreferrer" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: `lodos-${l.name.toLowerCase()}`, page: "partnerships", href: l.url })} class="group rounded-xl overflow-hidden ring-1 ring-line card-hover block">
               <img src={l.img} alt={l.name} loading="lazy" class="w-full aspect-video object-cover" />
               <div class="flex items-center justify-between gap-2 p-4">
                 <div class="min-w-0">
@@ -170,7 +170,7 @@ const bwaiHref = "https://gathin.com/events/build-with-ai-program-2026-649";
         </div>
       </div>
       <div class="grid sm:grid-cols-3 gap-3 mt-6">
-        <a href={bwaiHref} target="_blank" rel="noopener noreferrer" class="group relative block rounded-xl overflow-hidden ring-1 ring-line card-hover">
+        <a href={bwaiHref} target="_blank" rel="noopener noreferrer" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "build-with-ai", page: "partnerships", href: bwaiHref })} class="group relative block rounded-xl overflow-hidden ring-1 ring-line card-hover">
           <img src="/partners/google-bwai.jpg" alt="Build with AI 2026" loading="lazy" class="w-full aspect-video object-cover transition duration-500 group-hover:scale-[1.03]" />
           <div class="absolute inset-0 grid place-items-center bg-black/0 group-hover:bg-black/45 transition-colors">
             <span class="flex items-center gap-1.5 text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition">

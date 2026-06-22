@@ -7,8 +7,16 @@ import type { EventRow } from "@/lib/types";
 
 interface Props {
   event: EventRow;
+  /** Analytics context: which page/section the card is rendered on. */
+  page?: string;
 }
-const { event } = Astro.props;
+const { event, page } = Astro.props;
+const trackProps = JSON.stringify({
+  event_slug: event.slug,
+  event_title: event.title,
+  event_community: event.community,
+  page,
+});
 const hex = accentHex(categoryAccent(event.category));
 const upcoming = isUpcoming(event.starts_at);
 const d = formatDayLabel(event.starts_at);
@@ -45,7 +53,7 @@ const cover = imageSrc(event.cover_image);
 
   <div class="p-4 flex flex-col flex-1">
     <h3 class="font-display text-base font-semibold leading-snug line-clamp-2">
-      <a href={href} class="after:absolute after:inset-0">{event.title}</a>
+      <a href={href} class="after:absolute after:inset-0" data-track="event_card_click" data-track-props={trackProps}>{event.title}</a>
     </h3>
     {event.summary && <p class="text-ink-dim text-sm mt-1.5 line-clamp-2">{event.summary}</p>}
 
@@ -65,6 +73,13 @@ const cover = imageSrc(event.cover_image);
           target="_blank"
           rel="noopener noreferrer"
           class="relative z-10 btn btn-ghost !py-2 !px-3 text-xs mt-4 self-start"
+          data-track="event_register_click"
+          data-track-props={JSON.stringify({
+            event_slug: event.slug,
+            event_title: event.title,
+            event_community: event.community,
+            location: "card",
+          })}
         >
           Kayıt ol <Icon name="arrow-up-right" size={13} />
         </a>

@@ -5,8 +5,10 @@ import type { LinkRow } from "@/lib/types";
 
 interface Props {
   link: LinkRow;
+  /** Optional grouping label for analytics (e.g. the link section title). */
+  group?: string;
 }
-const { link } = Astro.props;
+const { link, group } = Astro.props;
 const hex = accentHex(link.accent);
 // Route through /go/<id> so we can count clicks before redirecting out.
 const href = `/go/${link.id}`;
@@ -16,6 +18,8 @@ const href = `/go/${link.id}`;
   href={href}
   class="card card-hover relative flex items-center gap-4 p-4"
   data-link
+  data-track="link_click"
+  data-track-props={JSON.stringify({ link_id: link.id, link_label: link.label, link_group: group })}
   style={`--a:${hex}`}
 >
   <span class="grid place-items-center w-11 h-11 rounded-xl shrink-0" style={`background:color-mix(in srgb, ${hex} 14%, transparent);color:${hex}`}>

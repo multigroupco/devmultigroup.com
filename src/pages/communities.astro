@@ -199,7 +199,17 @@ const initials = (name: string) =>
                   </div>
                 );
                 return c.url || c.instagram ? (
-                  <a href={c.url || c.instagram} target="_blank" rel="noopener noreferrer" class="community-card" data-city={c.city} data-eco={c.ecosystem} data-q={q}>
+                  <a
+                    href={c.url || c.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="community-card"
+                    data-city={c.city}
+                    data-eco={c.ecosystem}
+                    data-q={q}
+                    data-track="cta_click"
+                    data-track-props={JSON.stringify({ cta_id: "community_card", name: c.name, city: c.city, ecosystem: c.ecosystem })}
+                  >
                     {inner}
                   </a>
                 ) : (
@@ -269,9 +279,17 @@ const initials = (name: string) =>
           nodes.forEach((n) => n.classList.toggle("is-selected", !!state.q && norm(n.getAttribute("data-city")) === state.q));
         };
 
+        let cdeb;
         search.addEventListener("input", () => {
           state.q = norm(search.value);
           apply();
+          clearTimeout(cdeb);
+          cdeb = setTimeout(() => {
+            const q = state.q.trim();
+            if (q.length < 2) return;
+            const count = document.querySelectorAll(".community-card:not(.is-hidden)").length;
+            try { window.track && window.track("search_submit", { query: q, result_count: count, surface: "communities" }); } catch (e) {}
+          }, 400);
         });
         if (clearBtn)
           clearBtn.addEventListener("click", () => {

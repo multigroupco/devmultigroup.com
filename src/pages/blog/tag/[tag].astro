@@ -17,7 +17,7 @@ const posts = await listPosts(env, { tag: decoded, limit: 40 });
   canonicalPath={`/blog/tag/${tag}`}
 >
   <section class="container-x pt-14 pb-8">
-    <a href="/blog" class="inline-flex items-center gap-1.5 text-sm text-ink-dim hover:text-ink-text mb-6">
+    <a href="/blog" class="inline-flex items-center gap-1.5 text-sm text-ink-dim hover:text-ink-text mb-6" data-track="nav_click" data-track-props={JSON.stringify({ location: "blog_tag", nav_label: "Tüm yazılar", href: "/blog" })}>
       <Icon name="arrow-right" size={15} class="rotate-180" /> Tüm yazılar
     </a>
     <h1 class="text-4xl md:text-5xl font-semibold">#{decoded}</h1>
@@ -28,7 +28,7 @@ const posts = await listPosts(env, { tag: decoded, limit: 40 });
     {
       posts.length > 0 ? (
         <div class="grid md:grid-cols-3 gap-4">
-          {posts.map((p) => <PostCard post={p} />)}
+          {posts.map((p) => <PostCard post={p} page="blog_tag" />)}
         </div>
       ) : (
         <div class="card p-12 text-center text-ink-dim">Henüz “{decoded}” etiketli bir şey yok.</div>

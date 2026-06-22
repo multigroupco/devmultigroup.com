@@ -148,15 +148,15 @@ recordings = recordings.slice(0, 3);
         mühendisleri birlikte büyüten bir akademi.
       </p>
       <div class="flex flex-wrap items-center justify-center gap-3 mt-8 pointer-events-auto">
-        <a href={GATHIN.multigroup} target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+        <a href={GATHIN.multigroup} target="_blank" rel="noopener noreferrer" class="btn btn-primary" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "hero_events", page: "home", href: GATHIN.multigroup })}>
           <Icon name="calendar" size={17} /> Etkinliğe katıl
         </a>
-        <a href="/about" class="btn btn-ghost">Hikâyemiz <Icon name="arrow-right" size={16} /></a>
+        <a href="/about" class="btn btn-ghost" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "hero_about", page: "home" })}>Hikâyemiz <Icon name="arrow-right" size={16} /></a>
       </div>
       <div class="flex items-center justify-center gap-2.5 mt-8 pointer-events-auto">
         {
           social.map((s) => (
-            <a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} class="grid place-items-center w-10 h-10 rounded-full border border-line bg-white/[0.04] backdrop-blur-[6px] text-ink-dim hover:text-ink-text hover:bg-white/[0.09] hover:border-line-strong transition-colors">
+            <a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} class="grid place-items-center w-10 h-10 rounded-full border border-line bg-white/[0.04] backdrop-blur-[6px] text-ink-dim hover:text-ink-text hover:bg-white/[0.09] hover:border-line-strong transition-colors" data-track="social_click" data-track-props={JSON.stringify({ platform: s.label, location: "hero", page: "home" })}>
               <Icon name={s.icon} size={18} />
             </a>
           ))
@@ -186,7 +186,7 @@ recordings = recordings.slice(0, 3);
       <section class="container-x py-8">
         <SectionHeader title="Yaklaşan etkinlikler" href="/events" hrefLabel="Tüm etkinlikler" />
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
-          {upcoming.map((e) => <EventCard event={e} />)}
+          {upcoming.map((e) => <EventCard event={e} page="home" />)}
         </div>
       </section>
     )
@@ -204,8 +204,8 @@ recordings = recordings.slice(0, 3);
             ücretsiz bootcamp'ler düzenliyor — merakı üretime hazır beceriye dönüştürüyor.
           </p>
           <div class="flex flex-wrap gap-3 mt-6">
-            <a href="/academy" class="btn btn-primary">Akademiyi keşfet <Icon name="arrow-right" size={16} /></a>
-            <a href={GATHIN.multiacademy} target="_blank" rel="noopener noreferrer" class="btn btn-ghost">Akademi etkinlikleri</a>
+            <a href="/academy" class="btn btn-primary" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "academy_explore", page: "home" })}>Akademiyi keşfet <Icon name="arrow-right" size={16} /></a>
+            <a href={GATHIN.multiacademy} target="_blank" rel="noopener noreferrer" class="btn btn-ghost" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "academy_events", page: "home" })}>Akademi etkinlikleri</a>
           </div>
         </div>
         <div class="flex justify-center md:justify-end">
@@ -242,7 +242,7 @@ recordings = recordings.slice(0, 3);
       <section class="container-x py-8">
         <SectionHeader title="Geçmiş etkinlik kayıtları" href="/recordings" hrefLabel="Tüm kayıtlar" />
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
-          {recordings.map((r) => <RecordingCard rec={r} />)}
+          {recordings.map((r) => <RecordingCard rec={r} page="home" />)}
         </div>
       </section>
     )
@@ -254,7 +254,7 @@ recordings = recordings.slice(0, 3);
       <section class="container-x py-8">
         <SectionHeader title="Blog'dan" href="/blog" hrefLabel="Tüm yazılar" />
         <div class="grid md:grid-cols-3 gap-4 mt-8">
-          {posts.map((p) => <PostCard post={p} />)}
+          {posts.map((p) => <PostCard post={p} page="home" />)}
         </div>
       </section>
     )
@@ -272,8 +272,8 @@ recordings = recordings.slice(0, 3);
         gel, bir konuşma izle ya da doğrudan topluluğa atla.
       </p>
       <div class="flex flex-wrap justify-center gap-3 mt-8">
-        <a href="/links" class="btn btn-primary"><Icon name="sparkles" size={17} /> Tüm bağlantılarımız</a>
-        <a href={GATHIN.multigroup} target="_blank" rel="noopener noreferrer" class="btn btn-ghost">Gathin'de etkinliklere göz at</a>
+        <a href="/links" class="btn btn-primary" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "all_links", page: "home" })}><Icon name="sparkles" size={17} /> Tüm bağlantılarımız</a>
+        <a href={GATHIN.multigroup} target="_blank" rel="noopener noreferrer" class="btn btn-ghost" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "events_gathin", page: "home" })}>Gathin'de etkinliklere göz at</a>
       </div>
     </div>
   </section>

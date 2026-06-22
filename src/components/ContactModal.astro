@@ -92,6 +92,7 @@ import Icon from "./Icon.astro";
       el.setAttribute("aria-hidden", "false");
       document.getElementById("mobile-nav")?.classList.remove("open");
       document.documentElement.style.overflow = "hidden";
+      try { window.track && window.track("contact_modal_open", { contact_type: type }); } catch (err) {}
       setTimeout(() => el.querySelector(isNews ? "#cf-email" : 'input[name="name"]').focus(), 60);
     }
     function close() {
@@ -132,11 +133,14 @@ import Icon from "./Icon.astro";
           });
           const j = await r.json().catch(() => ({ ok: false }));
           if (j.ok) {
-            if (window.dmgTrack) {
-              window.dmgTrack(
-                payload.type === "newsletter" ? "newsletter_signup" : "generate_lead",
-                { form_type: payload.type || "contact" },
-              );
+            if (payload.type === "newsletter") {
+              // newsletter_signup goes to PostHog server-side (deduped on new
+              // subscribers); fire the GA4 conversion only here to avoid a
+              // double count in PostHog.
+              try { window.gtag && window.gtag("event", "newsletter_signup", { form_type: "newsletter" }); } catch (err) {}
+            } else {
+              // Lead conversion → GA4 + PostHog (server also logs contact_submit).
+              try { window.track && window.track("generate_lead", { form_type: payload.type || "contact" }); } catch (err) {}
             }
             const card = el.querySelector(".contact-card");
             const success = el.querySelector("#contact-success");
