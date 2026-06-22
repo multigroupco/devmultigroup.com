@@ -27,14 +27,12 @@
       "database_id": "e0e1881b-03ba-40b7-ae7e-e04f9f96c54c"
     },
     {
-      // MultiGroup Store — SEPARATE database (commerce; Better Auth in v1).
-      // Kept isolated from the content DB. The database_id below is a LOCAL
-      // placeholder; replace with the real id from
-      // `wrangler d1 create devmultigroup-store-db` at go-live (Phase 1 is
-      // local-only). Store migrations live in migrations-store/.
+      // MultiGroup Store — SEPARATE database (commerce; Better Auth in v1),
+      // kept isolated from the content DB. Store migrations live in
+      // migrations-store/. Local dev uses platformProxy's emulated copy.
       "binding": "STORE_DB",
       "database_name": "devmultigroup-store-db",
-      "database_id": "5106c0de-0000-4000-8000-000000000001",
+      "database_id": "d9798c14-8b4b-46ae-ac18-0b4a399f89cb",
       "migrations_dir": "migrations-store"
     }
   ],
