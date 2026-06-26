@@ -37,7 +37,7 @@ interface Props {
 const {
   measurementId = "",
   posthogKey = "",
-  posthogHost = "https://us.i.posthog.com",
+  posthogHost = "https://eu.i.posthog.com",
   sentryDsn = "",
   environment = "production",
   release = "",
@@ -78,8 +78,8 @@ const active = enabled && (measurementId || posthogKey || sentryLoader);
   if (!A.enabled) return;
   var w = window, d = document;
 
-  /* ---------- consent (opt-out model) ---------- */
-  var CK = "dmg_consent"; // "granted" | "denied"
+  /* ---------- consent (OPT-IN model — KVKK K-005) ---------- */
+  var CK = "dmg_consent"; // "granted" | "denied" | null (no choice yet)
   function dnt() {
     var v = navigator.doNotTrack || w.doNotTrack || navigator.msDoNotTrack;
     return v === "1" || v === "yes";
@@ -87,8 +87,10 @@ const active = enabled && (measurementId || posthogKey || sentryLoader);
   function read() { try { return localStorage.getItem(CK); } catch (e) { return null; } }
   function write(v) { try { localStorage.setItem(CK, v); } catch (e) {} }
   var choice = read();
-  var analytics = choice ? choice === "granted" : !dnt();
-  w.__dmgConsent = analytics ? "granted" : "denied";
+  // OPT-IN: GA4 + PostHog load ONLY after an explicit "granted". No prior choice
+  // and Do-Not-Track never grant — zero analytics before consent.
+  var analytics = choice === "granted";
+  w.__dmgConsent = choice === "granted" ? "granted" : (choice === "denied" ? "denied" : "unset");
 
   /* ---------- GA4 ---------- */
   function loadGA() {
@@ -112,7 +114,7 @@ const active = enabled && (measurementId || posthogKey || sentryLoader);
     !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug getPageViewId captureTraceFeedback captureTraceMetric".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(d,w.posthog||[]);
     w.posthog.init(A.phKey, {
       api_host: A.phHost,
-      ui_host: "https://us.posthog.com",
+      ui_host: "https://eu.posthog.com",
       defaults: "2025-05-24",
       capture_pageview: false,
       capture_pageleave: true,
@@ -152,7 +154,7 @@ const active = enabled && (measurementId || posthogKey || sentryLoader);
 
   /* ---------- unified dispatcher: GA4 + PostHog ---------- */
   function fire(name, props) {
-    if (w.__dmgConsent === "denied") return;
+    if (w.__dmgConsent !== "granted") return;
     props = props || {};
     try { if (w.gtag) w.gtag("event", name, props); } catch (e) {}
     try { if (w.posthog && w.posthog.capture) w.posthog.capture(name, props); } catch (e) {}
@@ -162,7 +164,7 @@ const active = enabled && (measurementId || posthogKey || sentryLoader);
 
   /* ---------- pageview, once per page-load incl. view transitions ---------- */
   function pageview() {
-    if (w.__dmgConsent === "denied") return;
+    if (w.__dmgConsent !== "granted") return;
     try { if (w.gtag) w.gtag("event", "page_view", {
       page_location: location.href,
       page_path: location.pathname + location.search,
@@ -185,26 +187,77 @@ const active = enabled && (measurementId || posthogKey || sentryLoader);
 
   /* ---------- consent banner (rendered in <body> by ConsentBanner.astro) ---------- */
   function banner() { return d.getElementById("dmg-consent"); }
-  function maybeShowBanner() {
-    var b = banner(); if (!b) return;
-    if (read() === null && !dnt()) b.removeAttribute("hidden");
-    else b.setAttribute("hidden", "");
+
+  // Stable per-tab session id for the consent audit trail (no PII).
+  function sid() {
+    try {
+      var k = "dmg_sid", v = sessionStorage.getItem(k);
+      if (!v) { v = Date.now().toString(36) + Math.random().toString(36).slice(2, 10); sessionStorage.setItem(k, v); }
+      return v;
+    } catch (e) { return null; }
   }
-  function onConsentClick(e) {
-    var btn = e.target.closest && e.target.closest("[data-consent]");
-    if (!btn) return;
-    var v = btn.getAttribute("data-consent"); // "granted" | "denied"
-    write(v);
-    w.__dmgConsent = v;
-    if (v === "granted") { loadGA(); loadPH(); pageview(); }
-    else { disableGA(); disablePH(); }
-    var b = banner(); if (b) b.setAttribute("hidden", "");
+  // Persist every consent decision server-side (KVKK m.11/m.12). Fire-and-forget.
+  function recordConsent(action, categories, source) {
+    try {
+      fetch("/api/consent-record", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        keepalive: true,
+        body: JSON.stringify({
+          action: action, categories: categories || [],
+          source: source || "web_banner", session_id: sid(),
+          consent_time_iso: new Date().toISOString()
+        })
+      }).catch(function () {});
+    } catch (e) {}
   }
 
-  /* ---------- init ---------- */
-  if (analytics) loadGA(); else disableGA();
-  if (analytics) loadPH();
-  loadSentry();
+  function maybeShowBanner() {
+    var b = banner(); if (!b) return;
+    if (read() !== null) { b.setAttribute("hidden", ""); return; }
+    if (dnt()) { b.setAttribute("hidden", ""); return; } // DNT = implied deny; don't nag
+    b.removeAttribute("hidden");
+    if (!w.__dmgBannerLogged) { w.__dmgBannerLogged = true; recordConsent("banner_shown", [], "web_banner"); }
+  }
+
+  // analytics-consent gates GA + PostHog (the only non-essential tools today).
+  function applyConsent(granted, categories, source) {
+    var v = granted ? "granted" : "denied";
+    write(v); w.__dmgConsent = v;
+    if (granted) { loadGA(); loadPH(); pageview(); } else { disableGA(); disablePH(); }
+    recordConsent(granted ? "opt-in" : "opt-out", categories || [], source || "web_banner");
+    var b = banner(); if (b) b.setAttribute("hidden", "");
+    var p = d.getElementById("dmg-consent-prefs"); if (p) p.hidden = true;
+  }
+  function onConsentClick(e) {
+    var t = e.target;
+    if (!t || !t.closest) return;
+    if (t.closest("[data-consent-open]")) {       // footer "Çerez Tercihleri" → re-open (revocation, m.5)
+      e.preventDefault();
+      var b0 = banner(); if (b0) b0.removeAttribute("hidden");
+      var p0 = d.getElementById("dmg-consent-prefs"); if (p0) p0.hidden = false;
+      return;
+    }
+    if (t.closest("[data-consent-manage]")) {     // toggle granular panel
+      var p1 = d.getElementById("dmg-consent-prefs"); if (p1) p1.hidden = !p1.hidden;
+      return;
+    }
+    if (t.closest("[data-consent='granted']")) { applyConsent(true, ["analytics", "marketing"], "web_banner"); return; }
+    if (t.closest("[data-consent='denied']")) { applyConsent(false, [], "web_banner"); return; }
+    if (t.closest("[data-consent-save]")) {       // save granular selection
+      var cats = [];
+      var a = d.getElementById("dmg-cat-analytics");
+      var m = d.getElementById("dmg-cat-marketing");
+      if (a && a.checked) cats.push("analytics");
+      if (m && m.checked) cats.push("marketing");
+      applyConsent(cats.indexOf("analytics") !== -1, cats, "web_banner");
+      return;
+    }
+  }
+
+  /* ---------- init (OPT-IN: GA/PostHog stay dormant until granted) ---------- */
+  if (analytics) { loadGA(); loadPH(); }
+  loadSentry(); // essential: error monitoring only (replay off, IP anon — K-003)
 
   if (!w.__dmgAnalyticsBound) {
     w.__dmgAnalyticsBound = true;

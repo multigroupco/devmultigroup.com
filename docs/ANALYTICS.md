@@ -1,11 +1,11 @@
 # Analytics & Observability
 
-The site runs **three** tools behind one consent-aware layer:
+The site runs **three** tools behind one **opt-in** consent layer (KVKK K-005, see [Consent](#consent-kvkk--gdpr--opt-in) below): GA4 + PostHog load **only after explicit consent**; Sentry (errors only) is essential. Final legal texts (aydınlatma / çerez / bülten) are published as **DRAFT** pending lawyer review — see [`docs/kvkk/ANALIZ.md`](./kvkk/ANALIZ.md) / [`KARARLAR.md`](./kvkk/KARARLAR.md).
 
 | Tool | Owns | Delivery |
 | ---- | ---- | -------- |
 | **Google Analytics 4** | Marketing / traffic + conversions | `gtag.js` (head, lazy) |
-| **PostHog** | Product analytics, autocapture, web vitals, session replay, heatmaps | web snippet (US cloud) |
+| **PostHog** | Product analytics, autocapture, web vitals, heatmaps (session replay **off** — K-003) | web snippet (EU cloud) |
 | **Sentry** | Error monitoring — browser **and** Worker SSR | JS Loader (browser) + dependency-free envelope (server) |
 
 Division of labour: **GA4 = marketing**, **PostHog = product**, **Sentry = errors**.
@@ -95,21 +95,30 @@ avoid `@sentry/cloudflare`/`@sentry/astro` to not touch the pinned adapter's
 generated worker) and re-thrown so Astro still renders its 500. Capture is skipped
 in dev. DSN comes from `env.SENTRY_DSN` (never D1, so it survives a DB outage).
 
-## Consent (KVKK / GDPR) — opt-out
+## Consent (KVKK / GDPR) — opt-in
 
-[`src/components/ConsentBanner.astro`](../src/components/ConsentBanner.astro) is a
-dismissible notice. Model:
+[`src/components/ConsentBanner.astro`](../src/components/ConsentBanner.astro) is an
+**opt-in** consent banner (KVKK K-005). Model:
 
-- GA4 + PostHog load **by default** unless the visitor sends Do-Not-Track or has
-  previously rejected (choice stored in `localStorage` as `dmg_consent`).
-- **Reddet** (reject) disables GA (`ga-disable-<id>` flag) + `posthog.opt_out_capturing()`
-  + stops session replay.
-- **Sentry** loads regardless — error monitoring is treated as essential (no PII).
+- GA4 + PostHog load **only after** the visitor explicitly grants consent
+  ("Kabul et", or "Tercihleri yönet" → Analytics). With no prior choice — or with
+  Do-Not-Track — **nothing analytics loads** (choice stored in `localStorage` as
+  `dmg_consent`; default = deny).
+- The banner offers three **equal-weight** actions (Reddet / Tercihleri yönet /
+  Kabul et — no dark-pattern bias) plus a granular panel (Analytics / Pazarlama),
+  all unchecked by default. A persistent footer **"Çerez Tercihleri"** link
+  (`data-consent-open`) re-opens it so consent can be withdrawn as easily as given.
+- Every decision (`opt-in` / `opt-out` / `banner_shown`) is recorded server-side
+  via **`POST /api/consent-record`** → D1 `consent_records` (no PII: a SHA-256
+  user-agent hash + `0.0.0.0` IP only) for the KVKK m.11/m.12 audit trail.
+- **Sentry** loads regardless — error monitoring is essential (replay off, IP
+  anonymised — K-003). [AVUKAT: meşru menfaat zemini doğrulanacak.]
 - Master switch `settings.analytics_enabled = "0"` turns **everything** off.
 
-> Server-side captures are transactional (user-initiated conversions, no PII
-> properties, no raw IP) and run under legitimate interest; they are not gated by
-> the client consent flag because that flag never reaches the Worker.
+> Server-side captures (conversions, no PII properties, no raw IP) carry the
+> e-mail **only as a SHA-256 hash** as `distinct_id` (K-011) — plaintext PII never
+> reaches PostHog. They run on legitimate-interest grounds and are not gated by the
+> client consent flag (which never reaches the Worker). [AVUKAT: zemin doğrulanacak.]
 
 ## Configuration
 
@@ -138,7 +147,7 @@ npm run analytics:settings:remote     # production (then bump cv:settings/cv:hom
 
 ## Backend (already provisioned via MCP)
 
-- **PostHog** (project *MultiGroup Web*, id 480740): dashboard
+- **PostHog** (project *MultiGroup Websites*, id 93082, EU cloud): dashboard
   *"MultiGroup Web — Product & Conversions"* (pinned) with Pageviews, Conversions,
   Store funnel, and Content-engagement insights; plus a launch annotation. Replay,
   web vitals, console logs, heatmaps are enabled project-side.

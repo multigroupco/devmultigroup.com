@@ -67,6 +67,13 @@ export const FOOTER_NAV: { label: string; href: string }[] = [
   { label: "Bağlantılar", href: "/links" },
 ];
 
+/** Gizlilik / KVKK footer links. Legal texts are DRAFT pending lawyer review. */
+export const LEGAL_NAV: { label: string; href: string }[] = [
+  { label: "Aydınlatma Metni", href: "/privacy" },
+  { label: "Çerez Politikası", href: "/privacy/cerez-politikasi" },
+  { label: "Bülten Onayı", href: "/privacy/bulten-onay" },
+];
+
 // Community platform pages (event registration routes here).
 export const GATHIN = {
   multigroup:
@@ -171,7 +178,7 @@ export function resolveSite(settings: Settings): SiteConfig {
     gaMeasurementId: settings.ga_measurement_id || "",
     gscVerification: settings.gsc_verification || "",
     posthogKey: settings.posthog_key || "",
-    posthogHost: (settings.posthog_host || "https://us.i.posthog.com").replace(/\/$/, ""),
+    posthogHost: (settings.posthog_host || "https://eu.i.posthog.com").replace(/\/$/, ""),
     sentryDsn: settings.sentry_dsn || "",
     analyticsEnabled: (settings.analytics_enabled ?? "1") !== "0",
     bannerEnabled: (settings.banner_enabled ?? "1") !== "0",

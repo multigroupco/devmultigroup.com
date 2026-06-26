@@ -1,7 +1,7 @@
 ---
 import Icon from "./Icon.astro";
 import AsciiFlower from "./AsciiFlower.astro";
-import { BRAND, FOOTER_NAV, SOCIALS, SUBBRANDS } from "@/lib/site";
+import { BRAND, FOOTER_NAV, LEGAL_NAV, SOCIALS, SUBBRANDS } from "@/lib/site";
 
 const year = new Date().getFullYear();
 const mg = SOCIALS.multigroup;
@@ -113,9 +113,27 @@ const social = [
       </div>
     </div>
 
-    <div class="mt-12 pt-6 border-t border-line-soft flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-ink-faint">
-      <p>© 2020–{year} {BRAND.name}.</p>
-      <p class="font-mono">{BRAND.tagline.toLowerCase()}</p>
+    <div class="mt-12 pt-6 border-t border-line-soft flex flex-col gap-4 text-xs text-ink-faint">
+      <nav class="flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="Yasal">
+        {
+          LEGAL_NAV.map((n) => (
+            <a href={n.href} class="text-ink-dim hover:text-ink-text transition-colors">
+              {n.label}
+            </a>
+          ))
+        }
+        <button
+          type="button"
+          data-consent-open
+          class="text-ink-dim hover:text-ink-text transition-colors"
+        >
+          Çerez Tercihleri
+        </button>
+      </nav>
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <p>© 2020–{year} {BRAND.name}.</p>
+        <p class="font-mono">{BRAND.tagline.toLowerCase()}</p>
+      </div>
     </div>
   </div>
 

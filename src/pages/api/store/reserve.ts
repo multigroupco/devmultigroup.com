@@ -28,11 +28,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   // Analytics (server-authoritative). Conversion on success, friction on error.
   // The client mirrors the GA4 conversion on the ticket page. Email is only a
-  // distinct_id, never a property value.
+  // distinct_id — SHA-256 hashed before egress (K-011), never a property value.
   const track = result.ok
     ? captureServer(env, EVENTS.storeReserveSuccess, {
         request,
         distinctId: buyerEmail.toLowerCase() || undefined,
+        distinctIdIsEmail: true,
         properties: {
           order_no: result.order.order_no,
           product_id: productId,

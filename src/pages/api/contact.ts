@@ -96,10 +96,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return json({ ok: false, error: "Gönderilemedi, lütfen tekrar dene." }, 502);
   }
 
-  // Analytics: lead captured. Email is used only as distinct_id (never a prop).
+  // Analytics: lead captured. Email is used only as distinct_id — SHA-256 hashed
+  // before egress (K-011), never a prop.
   const track = captureServer(env, EVENTS.contactSubmit, {
     request,
     distinctId: email.toLowerCase(),
+    distinctIdIsEmail: true,
     properties: { form_type: type, has_org: !!org },
   });
   const ctx = (locals as App.Locals).runtime?.ctx;

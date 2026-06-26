@@ -1,21 +1,47 @@
 ---
-// Opt-out KVKK/GDPR consent notice. Rendered (hidden) in <body>; the analytics
-// bootstrap in Analytics.astro reveals it on astro:page-load only when the
-// visitor has made no prior choice and isn't sending Do-Not-Track. The buttons
-// carry data-consent="granted|denied" — the bootstrap's delegated listener
-// persists the choice and (de)activates GA + PostHog accordingly. No client
-// script lives here, so it survives view transitions without re-binding.
+// OPT-IN KVKK/GDPR consent notice (K-005). Rendered (hidden) in <body>; the
+// analytics bootstrap in Analytics.astro reveals it on astro:page-load only when
+// the visitor has made no prior choice and isn't sending Do-Not-Track. Nothing
+// (GA4 / PostHog) loads until "Kabul et" or a granular selection grants it.
+//
+// KVKK "eşit seçenekler": the three actions (Reddet / Tercihleri yönet / Kabul
+// et) share one neutral button style — no primary-button bias / dark pattern.
+// The granular panel's checkboxes are UNCHECKED by default (opt-in). Every
+// decision is persisted via /api/consent-record. No client script lives here, so
+// it survives view transitions without re-binding (the delegated listener is in
+// Analytics.astro).
 ---
 
 <div id="dmg-consent" class="consent" role="dialog" aria-live="polite" aria-label="Çerez tercihi" hidden>
   <div class="consent-card card">
     <p class="consent-text">
-      Deneyimini iyileştirmek ve topluluğu büyütmek için analiz çerezleri
-      kullanıyoruz. İstediğin zaman reddedebilirsin.
+      Topluluğu büyütmek ve deneyimini ölçmek için <strong>analiz çerezleri</strong>
+      kullanmak istiyoruz. Bunlar yalnızca <strong>onayınla</strong> çalışır; reddetmen
+      siteyi kullanmana engel olmaz. Ayrıntılar:
+      <a href="/privacy" class="consent-link">Aydınlatma Metni</a> ·
+      <a href="/privacy/cerez-politikasi" class="consent-link">Çerez Politikası</a>.
     </p>
+
+    <div id="dmg-consent-prefs" class="consent-prefs" hidden>
+      <label class="consent-opt">
+        <input type="checkbox" id="dmg-cat-essential" checked disabled />
+        <span><strong>Zorunlu</strong> — sitenin çalışması ve rıza tercihin (her zaman açık)</span>
+      </label>
+      <label class="consent-opt">
+        <input type="checkbox" id="dmg-cat-analytics" />
+        <span><strong>Analitik</strong> — Google Analytics 4, PostHog (kullanım ölçümü)</span>
+      </label>
+      <label class="consent-opt">
+        <input type="checkbox" id="dmg-cat-marketing" />
+        <span><strong>Pazarlama</strong> — şu an kullanılmıyor</span>
+      </label>
+      <button type="button" class="btn btn-ghost consent-btn" data-consent-save>Seçimi kaydet</button>
+    </div>
+
     <div class="consent-actions">
-      <button type="button" class="btn btn-ghost" data-consent="denied">Reddet</button>
-      <button type="button" class="btn btn-primary" data-consent="granted">Kabul et</button>
+      <button type="button" class="btn btn-ghost consent-btn" data-consent="denied">Reddet</button>
+      <button type="button" class="btn btn-ghost consent-btn" data-consent-manage>Tercihleri yönet</button>
+      <button type="button" class="btn btn-ghost consent-btn" data-consent="granted">Kabul et</button>
     </div>
   </div>
 </div>
@@ -27,30 +53,57 @@
     bottom: 1rem;
     transform: translateX(-50%);
     z-index: 80;
-    width: min(40rem, calc(100vw - 2rem));
+    width: min(42rem, calc(100vw - 2rem));
   }
   .consent[hidden] { display: none; }
   .consent-card {
     display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.9rem 1.1rem;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 1rem 1.15rem;
     box-shadow: 0 18px 50px -12px rgba(0, 0, 0, 0.85);
   }
   .consent-text {
     margin: 0;
     font-size: 0.82rem;
-    line-height: 1.45;
+    line-height: 1.5;
     color: var(--color-ink-dim);
   }
+  .consent-link { color: var(--color-ink-body); text-decoration: underline; text-underline-offset: 2px; }
+  .consent-link:hover { color: var(--color-ink); }
+
+  .consent-prefs {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 0.5rem 0;
+    border-top: 1px solid var(--color-hairline, rgba(255, 255, 255, 0.08));
+    border-bottom: 1px solid var(--color-hairline, rgba(255, 255, 255, 0.08));
+  }
+  .consent-prefs[hidden] { display: none; }
+  .consent-opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--color-ink-dim);
+    cursor: pointer;
+  }
+  .consent-opt input { margin-top: 0.15rem; accent-color: var(--color-ink-body, #c2c2c8); }
+  .consent-opt input:disabled { cursor: not-allowed; }
+  .consent-prefs .consent-btn { align-self: flex-start; margin-top: 0.2rem; }
+
+  /* Eşit seçenekler: all three actions share one neutral weight (no dark pattern). */
   .consent-actions {
     display: flex;
     gap: 0.5rem;
-    flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
-  .consent-actions .btn { padding-inline: 1rem; font-size: 0.82rem; }
-  @media (max-width: 30rem) {
-    .consent-card { flex-direction: column; align-items: stretch; }
-    .consent-actions { justify-content: flex-end; }
+  .consent-btn { padding-inline: 1rem; font-size: 0.82rem; }
+  @media (max-width: 32rem) {
+    .consent-actions { justify-content: stretch; }
+    .consent-actions .consent-btn { flex: 1 1 auto; }
   }
 </style>

@@ -305,7 +305,7 @@ export const SETTINGS_FIELDS: Field[] = [
   { name: "site_description", label: "Meta description", type: "textarea", full: true },
   { name: "ga_measurement_id", label: "Google Analytics 4 ID", type: "text", help: "e.g. G-XXXXXXXXXX — analytics goes live the moment this is set." },
   { name: "posthog_key", label: "PostHog project key", type: "text", help: "Public key, e.g. phc_… — enables product analytics, web vitals & session replay." },
-  { name: "posthog_host", label: "PostHog host", type: "text", help: "Ingestion host. Default https://us.i.posthog.com (US cloud)." },
+  { name: "posthog_host", label: "PostHog host", type: "text", help: "Ingestion host. Default https://eu.i.posthog.com (EU cloud)." },
   { name: "sentry_dsn", label: "Sentry DSN (browser)", type: "text", help: "Public DSN, e.g. https://…@…ingest.de.sentry.io/… — enables client error monitoring." },
   { name: "analytics_enabled", label: "Analytics master switch", type: "boolean", help: "Off = no GA / PostHog / Sentry anywhere, regardless of keys." },
   { name: "gsc_verification", label: "Google Search Console token", type: "text", help: "The content value of the google-site-verification meta tag." },

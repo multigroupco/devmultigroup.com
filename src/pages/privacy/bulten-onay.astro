@@ -1,0 +1,70 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+
+// Bülten onay + aydınlatma metni. TASLAK — avukat onayı bekliyor.
+// Bülten "ücretsiz etkinlik duyurusu / bilgilendirme" olarak konumlandı
+// (ticari değil → İYS dışı varsayımı; sponsor/satış girerse ETK 6563 onayı gerekir).
+const updated = "22.06.2026";
+---
+
+<BaseLayout
+  title="E-posta Bülteni — Onay ve Aydınlatma"
+  description="Developer MultiGroup bülteni onay ve aydınlatma metni: ne gönderdiğimiz, hangi verileri işlediğimiz ve abonelikten çıkma."
+  canonicalPath="/privacy/bulten-onay"
+  noindex={true}
+>
+  <section class="container-x py-16 md:py-20">
+    <div class="mx-auto max-w-3xl">
+      <div class="mb-8 rounded-xl border border-line bg-white/[0.03] px-4 py-3 text-sm text-ink-dim">
+        <strong class="text-ink-text">Taslak.</strong> Bu metin hukuki inceleme sürecindedir.
+        İçeriğe sponsor/indirim/satış öğesi eklenirse ileti "ticari elektronik ileti" niteliği kazanır ve
+        ETK 6563 kapsamında ayrı onay + İYS kaydı gerekir.
+      </div>
+
+      <h1 class="fw text-3xl md:text-4xl mb-2">E-posta Bülteni — Onay ve Aydınlatma Metni</h1>
+      <p class="text-ink-faint text-sm mb-10">Son güncelleme: {updated} · Versiyon: Taslak</p>
+
+      <div class="prose-dmg">
+        <h2>Ne gönderiyoruz?</h2>
+        <p>
+          Developer MultiGroup bülteni; <strong>ücretsiz etkinlik ve buluşma duyuruları, topluluk haberleri,
+          yeni içerik (kayıt/yazı) bildirimleri</strong> gibi <strong>bilgilendirme</strong> içerikleri gönderir.
+          Ürün/hizmet pazarlamayan, <strong>ticari amaç gütmeyen</strong> bir topluluk iletişimidir.
+        </p>
+
+        <h2>Onay</h2>
+        <blockquote>
+          ☐ Developer MultiGroup bültenine kaydolmak ve e-posta adresimin bu amaçla işlenmesini,
+          <a href="/privacy">Aydınlatma Metni</a>'ni okuyarak <strong>açık rızamla</strong> kabul ediyorum.
+        </blockquote>
+        <ul>
+          <li>Kutu <strong>ön-işaretli değildir</strong>; işaretlemek tamamen size bağlıdır.</li>
+          <li>Onayınızın <strong>tarihi, kaynağı ve kanalı</strong> rızanın ispatı için kayıt altına alınır.</li>
+        </ul>
+
+        <h2>Kişisel verileriniz</h2>
+        <ul>
+          <li><strong>Veri sorumlusu:</strong> Furkan Ünsalan (Developer MultiGroup adına) · Başvuru: <strong>kvkk@devmultigroup.com</strong></li>
+          <li><strong>İşlenen veri:</strong> ad (opsiyonel), e-posta adresi.</li>
+          <li><strong>Amaç / hukuki sebep:</strong> bülten gönderimi — <strong>açık rıza</strong> (KVKK m.5/1).</li>
+          <li><strong>Etkileşim ölçümü:</strong> Gönderdiğimiz e-postalardaki bağlantı tıklamalarını ölçeriz; bu veri <strong>12 ay sonra anonimleştirilir.</strong> E-posta <strong>açılma/piksel</strong> takibi yapmıyoruz.</li>
+          <li><strong>Aktarım:</strong> Gönderim Cloudflare Email Sending ile yapılır; analitiğe e-posta yalnızca <strong>şifrelenmiş (SHA-256)</strong> biçimde iletilir. Ayrıntı: <a href="/privacy">Aydınlatma Metni</a> §5–6.</li>
+          <li><strong>Saklama:</strong> Abonelikten çıkana kadar.</li>
+        </ul>
+
+        <h2>Abonelikten çıkma</h2>
+        <p>
+          Her e-postanın altındaki <strong>"abonelikten çık"</strong> bağlantısıyla tek tıkla çıkabilirsiniz
+          (RFC 8058 tek-tık dahil). Çıkış talebiniz derhâl işleme alınır; bundan sonra bülten gönderilmez.
+          Rızanızı verdiğiniz kadar kolay geri alabilirsiniz.
+        </p>
+
+        <h2>Haklarınız</h2>
+        <p>
+          KVKK m.11 kapsamındaki tüm haklarınız (erişim, düzeltme, silme vb.) için:
+          <strong>kvkk@devmultigroup.com</strong> — ayrıntı: <a href="/privacy">Aydınlatma Metni</a> §8.
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

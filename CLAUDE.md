@@ -164,7 +164,10 @@ banner in `PostCard.astro` (`/blog/banner/${slug}.svg` when no cover).
 
 ## Analytics & observability
 
-Full tracking layer over **GA4 + PostHog + Sentry**, consent-gated. See
+Full tracking layer over **GA4 + PostHog + Sentry**, behind an **opt-in** consent
+layer (KVKK K-005: no GA/PostHog before explicit consent; Sentry is essential —
+errors only). Final legal texts are published as DRAFT pending lawyer review; see
+[`docs/kvkk/ANALIZ.md`](./docs/kvkk/ANALIZ.md). See
 [`docs/ANALYTICS.md`](./docs/ANALYTICS.md) for the complete map. Essentials:
 
 - **Apex-only:** the whole layer (client + server) is inert unless the request
@@ -187,15 +190,18 @@ Full tracking layer over **GA4 + PostHog + Sentry**, consent-gated. See
 - **Server capture** (no client render): `captureServer()` in
   [`src/lib/analytics-server.ts`](./src/lib/analytics-server.ts) → PostHog `/capture`
   via `ctx.waitUntil`, from `/go/[id]`, `/api/contact`, `/api/subscribe`,
-  `/api/store/reserve`. Email is **only** a `distinct_id`; raw IP is not forwarded.
+  `/api/store/reserve`. Email is **only** a `distinct_id`, **SHA-256 hashed** before
+  egress (K-011); raw IP is not forwarded.
 - **Server errors:** [`src/middleware.ts`](./src/middleware.ts) wraps SSR and sends
   exceptions to Sentry via the dependency-free envelope sender in
   [`src/lib/sentry.ts`](./src/lib/sentry.ts) (DSN from `env.SENTRY_DSN`), then
   re-throws. No `@sentry/*` dependency — intentionally, to avoid wrapping the
   pinned adapter's generated worker.
-- **Consent:** opt-out + DNT, banner in
-  [`src/components/ConsentBanner.astro`](./src/components/ConsentBanner.astro);
-  reject disables GA + PostHog (incl. replay); Sentry stays (essential).
+- **Consent:** **opt-in** (K-005) — GA/PostHog load only after explicit consent;
+  banner in [`src/components/ConsentBanner.astro`](./src/components/ConsentBanner.astro)
+  (equal-weight actions + granular panel, default deny). Every decision is logged to
+  D1 `consent_records` via `/api/consent-record` (m.11/m.12); a footer "Çerez
+  Tercihleri" link withdraws consent. Sentry stays (essential, replay off).
 - **Config:** browser keys (`ga_measurement_id`, `posthog_key`, `posthog_host`,
   `sentry_dsn`, `analytics_enabled`) in D1 `settings` via `resolveSite`; server
   keys (`SENTRY_DSN`, `POSTHOG_KEY/HOST`) in `wrangler.jsonc` vars (public ingest

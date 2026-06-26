@@ -74,8 +74,8 @@
     "AI_GATEWAY_ID": "devmultigroup-search",
     "SENTRY_DSN": "https://2ac8e8503fb86d9f0a0c39857e6b600e@o4511607789584384.ingest.de.sentry.io/4511607888347216",
     "SENTRY_ENVIRONMENT": "production",
-    "POSTHOG_KEY": "phc_sGRQfYTzBZWsD2SHrFF45z54EvCSwcXYYWzUHMAUHCfv",
-    "POSTHOG_HOST": "https://us.i.posthog.com"
+    "POSTHOG_KEY": "phc_ClVwVt5T7LOptJMI9Wp8FM9bay0s4OFwcIBVVyzzvY7",
+    "POSTHOG_HOST": "https://eu.i.posthog.com"
   },
   // Workers AI — used ONLY to embed text for semantic search (bge-m3). This is
   // the embedding engine, not AI Search/AutoRAG; no managed instance exists.

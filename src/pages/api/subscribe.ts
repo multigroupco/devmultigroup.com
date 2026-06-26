@@ -38,8 +38,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
       .first();
     if (!existing) {
       await env.MAIL_DB
-        .prepare("INSERT INTO contacts (email, name, list_id, created_at) VALUES (?, ?, ?, unixepoch())")
+        .prepare(
+          "INSERT INTO contacts (email, name, list_id, consent_source, consent_channel, consented_at, created_at) VALUES (?, ?, ?, 'web_form', 'web', unixepoch(), unixepoch())",
+        )
         .bind(email, name, LIST_ID)
+        .run();
+      // KVKK rıza kaydı (append-only) — proof of opt-in: date + source + channel
+      // (K-006). No IP is stored, consistent with our IP-minimisation stance.
+      await env.MAIL_DB
+        .prepare(
+          "INSERT INTO subscriber_consent (email, consent_source, consent_channel, consented_at, created_at) VALUES (?, 'web_form', 'web', unixepoch(), unixepoch())",
+        )
+        .bind(email)
         .run();
       isNew = true;
     }
@@ -48,12 +58,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   // Analytics: count only genuinely new subscribers (idempotent re-submits are
-  // not signups). Email is used only as distinct_id, never as a property.
+  // not signups). Email is used only as distinct_id — SHA-256 hashed before
+  // egress (K-011), never sent as a property. The consent moment (source +
+  // channel) is recorded as event properties for the rıza kaydı (K-006).
   if (isNew) {
     const track = captureServer(env, EVENTS.newsletterSignup, {
       request,
       distinctId: email,
-      properties: { form_type: "newsletter" },
+      distinctIdIsEmail: true,
+      properties: { form_type: "newsletter", consent_source: "web_form", consent_channel: "web" },
     });
     const ctx = (locals as App.Locals).runtime?.ctx;
     if (ctx?.waitUntil) ctx.waitUntil(track);

@@ -13,8 +13,8 @@
 --   Local : npm run analytics:settings:local
 --   Remote: npm run analytics:settings:remote
 INSERT INTO settings (key, value, updated_at) VALUES
-  ('posthog_key',       'phc_sGRQfYTzBZWsD2SHrFF45z54EvCSwcXYYWzUHMAUHCfv',                                              unixepoch()),
-  ('posthog_host',      'https://us.i.posthog.com',                                                                     unixepoch()),
+  ('posthog_key',       'phc_ClVwVt5T7LOptJMI9Wp8FM9bay0s4OFwcIBVVyzzvY7',                                              unixepoch()),
+  ('posthog_host',      'https://eu.i.posthog.com',                                                                     unixepoch()),
   ('sentry_dsn',        'https://2ac8e8503fb86d9f0a0c39857e6b600e@o4511607789584384.ingest.de.sentry.io/4511607888347216', unixepoch()),
   ('analytics_enabled', '1',                                                                                            unixepoch())
 ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at;

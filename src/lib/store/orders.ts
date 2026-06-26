@@ -104,9 +104,10 @@ export async function reserve(env: Env, input: ReserveInput): Promise<ReserveRes
     env.STORE_DB,
     `INSERT INTO orders
        (id, order_no, drop_id, user_id, buyer_name, buyer_email, pickup_event_id, pickup_label,
-        status, payment_status, payment_method, subtotal_minor, vat_minor, shipping_minor, total_minor, notes, created_at, updated_at)
-     VALUES (?, ?, '', NULL, ?, ?, '', '', 'reserved', 'unpaid', '', ?, ?, 0, ?, ?, ?, ?)`,
-    [orderId, orderNo, name, email, subtotal, vat, total, (input.notes || "").trim(), t, t],
+        status, payment_status, payment_method, subtotal_minor, vat_minor, shipping_minor, total_minor, notes,
+        consent_at, consent_source, consent_channel, created_at, updated_at)
+     VALUES (?, ?, '', NULL, ?, ?, '', '', 'reserved', 'unpaid', '', ?, ?, 0, ?, ?, ?, 'web_form', 'web', ?, ?)`,
+    [orderId, orderNo, name, email, subtotal, vat, total, (input.notes || "").trim(), t, t, t],
   );
   await run(
     env.STORE_DB,

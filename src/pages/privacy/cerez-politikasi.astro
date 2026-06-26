@@ -1,0 +1,69 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+
+// Çerez politikası. TASLAK — avukat onayı bekliyor. Tablo, opt-in CMP devreye
+// girince gerçek değerlerle kesinleştirilir. noindex until finalised.
+const updated = "22.06.2026";
+---
+
+<BaseLayout
+  title="Çerez Politikası"
+  description="Developer MultiGroup çerez politikası: kullanılan çerez türleri, hukuki sebepleri ve çerez tercihlerini yönetme."
+  canonicalPath="/privacy/cerez-politikasi"
+  noindex={true}
+>
+  <section class="container-x py-16 md:py-20">
+    <div class="mx-auto max-w-3xl">
+      <div class="mb-8 rounded-xl border border-line bg-white/[0.03] px-4 py-3 text-sm text-ink-dim">
+        <strong class="text-ink-text">Taslak.</strong> Çerez tablosu, opt-in çerez bildirimi devreye girince
+        kesinleştirilecektir. Sorular: <a class="underline underline-offset-2 hover:text-ink-text" href="mailto:kvkk@devmultigroup.com">kvkk@devmultigroup.com</a>.
+      </div>
+
+      <h1 class="fw text-3xl md:text-4xl mb-2">Çerez Politikası</h1>
+      <p class="text-ink-faint text-sm mb-10">Son güncelleme: {updated} · Versiyon: Taslak</p>
+
+      <div class="prose-dmg">
+        <h2>1. Çerez Nedir?</h2>
+        <p>
+          Çerezler, ziyaret ettiğiniz siteler tarafından tarayıcınıza kaydedilen küçük metin dosyalarıdır.
+          Sitenin çalışması, tercihlerin hatırlanması ve kullanım analizi için kullanılır.
+        </p>
+
+        <h2>2. Çerez Türleri ve Hukuki Sebep</h2>
+        <ul>
+          <li><strong>Zorunlu çerezler:</strong> Sitenin temel işlevleri ve güvenliği için gereklidir; rıza gerektirmez (meşru menfaat — KVKK m.5/2-f). Örn. rıza tercihinizi saklayan çerez.</li>
+          <li><strong>Analitik çerezler:</strong> Site kullanımını ölçmek için (Google Analytics, PostHog). <strong>Yalnızca açık rızanızla</strong> çalışır.</li>
+          <li><strong>Pazarlama çerezleri:</strong> Şu an kullanılmıyor; kullanılırsa yalnızca açık rıza ile devreye girer.</li>
+        </ul>
+        <p>
+          <strong>Opt-in:</strong> Siteyi ilk açtığınızda zorunlu olmayan (analitik/pazarlama) çerezler
+          <strong>yüklenmez.</strong> Bunlar yalnızca çerez bildiriminde <strong>"Kabul et"</strong> veya
+          "Tercihleri yönet" ile onayladığınız kategoriler için devreye girer.
+        </p>
+
+        <h2>3. Kullandığımız Çerezler</h2>
+        <p class="text-ink-faint text-sm">Aşağıdakiler beklenen çerezlerdir; opt-in bildirimi kurulduğunda gerçek değerlerle güncellenecektir.</p>
+        <table>
+          <thead><tr><th>Çerez</th><th>Taraf</th><th>Amaç</th><th>Kategori</th><th>Ömür</th></tr></thead>
+          <tbody>
+            <tr><td><code>dmg_consent</code></td><td>Birinci taraf</td><td>Çerez tercihinizi saklar</td><td>Zorunlu</td><td>~12 ay</td></tr>
+            <tr><td><code>_ga</code>, <code>_ga_*</code></td><td>Google (ABD)</td><td>Web analitiği (ziyaretçi ayrımı)</td><td>Analitik</td><td>GA varsayılanı</td></tr>
+            <tr><td><code>ph_*_posthog</code></td><td>PostHog (AB)</td><td>Ürün analitiği</td><td>Analitik</td><td>PostHog varsayılanı</td></tr>
+          </tbody>
+        </table>
+        <p>Yurt dışı aktarım için bkz. <a href="/privacy">Aydınlatma Metni</a> §5–6.</p>
+
+        <h2>4. Çerez Tercihlerinizi Yönetme</h2>
+        <ul>
+          <li>Çerez bildiriminden <strong>"Kabul et" / "Reddet" / "Tercihleri yönet"</strong> seçeneklerini kullanabilirsiniz.</li>
+          <li>Verdiğiniz rızayı dilediğiniz zaman, site alt bilgisindeki <strong>"Çerez Tercihleri"</strong> bağlantısından <strong>geri alabilir</strong> veya değiştirebilirsiniz.</li>
+          <li>Tarayıcı ayarlarından da çerezleri silebilir/engelleyebilirsiniz (zorunlu çerezler engellenirse bazı işlevler çalışmayabilir).</li>
+        </ul>
+        <p>Bir "çerez duvarı" kullanmıyoruz; çerezleri reddetmeniz siteye erişiminizi engellemez.</p>
+
+        <h2>5. İletişim</h2>
+        <p>Sorularınız için: <strong>kvkk@devmultigroup.com</strong></p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
