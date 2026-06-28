@@ -150,6 +150,65 @@ export interface CommunityRow {
   updated_at: number;
 }
 
+export interface CompanyRow {
+  id: string;
+  name: string;
+  slug: string;
+  sector: string;
+  logo_url: string;
+  website: string;
+  description: string;
+  featured: number;
+  sort_order: number;
+  is_active: number;
+  created_at: number;
+  updated_at: number;
+}
+
+/** One archived talk on a speaker's record. `slug` links to a seeded event
+ *  when matched (null for pre-2022 events with no seeded page). */
+export interface SpeakerTalk {
+  event: string;
+  date: string | null; // yyyy-mm-dd
+  slug: string | null;
+}
+
+export interface SpeakerRow {
+  id: string;
+  name: string;
+  slug: string;
+  title: string;
+  company: string;
+  company_id: string | null;
+  bio: string;
+  avatar_url: string;
+  socials: string; // json
+  tags: string; // csv
+  talks: string; // json SpeakerTalk[]
+  talk_count: number;
+  first_talk_at: number | null;
+  last_talk_at: number | null;
+  featured: number;
+  sort_order: number;
+  is_active: number;
+  created_at: number;
+  updated_at: number;
+}
+
+/** A speaker row joined with its event_speakers link fields. */
+export interface EventSpeaker extends SpeakerRow {
+  role: string;
+  talk_title: string;
+}
+
+export interface SpeakerSocials {
+  linkedin?: string;
+  github?: string;
+  twitter?: string;
+  instagram?: string;
+  website?: string;
+}
+
 export type Settings = Record<string, string>;
 
 export interface TeamSocials {

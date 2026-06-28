@@ -54,6 +54,12 @@ const fromLocalInput = (s: string): number | null => {
 };
 
 const COMMUNITY = opt("multigroup", "multiacademy");
+const SECTORS = opt(
+  "Fintech", "Banka", "E-ticaret", "Oyun", "Yapay Zekâ", "Mobilite", "Telekom",
+  "Bulut & Altyapı", "Siber Güvenlik", "Danışmanlık", "Yazılım", "Medya & Eğlence",
+  "Eğitim", "Kamu", "Sağlık", "Otomotiv", "Havacılık & Savunma", "Perakende",
+  "İnsan Kaynakları", "Diğer",
+);
 const ACCENTS = opt("violet", "iris", "cyan", "lime", "amber", "coral", "magenta");
 const ICONS = opt(
   "link", "instagram", "twitter", "linkedin", "youtube", "github", "globe",
@@ -267,6 +273,65 @@ export const RESOURCES: Record<string, Resource> = {
       { name: "logo_url", label: "Logo", type: "image" },
       { name: "instagram", label: "Instagram URL", type: "text" },
       { name: "url", label: "Website / link", type: "text" },
+      { name: "sort_order", label: "Sort order", type: "number" },
+      { name: "is_active", label: "Active", type: "boolean" },
+    ],
+  },
+
+  companies: {
+    key: "companies",
+    label: "Companies",
+    singular: "Company",
+    table: "companies",
+    icon: "sparkles",
+    ns: [NS.companies, NS.home],
+    searchable: true,
+    defaultSort: "featured DESC, sort_order ASC, name ASC",
+    listColumns: [
+      { name: "name", label: "Name" },
+      { name: "sector", label: "Sector" },
+      { name: "featured", label: "Featured" },
+      { name: "is_active", label: "Active" },
+    ],
+    fields: [
+      { name: "name", label: "Name", type: "text", required: true },
+      { name: "slug", label: "Slug", type: "text", help: "Leave blank to auto-generate from name." },
+      { name: "sector", label: "Sector", type: "select", options: SECTORS },
+      { name: "logo_url", label: "Logo", type: "image", help: "Upload a transparent-background logo or paste a URL." },
+      { name: "website", label: "Website", type: "text", full: true },
+      { name: "description", label: "Description", type: "textarea", full: true, help: "One-line note about the company (optional)." },
+      { name: "featured", label: "Featured", type: "boolean" },
+      { name: "sort_order", label: "Sort order", type: "number" },
+      { name: "is_active", label: "Active", type: "boolean" },
+    ],
+  },
+
+  speakers: {
+    key: "speakers",
+    label: "Speakers",
+    singular: "Speaker",
+    table: "speakers",
+    icon: "users",
+    ns: [NS.speakers, NS.home],
+    searchable: true,
+    defaultSort: "featured DESC, talk_count DESC, name ASC",
+    listColumns: [
+      { name: "name", label: "Name" },
+      { name: "company", label: "Company" },
+      { name: "talk_count", label: "Talks" },
+      { name: "is_active", label: "Active" },
+    ],
+    fields: [
+      { name: "name", label: "Name", type: "text", required: true },
+      { name: "slug", label: "Slug", type: "text", help: "Leave blank to auto-generate from name." },
+      { name: "title", label: "Title / role", type: "text", help: 'e.g. "Senior iOS Engineer"' },
+      { name: "company", label: "Company (display name)", type: "text" },
+      { name: "company_id", label: "Company link (id)", type: "text", help: "Optional companies.id to link the logo." },
+      { name: "bio", label: "Bio", type: "textarea", full: true },
+      { name: "avatar_url", label: "Photo", type: "image" },
+      { name: "socials", label: "Socials (JSON)", type: "textarea", full: true, placeholder: '{"linkedin":"https://...","github":"https://...","twitter":"https://...","website":"https://..."}' },
+      { name: "tags", label: "Expertise tags", type: "tags" },
+      { name: "featured", label: "Featured", type: "boolean" },
       { name: "sort_order", label: "Sort order", type: "number" },
       { name: "is_active", label: "Active", type: "boolean" },
     ],

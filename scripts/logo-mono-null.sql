@@ -1,0 +1,11 @@
+UPDATE companies SET logo_url='' WHERE slug='ar-code';
+UPDATE companies SET logo_url='' WHERE slug='blind-id';
+UPDATE companies SET logo_url='' WHERE slug='insider';
+UPDATE companies SET logo_url='' WHERE slug='inzva';
+UPDATE companies SET logo_url='' WHERE slug='lodos';
+UPDATE companies SET logo_url='' WHERE slug='oredata';
+UPDATE companies SET logo_url='' WHERE slug='otokoc-otomotiv';
+UPDATE companies SET logo_url='' WHERE slug='sahibinden';
+UPDATE companies SET logo_url='' WHERE slug='the-big-things';
+UPDATE companies SET logo_url='' WHERE slug='tirendaz-academy';
+UPDATE companies SET logo_url='' WHERE slug='vngrs';

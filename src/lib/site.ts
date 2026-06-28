@@ -31,16 +31,24 @@ export type NavItem = { label: string; href: string; children?: NavChild[] };
 export const NAV: NavItem[] = [
   { label: "Etkinlikler", href: "/events" },
   { label: "Akademi", href: "/academy" },
-  { label: "Kayıtlar", href: "/recordings" },
-  { label: "Blog", href: "/blog" },
+  {
+    label: "İçerik",
+    href: "/blog",
+    children: [
+      { label: "Blog", href: "/blog" },
+      { label: "Kayıtlar", href: "/recordings" },
+    ],
+  },
   { label: "Mağaza", href: "/store" },
   { label: "Ekip", href: "/team" },
   {
-    label: "Partner",
+    label: "Ekosistem",
     href: "/communities",
     children: [
       { label: "Topluluklar", href: "/communities" },
       { label: "İş Birlikleri", href: "/partnerships" },
+      { label: "Şirketler", href: "/companies" },
+      { label: "Konuşmacılar", href: "/speakers" },
     ],
   },
 ];

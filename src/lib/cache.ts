@@ -81,5 +81,7 @@ export const NS = {
   social: "social",
   home: "home",
   communities: "communities",
+  companies: "companies",
+  speakers: "speakers",
   search: "search",
 } as const;

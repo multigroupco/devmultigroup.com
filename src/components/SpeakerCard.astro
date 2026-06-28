@@ -1,0 +1,113 @@
+---
+import Icon from "@/components/Icon.astro";
+import { imageSrc } from "@/lib/ui";
+import type { SpeakerRow, CompanyRow, SpeakerSocials } from "@/lib/types";
+
+interface Props {
+  speaker: SpeakerRow & { role?: string; talk_title?: string };
+  company?: CompanyRow | null;
+  page?: string;
+  /** event card variant: shows the talk role, hides talk-count chip */
+  onEvent?: boolean;
+}
+const { speaker: s, company = null, page = "speakers", onEvent = false } = Astro.props;
+
+let socials: SpeakerSocials = {};
+try {
+  socials = s.socials ? (JSON.parse(s.socials) as SpeakerSocials) : {};
+} catch {
+  /* malformed json — no socials */
+}
+const socialLinks = (
+  [
+    ["linkedin", socials.linkedin],
+    ["github", socials.github],
+    ["twitter", socials.twitter],
+    ["instagram", socials.instagram],
+    ["globe", socials.website],
+  ] as const
+).filter((x): x is [(typeof x)[0], string] => Boolean(x[1]));
+
+const initials = s.name
+  .split(/\s+/)
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((w) => w[0])
+  .join("")
+  .toUpperCase();
+
+const avatar = imageSrc(s.avatar_url);
+const companyName = company?.name || s.company;
+const companyLogo = company?.logo_url ? imageSrc(company.logo_url) : "";
+const q = `${s.name} ${companyName} ${s.title}`.toLocaleLowerCase("tr");
+---
+
+<div
+  id={`s-${s.id}`}
+  class="speaker-card group card card-hover p-4 flex flex-col h-full scroll-mt-24"
+  data-q={q}
+  data-company={company?.slug ?? ""}
+  data-sector={company?.sector ?? ""}
+>
+  <div class="flex items-start gap-3.5">
+    <div
+      class="relative w-14 h-14 rounded-full bg-white/[0.05] border border-line grid place-items-center shrink-0 overflow-hidden"
+    >
+      {
+        avatar ? (
+          <img
+            src={avatar}
+            alt={s.name}
+            loading="lazy"
+            class="w-full h-full object-cover transition duration-300 group-hover:scale-[1.06]"
+          />
+        ) : (
+          <span class="font-display text-base text-ink-dim">{initials}</span>
+        )
+      }
+    </div>
+
+    <div class="min-w-0 flex-1">
+      <h3 class="font-medium leading-snug">{s.name}</h3>
+      {s.title && <p class="text-ink-dim text-xs mt-0.5 leading-snug">{s.title}</p>}
+      {
+        companyName && (
+          <div class="flex items-center gap-1.5 mt-1.5">
+            {companyLogo ? (
+              <img src={companyLogo} alt={companyName} class="h-3.5 w-auto max-w-[72px] object-contain opacity-75 shrink-0" loading="lazy" />
+            ) : (
+              <span class="text-ink-faint text-xs truncate">{companyName}</span>
+            )}
+          </div>
+        )
+      }
+    </div>
+
+    {
+      !onEvent && s.talk_count > 0 && (
+        <span class="chip shrink-0 !text-[0.66rem] tabular-nums">{s.talk_count} konuşma</span>
+      )
+    }
+    {onEvent && s.role && <span class="chip shrink-0 !text-[0.66rem]">{s.role}</span>}
+  </div>
+
+  {
+    socialLinks.length > 0 && (
+      <div class="flex items-center gap-1 mt-3 pt-3 border-t border-line-soft">
+        {socialLinks.map(([icon, url]) => (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${s.name} · ${icon}`}
+            class="grid place-items-center w-7 h-7 rounded-lg text-ink-faint hover:text-ink-text hover:bg-white/[0.06] transition"
+            data-track="cta_click"
+            data-track-props={JSON.stringify({ cta_id: `speaker_social_${icon}`, name: s.name, page })}
+          >
+            <Icon name={icon} size={15} />
+          </a>
+        ))}
+      </div>
+    )
+  }
+</div>

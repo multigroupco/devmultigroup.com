@@ -12,6 +12,9 @@ import type {
   SocialRow,
   TeamRow,
   CommunityRow,
+  CompanyRow,
+  SpeakerRow,
+  EventSpeaker,
   Community,
 } from "./types";
 
@@ -317,6 +320,118 @@ export async function listCommunities(env: Env): Promise<CommunityRow[]> {
   );
 }
 
+/* ── companies (employers represented at our events) ──────────────────────── */
+export async function listCompanies(
+  env: Env,
+  opts: { sector?: string; limit?: number } = {},
+): Promise<CompanyRow[]> {
+  const { sector, limit = 500 } = opts;
+  return cached(env, NS.companies, `list:${sector ?? "all"}:${limit}`, () => {
+    if (sector) {
+      return all<CompanyRow>(
+        env.DB,
+        `SELECT * FROM companies WHERE is_active=1 AND sector=?
+         ORDER BY featured DESC, sort_order ASC, name ASC LIMIT ?`,
+        [sector, limit],
+      );
+    }
+    return all<CompanyRow>(
+      env.DB,
+      `SELECT * FROM companies WHERE is_active=1
+       ORDER BY featured DESC, sort_order ASC, name ASC LIMIT ?`,
+      [limit],
+    );
+  });
+}
+
+export async function getCompany(env: Env, slug: string): Promise<CompanyRow | null> {
+  return cached(env, NS.companies, `get:${slug}`, () =>
+    first<CompanyRow>(env.DB, "SELECT * FROM companies WHERE slug=? LIMIT 1", [slug]),
+  );
+}
+
+/* ── speakers ─────────────────────────────────────────────────────────────── */
+export async function listSpeakers(
+  env: Env,
+  opts: { limit?: number; featured?: boolean } = {},
+): Promise<SpeakerRow[]> {
+  const { limit = 500, featured } = opts;
+  return cached(env, NS.speakers, `list:${limit}:${featured ? 1 : 0}`, () => {
+    const where = ["is_active=1"];
+    if (featured) where.push("featured=1");
+    // most-prolific speakers first, then most recent, then name
+    return all<SpeakerRow>(
+      env.DB,
+      `SELECT * FROM speakers WHERE ${where.join(" AND ")}
+       ORDER BY featured DESC, talk_count DESC, COALESCE(last_talk_at,0) DESC, name ASC
+       LIMIT ?`,
+      [limit],
+    );
+  });
+}
+
+export async function getSpeaker(env: Env, slug: string): Promise<SpeakerRow | null> {
+  return cached(env, NS.speakers, `get:${slug}`, () =>
+    first<SpeakerRow>(env.DB, "SELECT * FROM speakers WHERE slug=? LIMIT 1", [slug]),
+  );
+}
+
+/** Speakers for one event (via event_speakers) — for the event detail page. */
+export async function getEventSpeakers(env: Env, eventId: string): Promise<EventSpeaker[]> {
+  return cached(env, NS.speakers, `ev:${eventId}`, () =>
+    all<EventSpeaker>(
+      env.DB,
+      `SELECT s.*, es.role AS role, es.talk_title AS talk_title
+       FROM event_speakers es JOIN speakers s ON s.id = es.speaker_id
+       WHERE es.event_id = ? AND s.is_active = 1
+       ORDER BY es.sort_order ASC, s.talk_count DESC, s.name ASC`,
+      [eventId],
+    ),
+  );
+}
+
+/** Speakers who have worked at a given company — for the (future) company page. */
+export async function getCompanySpeakers(env: Env, companyId: string): Promise<SpeakerRow[]> {
+  return cached(env, NS.speakers, `co:${companyId}`, () =>
+    all<SpeakerRow>(
+      env.DB,
+      `SELECT * FROM speakers WHERE is_active=1 AND company_id=?
+       ORDER BY talk_count DESC, name ASC`,
+      [companyId],
+    ),
+  );
+}
+
+/** company_id → epoch secs of its earliest talk (first time on our stage). */
+export async function companyFirstSeen(env: Env): Promise<Record<string, number>> {
+  return cached(env, NS.speakers, "co-first", async () => {
+    const rows = await all<{ company_id: string; m: number }>(
+      env.DB,
+      `SELECT company_id, MIN(first_talk_at) m FROM speakers
+       WHERE company_id IS NOT NULL AND company_id<>'' AND first_talk_at IS NOT NULL
+       GROUP BY company_id`,
+    );
+    const o: Record<string, number> = {};
+    for (const r of rows) o[r.company_id] = r.m;
+    return o;
+  });
+}
+
+/** company_id → number of speakers, for company cards. */
+export async function companySpeakerCounts(env: Env): Promise<Record<string, number>> {
+  return cached(env, NS.speakers, "co-counts", async () => {
+    const rows = await all<{ company_id: string; n: number }>(
+      env.DB,
+      `SELECT company_id, COUNT(*) n FROM speakers
+       WHERE is_active=1 AND company_id IS NOT NULL AND company_id<>''
+       GROUP BY company_id`,
+    );
+    const m: Record<string, number> = {};
+    for (const r of rows) m[r.company_id] = r.n;
+    return m;
+  });
+}
+
 /* ── social ───────────────────────────────────────────────────────────────── */
 export async function listSocial(
   env: Env,
@@ -350,6 +465,8 @@ export interface SiteStats {
   pastEvents: number;
   posts: number;
   recordings: number;
+  companies: number;
+  speakers: number;
 }
 export async function getStats(env: Env): Promise<SiteStats> {
   return cached(env, NS.home, "stats", async () => {
@@ -363,6 +480,8 @@ export async function getStats(env: Env): Promise<SiteStats> {
       ),
       posts: await c("SELECT COUNT(*) n FROM posts WHERE status='published'"),
       recordings: await c("SELECT COUNT(*) n FROM recordings WHERE is_active=1"),
+      companies: await c("SELECT COUNT(*) n FROM companies WHERE is_active=1"),
+      speakers: await c("SELECT COUNT(*) n FROM speakers WHERE is_active=1"),
     };
   });
 }

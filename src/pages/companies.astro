@@ -1,0 +1,197 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Icon from "@/components/Icon.astro";
+import { tryEnv } from "@/lib/runtime";
+import { listCompanies, companySpeakerCounts } from "@/lib/content";
+import { imageSrc } from "@/lib/ui";
+import { BRAND } from "@/lib/site";
+import type { CompanyRow } from "@/lib/types";
+
+const env = tryEnv(Astro.locals);
+let companies: CompanyRow[] = [];
+let counts: Record<string, number> = {};
+if (env) {
+  try {
+    [companies, counts] = await Promise.all([listCompanies(env), companySpeakerCounts(env)]);
+  } catch {
+    /* pre-seed */
+  }
+}
+
+// sector tallies for the filter rail
+const sectorCounts = new Map<string, number>();
+for (const c of companies) {
+  const k = c.sector || "Diğer";
+  sectorCounts.set(k, (sectorCounts.get(k) ?? 0) + 1);
+}
+const sectors = [...sectorCounts.entries()].sort(
+  (a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "tr"),
+);
+
+// order the wall: logo'd + most speakers first (so the wall reads strong up top)
+const wall = [...companies].sort(
+  (a, b) =>
+    (b.logo_url ? 1 : 0) - (a.logo_url ? 1 : 0) ||
+    (counts[b.id] ?? 0) - (counts[a.id] ?? 0) ||
+    a.name.localeCompare(b.name, "tr"),
+);
+
+const totalSpeakers = Object.values(counts).reduce((a, b) => a + b, 0);
+
+const companiesLd = companies.length
+  ? {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: "Developer MultiGroup etkinliklerinde yer alan şirketler",
+      numberOfItems: companies.length,
+      itemListElement: companies.map((c, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        item: { "@type": "Organization", name: c.name, ...(c.website ? { url: c.website } : {}) },
+      })),
+    }
+  : undefined;
+---
+
+<BaseLayout
+  title="Şirketler"
+  description="6 yılda Developer MultiGroup sahnesinde konuşmacılarıyla yer alan şirketler — Trendyol, Hepsiburada, Akbank, Garanti BBVA, Microsoft, AWS ve yüzlerce teknoloji şirketi."
+  canonicalPath="/companies"
+  jsonLd={companiesLd}
+  breadcrumbs={[{ name: "Şirketler", item: `${BRAND.url}/companies` }]}
+>
+  <!-- hero -->
+  <section class="container-x pt-14 pb-5">
+    <p class="text-sm text-ink-faint uppercase tracking-[0.18em] mb-4">Ekosistem · Şirketler</p>
+    <div class="grid lg:grid-cols-[1fr_auto] gap-6 lg:gap-16 lg:items-end">
+      <h1 class="text-4xl md:text-6xl font-semibold leading-[1.02] max-w-3xl">
+        Altı yılda <span class="text-grad">{companies.length} şirket</span> bu sahneyi paylaştı.
+      </h1>
+      <div class="flex gap-8 shrink-0">
+        <div><div class="font-display text-3xl md:text-4xl font-semibold tabular-nums">{companies.length}</div><div class="text-ink-faint text-[0.7rem] mt-1 font-mono uppercase tracking-wider">şirket</div></div>
+        <div><div class="font-display text-3xl md:text-4xl font-semibold tabular-nums">{sectors.length}</div><div class="text-ink-faint text-[0.7rem] mt-1 font-mono uppercase tracking-wider">sektör</div></div>
+        <div><div class="font-display text-3xl md:text-4xl font-semibold tabular-nums">{totalSpeakers}</div><div class="text-ink-faint text-[0.7rem] mt-1 font-mono uppercase tracking-wider">konuşmacı</div></div>
+      </div>
+    </div>
+    <p class="text-ink-dim mt-6 max-w-2xl leading-relaxed">
+      İş birliklerinden farklı olarak bu duvar, sahnemizde yer alan konuşmacıların geldiği
+      şirketleri gösterir — global teknoloji devlerinden Türkiye'nin yıldız girişimlerine.
+    </p>
+  </section>
+
+  <!-- toolbar: search + sector rail -->
+  <section class="container-x pt-8">
+    <div id="co-toolbar" class="flex flex-col gap-4 scroll-mt-20">
+      <label class="relative max-w-md">
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none"><Icon name="search" size={16} /></span>
+        <input id="co-search" type="text" autocomplete="off" placeholder="Şirket ara…"
+          class="w-full bg-white/[0.04] border border-line rounded-xl pl-9 pr-9 py-2.5 text-sm placeholder:text-ink-faint focus:outline-none focus:border-white/25 transition" />
+        <button type="button" id="co-search-clear" aria-label="Temizle" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink-text"><Icon name="close" size={15} /></button>
+      </label>
+      <div class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
+        <button type="button" class="sector-pill is-active" data-sector="">Tümü <span class="tabular-nums opacity-60">{companies.length}</span></button>
+        {sectors.map(([s, n]) => (
+          <button type="button" class="sector-pill" data-sector={s}>{s} <span class="tabular-nums opacity-60">{n}</span></button>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- the wall -->
+  <section class="container-x py-7">
+    <div id="co-wall" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-px bg-line rounded-2xl overflow-hidden border border-line">
+      {
+        wall.map((c) => {
+          const logo = imageSrc(c.logo_url);
+          const inner = (
+            <div class="mark group relative grid place-items-center h-36 px-5 bg-ink-950 hover:bg-ink-900 transition-colors"
+              data-q={`${c.name} ${c.sector}`.toLocaleLowerCase("tr")} data-sector={c.sector}>
+              {logo ? (
+                <img src={logo} alt={c.name} loading="lazy" class="max-h-10 max-w-[78%] w-auto object-contain opacity-55 group-hover:opacity-100 transition duration-300 group-hover:scale-[1.04]" />
+              ) : (
+                <span class="font-display text-base md:text-lg font-medium text-center leading-tight text-ink-dim group-hover:text-ink-text transition-colors">{c.name}</span>
+              )}
+              {c.website && (
+                <span class="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition text-ink-faint"><Icon name="arrow-up-right" size={13} /></span>
+              )}
+            </div>
+          );
+          return c.website ? (
+            <a href={c.website} target="_blank" rel="noopener noreferrer" class="co-cell"
+              data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "company_mark", name: c.name, sector: c.sector, page: "companies" })}>
+              {inner}
+            </a>
+          ) : (
+            <div class="co-cell">{inner}</div>
+          );
+        })
+      }
+    </div>
+    <p id="co-empty" class="hidden text-center text-ink-faint text-sm py-12">
+      Eşleşen şirket yok. <button type="button" data-clear-all class="underline hover:text-ink-text">Temizle</button>
+    </p>
+  </section>
+
+  <style>
+    .co-cell { display: contents; }
+    .mark.is-hidden { display: none; }
+    .sector-pill {
+      flex: none; display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.4rem 0.8rem; border-radius: 999px; font-size: 0.8rem; white-space: nowrap;
+      color: var(--color-ink-dim); border: 1px solid var(--color-line);
+      background: rgba(255,255,255,0.02); transition: all 0.15s var(--ease-out-soft); cursor: pointer;
+    }
+    .sector-pill:hover { color: var(--color-ink-text); border-color: rgba(255,255,255,0.2); }
+    .sector-pill.is-active { color: #000; background: #fff; border-color: #fff; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { scrollbar-width: none; }
+  </style>
+
+  <script is:inline>
+    (() => {
+      const init = () => {
+        const wall = document.getElementById("co-wall");
+        const search = document.getElementById("co-search");
+        if (!wall || !search || wall.dataset.bound) return;
+        wall.dataset.bound = "1";
+        const marks = Array.from(wall.querySelectorAll(".mark"));
+        const pills = Array.from(document.querySelectorAll(".sector-pill"));
+        const clearBtn = document.getElementById("co-search-clear");
+        const empty = document.getElementById("co-empty");
+        const state = { sector: "", q: "" };
+        const norm = (s) => (s || "").toLocaleLowerCase("tr").trim();
+        const cellOf = (m) => m.closest(".co-cell") || m;
+        const apply = () => {
+          let total = 0;
+          marks.forEach((m) => {
+            const ok = (!state.sector || m.dataset.sector === state.sector) && (!state.q || (m.dataset.q || "").includes(state.q));
+            cellOf(m).classList.toggle("is-hidden", !ok);
+            m.classList.toggle("is-hidden", !ok);
+            if (ok) total++;
+          });
+          if (empty) empty.classList.toggle("hidden", total !== 0);
+          if (clearBtn) clearBtn.classList.toggle("hidden", !search.value);
+        };
+        let deb;
+        search.addEventListener("input", () => {
+          state.q = norm(search.value); apply();
+          clearTimeout(deb);
+          deb = setTimeout(() => {
+            const q = state.q.trim(); if (q.length < 2) return;
+            try { window.track && window.track("search_submit", { query: q, result_count: wall.querySelectorAll(".mark:not(.is-hidden)").length, surface: "companies" }); } catch (e) {}
+          }, 400);
+        });
+        if (clearBtn) clearBtn.addEventListener("click", () => { search.value = ""; state.q = ""; apply(); search.focus(); });
+        pills.forEach((p) => p.addEventListener("click", () => {
+          pills.forEach((x) => x.classList.remove("is-active")); p.classList.add("is-active");
+          state.sector = p.dataset.sector || ""; apply();
+        }));
+        const clearAll = document.querySelector("[data-clear-all]");
+        if (clearAll) clearAll.addEventListener("click", () => { state.sector = ""; state.q = ""; search.value = ""; pills.forEach((x) => x.classList.toggle("is-active", !x.dataset.sector)); apply(); });
+        apply();
+      };
+      if (!window.__dmgCoWall) { window.__dmgCoWall = true; document.addEventListener("astro:page-load", init); }
+      init();
+    })();
+  </script>
+</BaseLayout>

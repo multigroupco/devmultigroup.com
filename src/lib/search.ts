@@ -23,7 +23,9 @@ export type SearchType =
   | "recordings"
   | "links"
   | "team"
-  | "communities";
+  | "communities"
+  | "companies"
+  | "speakers";
 
 export interface SearchResult {
   type: SearchType;
@@ -129,6 +131,28 @@ export const TYPES: Record<SearchType, TypeConfig> = {
     published: isActive,
     table: "communities",
     cols: ["name", "ecosystem", "city"],
+    where: "is_active=1",
+  },
+  companies: {
+    label: "Şirketler",
+    title: (r) => r.name,
+    text: (r) => `${r.name}\n${r.sector ?? ""}\n${r.description ?? ""}`,
+    snippet: (r) => clip(r.sector || r.description, 300),
+    url: (_r, id) => `/companies#c-${id}`,
+    published: isActive,
+    table: "companies",
+    cols: ["name", "sector", "description"],
+    where: "is_active=1",
+  },
+  speakers: {
+    label: "Konuşmacılar",
+    title: (r) => r.name,
+    text: (r) => `${r.name}\n${r.title ?? ""}\n${r.company ?? ""}\n${r.bio ?? ""}`,
+    snippet: (r) => clip([r.title, r.company].filter(Boolean).join(" · ") || r.bio, 300),
+    url: (_r, id) => `/speakers#s-${id}`,
+    published: isActive,
+    table: "speakers",
+    cols: ["name", "title", "company", "bio"],
     where: "is_active=1",
   },
 };
