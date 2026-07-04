@@ -65,6 +65,16 @@ const ICONS = opt(
   "link", "instagram", "twitter", "linkedin", "youtube", "github", "globe",
   "calendar", "mail", "book-open", "play", "users", "sparkles", "external", "map-pin",
 );
+// Icons available for /kaynakca resource cards (all exist in Icon.astro).
+const RES_ICONS = opt(
+  "book-open", "sparkles", "cpu", "code", "smartphone", "layers", "users",
+  "github", "globe", "play",
+);
+const RES_GROUPS = [
+  { value: "kaynakca", label: "Kaynakça & Derlemeler" },
+  { value: "bootcamp", label: "Bootcamp & Kurslar" },
+  { value: "diger", label: "Topluluk & Diğer" },
+];
 
 export const RESOURCES: Record<string, Resource> = {
   events: {
@@ -164,6 +174,33 @@ export const RESOURCES: Record<string, Resource> = {
       { name: "accent", label: "Accent colour", type: "color", options: ACCENTS },
       { name: "sort_order", label: "Sort order", type: "number" },
       { name: "is_active", label: "Active", type: "boolean" },
+    ],
+  },
+
+  resources: {
+    key: "resources",
+    label: "Kaynakça",
+    singular: "Resource",
+    table: "resources",
+    icon: "book-open",
+    ns: [NS.resources],
+    defaultSort: "sort_order ASC, created_at ASC",
+    listColumns: [
+      { name: "title", label: "Title" },
+      { name: "group_name", label: "Group" },
+      { name: "lang", label: "Lang" },
+      { name: "is_active", label: "Active" },
+    ],
+    fields: [
+      { name: "title", label: "Title", type: "text", required: true },
+      { name: "url", label: "URL (GitHub repo)", type: "text", required: true, full: true },
+      { name: "description", label: "Description", type: "textarea", full: true },
+      { name: "icon", label: "Icon", type: "select", options: RES_ICONS },
+      { name: "group_name", label: "Group", type: "select", options: RES_GROUPS },
+      { name: "lang", label: "Language (optional)", type: "text", help: "e.g. Kotlin, JavaScript — leave blank to hide the chip." },
+      { name: "sort_order", label: "Sort order", type: "number" },
+      { name: "is_active", label: "Active", type: "boolean" },
+      { name: "is_soon", label: "Mark as “yakında”", type: "boolean" },
     ],
   },
 

@@ -75,6 +75,7 @@ export const NS = {
   events: "events",
   posts: "posts",
   links: "links",
+  resources: "resources",
   recordings: "recordings",
   gallery: "gallery",
   team: "team",

@@ -1,0 +1,115 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Icon from "@/components/Icon.astro";
+import { SOCIALS } from "@/lib/site";
+import { getEnv } from "@/lib/runtime";
+import { listResources } from "@/lib/content";
+import type { ResourceRow } from "@/lib/types";
+
+const env = getEnv(Astro.locals);
+const resources = await listResources(env);
+
+const GROUP_META: Record<string, { label: string; note: string }> = {
+  kaynakca: { label: "Kaynakça & Derlemeler", note: "Küratörlü kaynak listeleri (awesome)." },
+  bootcamp: { label: "Bootcamp & Kurslar", note: "Program müfredatları ve ders materyalleri." },
+  diger: { label: "Topluluk & Diğer", note: "Topluluk ve geliştirici kaynakları." },
+};
+const ORDER = ["kaynakca", "bootcamp", "diger"];
+
+const grouped = new Map<string, ResourceRow[]>();
+for (const r of resources) {
+  const g = r.group_name || "diger";
+  if (!grouped.has(g)) grouped.set(g, []);
+  grouped.get(g)!.push(r);
+}
+const orderedGroups = [
+  ...ORDER.filter((g) => grouped.has(g)),
+  ...[...grouped.keys()].filter((g) => !ORDER.includes(g)),
+];
+const total = resources.length;
+---
+
+<BaseLayout
+  title="Kaynakça — Developer MultiGroup"
+  description="MultiGroup'un açık kaynak eğitim derlemeleri, bootcamp kaynakçaları ve awesome list'leri — hepsi GitHub'da, herkese açık."
+  canonicalPath="/kaynakca"
+>
+  <section class="container-x py-16 md:py-24">
+    <!-- hero -->
+    <div class="max-w-2xl">
+      <span class="chip">Açık Kaynak</span>
+      <h1 class="text-4xl md:text-5xl font-semibold mt-4">Kaynakça</h1>
+      <p class="text-ink-dim mt-4 leading-relaxed">
+        MultiGroup'un açık eğitim derlemeleri, bootcamp kaynakçaları ve awesome
+        list'leri — hepsi GitHub'da, herkese açık. Öğrenmeye buradan başla.
+      </p>
+      <a
+        href={SOCIALS.multigroup.github}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="group inline-flex items-center gap-2 mt-6 text-sm text-ink-dim hover:text-ink-text transition-colors"
+        data-track="resource_click"
+        data-track-props={JSON.stringify({ repo: "org", location: "kaynakca-hero" })}
+      >
+        <Icon name="github" size={16} />
+        multigroupco'nun tüm repoları
+        <Icon name="arrow-up-right" size={15} class="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+      </a>
+    </div>
+
+    <!-- groups -->
+    {
+      total === 0 ? (
+        <div class="card p-8 mt-12 text-center text-ink-dim text-sm">Kaynaklar hazırlanıyor.</div>
+      ) : (
+        orderedGroups.map((g) => (
+          <div class="mt-14">
+            <div class="flex items-baseline gap-3 mb-5">
+              <h2 class="text-xs uppercase tracking-[0.12em] text-ink-faint">{GROUP_META[g]?.label ?? g}</h2>
+              {GROUP_META[g]?.note && <span class="text-xs text-ink-faint/70">{GROUP_META[g].note}</span>}
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {grouped.get(g)!.map((repo) => (
+                <a
+                  href={repo.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="card p-5 flex flex-col gap-3.5 hover:border-line-strong transition-colors group"
+                  data-track="resource_click"
+                  data-track-props={JSON.stringify({ repo: repo.title, location: "kaynakca" })}
+                >
+                  <div class="flex items-center justify-between">
+                    <span class="grid place-items-center w-10 h-10 rounded-xl border border-line text-ink-dim group-hover:text-ink-text group-hover:border-line-strong transition-colors">
+                      <Icon name={repo.icon || "book-open"} size={18} />
+                    </span>
+                    <Icon name="arrow-up-right" size={18} class="text-ink-faint group-hover:text-ink-text transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </div>
+
+                  <div>
+                    <h3 class="font-medium text-ink-text flex items-center gap-2 flex-wrap">
+                      {repo.title}
+                      {repo.is_soon === 1 && <span class="chip !text-[0.62rem] !py-0.5">yakında</span>}
+                    </h3>
+                    <p class="text-sm text-ink-dim mt-1.5 leading-relaxed">{repo.description}</p>
+                  </div>
+
+                  <div class="mt-auto flex items-center gap-2.5 text-xs text-ink-faint pt-1">
+                    {repo.lang && <span class="chip !text-[0.68rem]">{repo.lang}</span>}
+                    <span class="inline-flex items-center gap-1 ml-auto text-ink-faint/80 group-hover:text-ink-dim transition-colors">
+                      <Icon name="github" size={13} /> GitHub
+                    </span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        ))
+      )
+    }
+
+    <p class="text-ink-faint text-sm mt-16">
+      {total} açık kaynak — katkı ve yıldız her zaman açık. Eksik ya da düzeltilecek bir şey varsa
+      <a href={SOCIALS.multigroup.github} target="_blank" rel="noopener noreferrer" class="text-ink-dim hover:text-ink-text underline underline-offset-2 transition-colors">GitHub</a>'dan ulaşabilirsin.
+    </p>
+  </section>
+</BaseLayout>

@@ -37,6 +37,7 @@ export const NAV: NavItem[] = [
     children: [
       { label: "Blog", href: "/blog" },
       { label: "Kayıtlar", href: "/recordings" },
+      { label: "Kaynakça", href: "/kaynakca" },
     ],
   },
   { label: "Mağaza", href: "/store" },
@@ -70,6 +71,7 @@ export const FOOTER_NAV: { label: string; href: string }[] = [
   { label: "Akademi", href: "/academy" },
   { label: "Kayıtlar", href: "/recordings" },
   { label: "Blog", href: "/blog" },
+  { label: "Kaynakça", href: "/kaynakca" },
   { label: "Ekip", href: "/team" },
   { label: "Mağaza", href: "/store" },
   { label: "Bağlantılar", href: "/links" },

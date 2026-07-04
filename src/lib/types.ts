@@ -73,6 +73,22 @@ export interface LinkRow {
   updated_at: number;
 }
 
+/** Curated open-source content repo shown on /kaynakca. */
+export interface ResourceRow {
+  id: string;
+  title: string;
+  description: string;
+  url: string;
+  icon: string;
+  group_name: string; // kaynakca | bootcamp | diger
+  lang: string;
+  sort_order: number;
+  is_active: number;
+  is_soon: number;
+  created_at: number;
+  updated_at: number;
+}
+
 export interface RecordingRow {
   id: string;
   title: string;

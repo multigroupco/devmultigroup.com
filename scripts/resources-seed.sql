@@ -1,0 +1,15 @@
+-- Seed for /kaynakca — curated open-source content repos under multigroupco.
+-- Re-runnable (INSERT OR REPLACE by stable id). Direct D1 write → bump cv:resources
+-- or wait the 600s cache TTL after seeding.
+
+INSERT OR REPLACE INTO resources (id, title, description, url, icon, group_name, lang, sort_order, is_active, is_soon) VALUES
+  ('res-ds-awesome',    'Data Science Awesome',          'Veri bilimi, makine öğrenmesi ve üretken yapay zekâ için topluluk derlemesi kapsamlı kaynak listesi.', 'https://github.com/multigroupco/DMG-Data-Science-Awesome',            'sparkles',   'kaynakca', '',           10, 1, 0),
+  ('res-android-blast', 'Android Blast Off',             'Jetpack Compose ile Android geliştirme bootcamp kaynakçası.',                                          'https://github.com/multigroupco/Android-Blast-Off',                   'smartphone', 'kaynakca', 'Kotlin',     20, 1, 0),
+  ('res-android-awe',   'Android Awesome',               'Android Blast Off için derlenmiş Jetpack Compose kaynak listesi.',                                     'https://github.com/multigroupco/DMG-Android-Awesome',                 'smartphone', 'kaynakca', '',           30, 1, 0),
+  ('res-zero2end-ml',   'Zero2End ML Bootcamp',          'Sıfırdan ileri seviyeye makine öğrenmesi bootcamp müfredatı ve materyalleri.',                         'https://github.com/multigroupco/Zero2End-ML-Bootcamp',                'cpu',        'bootcamp', '',           10, 1, 0),
+  ('res-genai-gemini',  'GenAI Fundamentals w/ Gemini',  'Google Gemini ile üretken yapay zekâ temelleri kursunun içerik ve materyalleri.',                      'https://github.com/multigroupco/GenerativeAI-Fundamentals-With-Gemini','sparkles',  'bootcamp', '',           20, 1, 0),
+  ('res-build-with-ai', 'Build With AI',                 'Google iş birliğiyle Build With AI — ajanlar, Gemini ve modern yapay zekâ araçları.',                  'https://github.com/multigroupco/MultiGroup-Build-With-AI-Course',      'sparkles',   'bootcamp', '',           30, 1, 0),
+  ('res-python-zero',   'Python Zero to Hero',           'Python Zero-to-Hero bootcamp müfredatı, Jupyter notebooklarıyla.',                                     'https://github.com/multigroupco/PythonFundamentals',                  'code',       'bootcamp', 'Jupyter',    40, 1, 0),
+  ('res-fwd-react',     'Foundations · Web Dev (React)', 'MultiAcademy Foundations — React ile web geliştirme sertifika programı.',                              'https://github.com/multigroupco/fwd-react',                           'code',       'bootcamp', 'JavaScript', 50, 1, 0),
+  ('res-mg-hq',         'MultiGroup HQ',                 'Topluluğun kaynak ve kültür deposu.',                                                                  'https://github.com/multigroupco/MultiGroup.hq',                       'users',      'diger',    '',           10, 1, 0),
+  ('res-contextra',     'Android Contextra',             'Android geliştirme için Contextra kaynak derlemesi.',                                                  'https://github.com/multigroupco/Android-Contextra',                   'smartphone', 'diger',    '',           20, 1, 1);

@@ -8,6 +8,7 @@ import type {
   LinkRow,
   PostRow,
   RecordingRow,
+  ResourceRow,
   Settings,
   SocialRow,
   TeamRow,
@@ -227,6 +228,16 @@ export async function listLinks(env: Env): Promise<LinkRow[]> {
     all<LinkRow>(
       env.DB,
       `SELECT * FROM links WHERE is_active=1 ORDER BY sort_order ASC, created_at ASC`,
+    ),
+  );
+}
+
+/* ── resources (open-source content repos — /kaynakca) ─────────────────────── */
+export async function listResources(env: Env): Promise<ResourceRow[]> {
+  return cached(env, NS.resources, "active", () =>
+    all<ResourceRow>(
+      env.DB,
+      `SELECT * FROM resources WHERE is_active=1 ORDER BY sort_order ASC, created_at ASC`,
     ),
   );
 }
