@@ -1,14 +1,26 @@
 import type { APIRoute } from "astro";
+import { getEnv } from "@/lib/runtime";
 
-// Clear the local session. (Künye's own session/end-session is separate; this
-// signs the user out of devmultigroup-web only.)
-const handler: APIRoute = async ({ redirect, session }) => {
+// Full logout: clear THIS app's session, then redirect to Künye's logout so the
+// SSO session is also terminated (otherwise the next /admin visit silently
+// re-authenticates). Künye bounces back to this app's home.
+const handler: APIRoute = async ({ redirect, session, request, locals }) => {
   try {
     await session?.destroy();
   } catch {
     await session?.delete("auth");
   }
-  return redirect("/", 302);
+
+  const origin = new URL(request.url).origin;
+  let kunyeOrigin = "https://kunye.devmultigroup.com";
+  try {
+    const issuer = getEnv(locals).KUNYE_ISSUER;
+    if (issuer) kunyeOrigin = new URL(issuer).origin;
+  } catch {
+    /* fall back to the prod origin */
+  }
+  const dest = `${kunyeOrigin}/api/logout?redirect_uri=${encodeURIComponent(`${origin}/`)}`;
+  return redirect(dest, 302);
 };
 
 export const GET = handler;
