@@ -33,6 +33,7 @@
     "@fontsource-variable/space-grotesk": "5.2.10",
     "astro": "5.18.2",
     "marked": "18.0.5",
+    "oauth4webapi": "^3.8.6",
     "workers-og": "^0.0.27"
   },
   "devDependencies": {

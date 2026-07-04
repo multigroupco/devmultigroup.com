@@ -2,6 +2,7 @@ import { defineMiddleware } from "astro:middleware";
 import { tryEnv } from "./lib/runtime";
 import { captureServerException } from "./lib/sentry";
 import { isApexHost } from "./lib/site";
+import { ADMIN_ROLES } from "./lib/oidc";
 
 // The one host whose pages should be indexable. Every other host that serves
 // this Worker (the workers.dev staging URL, www, CF preview deploys) is kept out
@@ -18,8 +19,9 @@ import { isApexHost } from "./lib/site";
 // layers on baseline security headers, the staging-noindex guard, and a
 // conservative edge cache for SSR HTML.
 export const onRequest = defineMiddleware(async (context, next) => {
-  const email = context.request.headers.get("Cf-Access-Authenticated-User-Email");
-  context.locals.adminEmail = email;
+  // /admin identity now comes from the Künye session (OIDC), not Cloudflare
+  // Access. Resolved lazily in the /admin branch below.
+  context.locals.adminEmail = null;
   const dev = import.meta.env.DEV;
   const { pathname, host } = context.url;
 
@@ -47,16 +49,30 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   let response: Response;
   if (pathname.startsWith("/admin")) {
-    if (!email && !dev) {
-      response = new Response(
-        "Forbidden — this area is protected by Cloudflare Access.",
-        { status: 403, headers: { "content-type": "text/plain; charset=utf-8" } },
-      );
-    } else {
-      if (!context.locals.adminEmail) {
-        context.locals.adminEmail = dev ? "dev@localhost" : null;
-      }
+    // Künye OIDC session is the gate. (Cloudflare Access is retired for /admin.)
+    let authed: App.SessionData["auth"] | undefined;
+    try {
+      authed = await context.session?.get("auth");
+    } catch {
+      /* no session store / not signed in */
+    }
+    const role = authed?.role ?? "";
+
+    if (authed && ADMIN_ROLES.has(role)) {
+      context.locals.adminEmail = authed.email ?? "admin";
+      context.locals.adminRole = role;
       response = await render();
+    } else if (dev) {
+      // Local convenience: edit content without logging in. Hit /auth/login to
+      // exercise the real Künye OIDC flow locally.
+      context.locals.adminEmail = "dev@localhost";
+      context.locals.adminRole = "super-admin";
+      response = await render();
+    } else {
+      response = context.redirect(
+        `/auth/login?redirect=${encodeURIComponent(pathname)}`,
+        302,
+      );
     }
   } else {
     response = await render();

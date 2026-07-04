@@ -141,12 +141,25 @@ banner in `PostCard.astro` (`/blog/banner/${slug}.svg` when no cover).
 
 ## Admin & auth
 
-- `/admin` is fronted by **Cloudflare Access** (Zero Trust) in production. Access
-  injects the `Cf-Access-Authenticated-User-Email` header.
-- [`src/middleware.ts`](./src/middleware.ts) reads that header into
-  `Astro.locals.adminEmail` and acts as defence-in-depth: on any `/admin*` path, **no
-  header + not dev → 403**. When `import.meta.env.DEV` is true the guard is **bypassed**
-  and the user becomes `dev@localhost`, so admin is freely usable in local dev.
+- `/admin` is gated by **Künye** — the MultiGroup central OIDC identity provider (a
+  separate app at `auth.devmultigroup.com`; source in the sibling `kunye/` repo).
+  **Cloudflare Access has been retired for `/admin`** (ADR
+  [`docs/adr/0001-kunye-central-identity-provider.md`](./docs/adr/0001-kunye-central-identity-provider.md)).
+- This app is an **OIDC relying party**: [`src/lib/oidc.ts`](./src/lib/oidc.ts)
+  (`oauth4webapi`) + the routes [`src/pages/auth/login.ts`](./src/pages/auth/login.ts)
+  (begin: PKCE/state/nonce → redirect to Künye), [`auth/callback.ts`](./src/pages/auth/callback.ts)
+  (exchange code, verify ID token, persist identity), and [`auth/logout.ts`](./src/pages/auth/logout.ts).
+  The federated identity (incl. the `role` claim) is stored in **this app's own session**
+  (Astro KV `SESSION`) — OIDC federates *login*, not sessions.
+- [`src/middleware.ts`](./src/middleware.ts) reads that session on `/admin*` and allows
+  only roles in `ADMIN_ROLES` (`super-admin`/`admin`), populating `Astro.locals.adminEmail`
+  (+ `adminRole`). Not signed in + not dev → **302 to `/auth/login`**. When
+  `import.meta.env.DEV` is true the guard **falls back** to `dev@localhost` for content
+  editing; hit `/auth/login` to exercise the real Künye flow locally.
+- **Config:** `KUNYE_ISSUER` (must include the `/api/auth` base path), `KUNYE_CLIENT_ID`,
+  `KUNYE_REDIRECT_URI` as vars; `KUNYE_CLIENT_SECRET` as a `wrangler secret`. The client is
+  registered in Künye with `skip_consent` (first-party) + both the `*.workers.dev` and
+  `localhost` redirect URIs.
 - The same middleware also layers SEO/security concerns onto **every** response:
   baseline security headers (HSTS/nosniff/Referrer-Policy/X-Frame-Options/Permissions-Policy),
   a short `Cache-Control` for SSR HTML GETs, and — crucially — an **`X-Robots-Tag:
@@ -159,8 +172,8 @@ banner in `PostCard.astro` (`/blog/banner/${slug}.svg` when no cover).
   (list), `/admin/[resource]/[id]` (edit/new/delete; `id === "new"` is create), and
   `/admin/settings`. All driven by `RESOURCES` / `SETTINGS_FIELDS`. The shared form
   control is [`src/components/admin/Field.astro`](./src/components/admin/Field.astro).
-- Sign-out links to `/cdn-cgi/access/logout`. There are **no app-side passwords** by
-  design.
+- Sign-out links to `/auth/logout` (clears the local session; Künye's own session is
+  separate). App-side passwords live in **Künye**, not here — this app never sees them.
 
 ## Analytics & observability
 

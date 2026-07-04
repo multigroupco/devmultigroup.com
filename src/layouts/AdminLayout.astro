@@ -53,7 +53,7 @@ const active = (href: string) => path === href || path.startsWith(href + "/");
         </nav>
         <div class="mt-6 pt-4 border-t border-line space-y-1">
           <a href="/" target="_blank" class="admin-nav"><Icon name="external" size={17} /> View site</a>
-          <a href="/cdn-cgi/access/logout" class="admin-nav"><Icon name="arrow-up-right" size={17} /> Sign out</a>
+          <a href="/auth/logout" class="admin-nav"><Icon name="arrow-up-right" size={17} /> Sign out</a>
         </div>
         {email && <p class="mt-4 px-2 text-xs text-ink-faint font-mono truncate">{email}</p>}
       </aside>
