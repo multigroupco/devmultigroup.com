@@ -19,7 +19,7 @@ import { ADMIN_ROLES } from "./lib/oidc";
 // layers on baseline security headers, the staging-noindex guard, and a
 // conservative edge cache for SSR HTML.
 export const onRequest = defineMiddleware(async (context, next) => {
-  // /admin identity now comes from the Künye session (OIDC), not Cloudflare
+  // /admin identity now comes from the Warden session (OIDC), not Cloudflare
   // Access. Resolved lazily in the /admin branch below.
   context.locals.adminEmail = null;
   const dev = import.meta.env.DEV;
@@ -49,7 +49,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   let response: Response;
   if (pathname.startsWith("/admin")) {
-    // Künye OIDC session is the gate. (Cloudflare Access is retired for /admin.)
+    // Warden OIDC session is the gate. (Cloudflare Access is retired for /admin.)
     let authed: App.SessionData["auth"] | undefined;
     try {
       authed = await context.session?.get("auth");
@@ -64,7 +64,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       response = await render();
     } else if (dev) {
       // Local convenience: edit content without logging in. Hit /auth/login to
-      // exercise the real Künye OIDC flow locally.
+      // exercise the real Warden OIDC flow locally.
       context.locals.adminEmail = "dev@localhost";
       context.locals.adminRole = "super-admin";
       response = await render();

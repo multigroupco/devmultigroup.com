@@ -1,7 +1,7 @@
 /**
- * OIDC relying-party client for Künye (the MultiGroup identity provider).
+ * OIDC relying-party client for Warden (the MultiGroup identity provider).
  *
- * devmultigroup-web is a standard OAuth 2.1 / OIDC client: it redirects to Künye
+ * devmultigroup-web is a standard OAuth 2.1 / OIDC client: it redirects to Warden
  * to authenticate, exchanges the code for tokens, and reads the `role` claim to
  * gate /admin. Uses `oauth4webapi` (panva) — zero deps, Web Crypto only, runs
  * natively on Cloudflare Workers.
@@ -12,31 +12,31 @@
 import * as oauth from "oauth4webapi";
 
 export interface OidcEnv {
-  KUNYE_ISSUER?: string;
-  KUNYE_CLIENT_ID?: string;
-  KUNYE_CLIENT_SECRET?: string;
-  KUNYE_REDIRECT_URI?: string;
+  WARDEN_ISSUER?: string;
+  WARDEN_CLIENT_ID?: string;
+  WARDEN_CLIENT_SECRET?: string;
+  WARDEN_REDIRECT_URI?: string;
   SITE_URL?: string;
 }
 
 function cfg(env: OidcEnv) {
-  const issuer = env.KUNYE_ISSUER;
-  const clientId = env.KUNYE_CLIENT_ID;
-  const clientSecret = env.KUNYE_CLIENT_SECRET;
-  const redirectUri = env.KUNYE_REDIRECT_URI;
+  const issuer = env.WARDEN_ISSUER;
+  const clientId = env.WARDEN_CLIENT_ID;
+  const clientSecret = env.WARDEN_CLIENT_SECRET;
+  const redirectUri = env.WARDEN_REDIRECT_URI;
   if (!issuer || !clientId || !clientSecret || !redirectUri) {
     throw new Error(
-      "Künye OIDC is not configured (KUNYE_ISSUER/CLIENT_ID/CLIENT_SECRET/REDIRECT_URI).",
+      "Warden OIDC is not configured (WARDEN_ISSUER/CLIENT_ID/CLIENT_SECRET/REDIRECT_URI).",
     );
   }
   return { issuer, clientId, clientSecret, redirectUri };
 }
 
-// oauth4webapi enforces HTTPS. For local testing Künye runs on http://localhost,
+// oauth4webapi enforces HTTPS. For local testing Warden runs on http://localhost,
 // so allow insecure requests ONLY for an http:// issuer — prod (https) is never
 // affected. Symbol-keyed option spread into every HTTP-making call.
 function httpOpts(env: OidcEnv): Record<symbol, boolean> {
-  return (env.KUNYE_ISSUER ?? "").startsWith("http://")
+  return (env.WARDEN_ISSUER ?? "").startsWith("http://")
     ? { [oauth.allowInsecureRequests]: true }
     : {};
 }
@@ -127,7 +127,7 @@ export async function completeLogin(
   });
 
   const claims = oauth.getValidatedIdTokenClaims(result);
-  if (!claims) throw new Error("Künye did not return a valid ID token.");
+  if (!claims) throw new Error("Warden did not return a valid ID token.");
 
   return {
     sub: claims.sub,
@@ -139,5 +139,5 @@ export async function completeLogin(
   };
 }
 
-/** Roles permitted into /admin. Mirrors Künye `admin({ adminRoles })`. */
+/** Roles permitted into /admin. Mirrors Warden `admin({ adminRoles })`. */
 export const ADMIN_ROLES = new Set(["super-admin", "admin"]);

@@ -139,29 +139,29 @@ grilling for this turn and converge on names.)
 ### Q5 — Service names (auth + mail)
 
 **Answer → NAMES LOCKED:**
-- **Auth / identity service = `Künye`** (Turkish: ID tag / credential). Becomes the
+- **Auth / identity service = `Warden`** (Turkish: ID tag / credential). Becomes the
   worker name, D1 name (`kunye-db`), package name, and the OIDC **issuer (`iss`)**.
 - **Mailing service = `Talaria`** (Turkish: postman). Renames `mail-template-generator`.
 
 (Process note: rejected the picker + first batches; chose from a 20-each table.)
 
-### Q6 — `/admin` gate: Künye/OIDC REPLACE Cloudflare Access, or layer behind it?
+### Q6 — `/admin` gate: Warden/OIDC REPLACE Cloudflare Access, or layer behind it?
 
-**Answer → DECISION: REPLACE.** `/admin` login becomes the Künye OIDC flow; Cloudflare
+**Answer → DECISION: REPLACE.** `/admin` login becomes the Warden OIDC flow; Cloudflare
 Access is removed from `/admin`. Login **factor = email + password** (Q6b); **social
 providers deferred** ("next step stuff"). Super-user = one seeded row with a password
 hash (Better Auth handles scrypt + rate-limit + sessions).
 
 **Consequences captured:**
-- Middleware gate swaps `Cf-Access-Authenticated-User-Email` header check → "valid Künye
+- Middleware gate swaps `Cf-Access-Authenticated-User-Email` header check → "valid Warden
   session + admin role." Keep the `import.meta.env.DEV → dev@localhost` bypass for local.
-- Edge gate is gone → Künye is the *sole* thing in front of `/admin` (unsanitised
+- Edge gate is gone → Warden is the *sole* thing in front of `/admin` (unsanitised
   markdown render, R2 upload, D1 writes). Acceptable while it's just Furkan on
-  workers.dev; **Künye must be hardened before apex cutover exposes `/admin` publicly.**
+  workers.dev; **Warden must be hardened before apex cutover exposes `/admin` publicly.**
 
-### Q7 — Künye scope: staff-only SSO, or universal MultiGroup identity?
+### Q7 — Warden scope: staff-only SSO, or universal MultiGroup identity?
 
-**Answer → DECISION: Universal identity with a managed role system.** Künye hosts a
+**Answer → DECISION: Universal identity with a managed role system.** Warden hosts a
 **super-admin route** where Furkan manages users/roles.
 
 **Role taxonomy (stated):** super-admin, admin, team, partner, partner-member, member.
@@ -180,21 +180,21 @@ hash (Better Auth handles scrypt + rate-limit + sessions).
 - Global roles for now are a **flat, staff-tier set** (super-admin/admin/team).
 - **Store customer auth (`docs/store/02`, separate BA in `STORE_DB`) STANDS for now** —
   store MVP is guest-checkout-first, so customer auth isn't built yet; when the `member`
-  surface lands, the store's future customer auth should be a **Künye client** rather
+  surface lands, the store's future customer auth should be a **Warden client** rather
   than standalone (forward note, not a phase-1 task).
 - **Forward-compat caution:** don't hard-encode `partner`/`member` as flat roles in a way
   that blocks the later org model — reserve the values, don't build behavior around them.
 
-### Q9 — Design-system delivery for Künye's pages
+### Q9 — Design-system delivery for Warden's pages
 
-**Answer → DECISION: Copy the design into a standalone Künye Astro app for phase 1.
+**Answer → DECISION: Copy the design into a standalone Warden Astro app for phase 1.
 No monorepo** (explicitly dropped). Accept the drift risk for now.
 
 **Future idea (not phase 1):** a proper **design system published via Storybook** on its
 own **subdomain** — this becomes the real drift-killer later (single source of visual
 truth all apps consume). User asked for **name ideas** for that design system.
 
-**Künye stack implied:** Künye is an **Astro app** (same stack as devmultigroup-web) so it
+**Warden stack implied:** Warden is an **Astro app** (same stack as devmultigroup-web) so it
 can reuse `global.css` + Fontsource + a minimal `BaseLayout` — hosts both the **login
 page** and the **super-admin console**.
 
@@ -208,9 +208,9 @@ implementation; ping only if blocked.
   `devmultigroup-db`); a light **Workers-compatible OIDC client** does the code exchange.
 - **C — client registration:** **static** OAuth-application rows in `kunye-db` (one for
   devmultigroup-web, one for Talaria later); each app's `client_secret` = a wrangler secret.
-- **Local testing:** Künye deployed for real; consumers tested on `*.workers.dev` +
+- **Local testing:** Warden deployed for real; consumers tested on `*.workers.dev` +
   `localhost` (both registered redirect URIs); `wrangler dev --remote` so local hits the
-  real Künye + `kunye-db`.
+  real Warden + `kunye-db`.
 - **Design-system name:** parked (candidates: **Desen** / **Atölye** / **Kalıp**).
 
 ---
@@ -221,42 +221,42 @@ implementation; ping only if blocked.
 
 ### Final decisions (the spec)
 
-1. **Topology — Federated central IdP.** A standalone **Künye** Astro Worker with its own
+1. **Topology — Federated central IdP.** A standalone **Warden** Astro Worker with its own
    D1 (`kunye-db`) at **`auth.devmultigroup.com`**. NOT consolidation; the reference
    (phoenix, single-app embedded auth) informed *how to do Better Auth on CF*, not the
    topology. Apps are clients.
 2. **Seam — Full OIDC** (`better-auth` `oidcProvider`). Redirect + back-channel token
    exchange; **no shared cookie** → `workers.dev` pre-cutover is fine.
-3. **Names — `Künye`** (identity, = OIDC `iss`), **`Talaria`** (mail, renames
+3. **Names — `Warden`** (identity, = OIDC `iss`), **`Talaria`** (mail, renames
    `mail-template-generator`). Design system later: *Desen/Atölye/Kalıp* (parked).
-4. **`/admin` gate — Künye REPLACES Cloudflare Access.** Login = **email + password**;
-   social deferred. Middleware swaps the `Cf-Access-…-Email` check → Künye session + role;
+4. **`/admin` gate — Warden REPLACES Cloudflare Access.** Login = **email + password**;
+   social deferred. Middleware swaps the `Cf-Access-…-Email` check → Warden session + role;
    keep the `DEV → dev@localhost` bypass.
-5. **Identity — Universal**, with a Künye-hosted **super-admin management console**. Roles
+5. **Identity — Universal**, with a Warden-hosted **super-admin management console**. Roles
    now: **super-admin, admin, team** (flat). Reserved (no surface yet): partner,
    partner-member, member. **Organization/multi-tenant plugin DEFERRED** (future ADR when
    a partner surface exists).
-6. **UI — copy** devmultigroup-web's AMOLED design into the standalone Künye app; **no
+6. **UI — copy** devmultigroup-web's AMOLED design into the standalone Warden app; **no
    monorepo**. Storybook design system on its own subdomain is a *later* drift-killer.
 7. **Client wiring — B/C/local** confirmed as above.
 
 ### Deferred / open risks (not phase-1 blockers)
-- Künye is the *sole* gate on `/admin` once Access is removed → **harden before apex
+- Warden is the *sole* gate on `/admin` once Access is removed → **harden before apex
   cutover** exposes it publicly.
-- Store customer auth (`docs/store/02`) stands standalone for now; **fold into Künye as a
+- Store customer auth (`docs/store/02`) stands standalone for now; **fold into Warden as a
   client when the `member` surface lands** (avoid a later customer migration by planning
-  it as a Künye client from the start).
+  it as a Warden client from the start).
 - **Multi-tenant org model** (partner/partner-member) → revisit + ADR when needed.
 - Copy-not-package **design drift** until the Storybook system exists.
 
 ### ADR-worthy decisions (flagged)
-- **"Central identity via a standalone OIDC provider (Künye), replacing Cloudflare Access
+- **"Central identity via a standalone OIDC provider (Warden), replacing Cloudflare Access
   on `/admin`"** — hard-to-reverse, reverses phoenix/store single-tenant-embedded stance,
   real trade-off. → capture as `docs/adr/` during implementation.
 - **Future:** adopting the multi-tenant organization plugin (when partner surfaces).
 
 ### Next (implementation)
-Build Künye (Better Auth email+password + `oidcProvider`, `kunye-db` migrations, login +
+Build Warden (Better Auth email+password + `oidcProvider`, `kunye-db` migrations, login +
 super-admin console in copied AMOLED UI, super-user seed script) → wire devmultigroup-web
 `/admin` as the first OIDC client (Workers OIDC client + Astro KV session + middleware
 rewire) → run locally, then deploy on user's go-ahead.
@@ -269,7 +269,7 @@ rewire) → run locally, then deploy on user's go-ahead.
 → switched to **`@better-auth/oauth-provider`** (OAuth 2.1, OIDC-compatible, hashed
 secrets, mandatory PKCE, asymmetric JWTs). Satisfies "full OIDC" on the safe track.
 
-**Künye** (new app at `MultiGroup/kunye/`, deploys to `auth.devmultigroup.com`):
+**Warden** (new app at `MultiGroup/warden/`, deploys to `auth.devmultigroup.com`):
 - `better-auth` 1.6.23 + `@better-auth/oauth-provider` + `jwt` + `admin`; Kysely
   `D1Dialect` (`kysely-d1`), `transaction:false`; per-request `createAuth(env)` factory.
 - `kunye-db` migration (all BA core + admin + jwt + oauth-provider tables, hand-ported
@@ -282,19 +282,19 @@ secrets, mandatory PKCE, asymmetric JWTs). Satisfies "full OIDC" on the safe tra
 **devmultigroup-web** (OIDC relying party):
 - `oauth4webapi` client (`src/lib/oidc.ts`) + `/auth/{login,callback,logout}`; identity
   in Astro KV `SESSION`. Middleware `/admin` gate swapped Cloudflare Access →
-  Künye session + `role` claim (dev bypass kept). Sign-out → `/auth/logout`.
+  Warden session + `role` claim (dev bypass kept). Sign-out → `/auth/logout`.
 - **Verified locally: full OIDC dance passes end-to-end** — login→authorize→(trusted,
   no consent)→callback w/ code→token exchange→ID-token verified→`/admin` renders as the
-  real Künye identity (`furkan@teachfluence.com`, role super-admin), not the dev bypass.
+  real Warden identity (`furkan@teachfluence.com`, role super-admin), not the dev bypass.
 
-**Docs:** `kunye/CLAUDE.md` (guide + deploy runbook), this ADR
+**Docs:** `warden/CLAUDE.md` (guide + deploy runbook), this ADR
 [`0001-kunye-central-identity-provider.md`], devmultigroup-web `CLAUDE.md` auth section
 updated.
 
 **Remaining = human-only (deploy):** `wrangler d1 create kunye-db` + real id, migrate
-remote, `wrangler secret put BETTER_AUTH_SECRET`, deploy Künye to workers.dev, bootstrap
-super-admin (`KUNYE_ALLOW_SIGNUP=1` → signup → seed → unset), register the prod client,
-set devmultigroup-web `KUNYE_*` secrets/vars, later the `auth.devmultigroup.com` custom
+remote, `wrangler secret put BETTER_AUTH_SECRET`, deploy Warden to workers.dev, bootstrap
+super-admin (`WARDEN_ALLOW_SIGNUP=1` → signup → seed → unset), register the prod client,
+set devmultigroup-web `WARDEN_*` secrets/vars, later the `auth.devmultigroup.com` custom
 domain. Nothing remote touched yet.
 
 

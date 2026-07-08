@@ -1,9 +1,9 @@
 import type { APIRoute } from "astro";
 import { getEnv } from "@/lib/runtime";
 
-// Full logout: clear THIS app's session, then redirect to Künye's logout so the
+// Full logout: clear THIS app's session, then redirect to Warden's logout so the
 // SSO session is also terminated (otherwise the next /admin visit silently
-// re-authenticates). Künye bounces back to this app's home.
+// re-authenticates). Warden bounces back to this app's home.
 const handler: APIRoute = async ({ redirect, session, request, locals }) => {
   try {
     await session?.destroy();
@@ -12,14 +12,14 @@ const handler: APIRoute = async ({ redirect, session, request, locals }) => {
   }
 
   const origin = new URL(request.url).origin;
-  let kunyeOrigin = "https://kunye.devmultigroup.com";
+  let wardenOrigin = "https://warden.devmultigroup.com";
   try {
-    const issuer = getEnv(locals).KUNYE_ISSUER;
-    if (issuer) kunyeOrigin = new URL(issuer).origin;
+    const issuer = getEnv(locals).WARDEN_ISSUER;
+    if (issuer) wardenOrigin = new URL(issuer).origin;
   } catch {
     /* fall back to the prod origin */
   }
-  const dest = `${kunyeOrigin}/api/logout?redirect_uri=${encodeURIComponent(`${origin}/`)}`;
+  const dest = `${wardenOrigin}/api/logout?redirect_uri=${encodeURIComponent(`${origin}/`)}`;
   return redirect(dest, 302);
 };
 

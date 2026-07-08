@@ -52,29 +52,29 @@ interface Env {
   POSTHOG_KEY?: string;
   POSTHOG_HOST?: string;
 
-  /** Künye (MultiGroup IdP) OIDC client config for /admin login.
+  /** Warden (MultiGroup IdP) OIDC client config for /admin login.
    *  ISSUER includes the /api/auth base path (e.g. https://auth.devmultigroup.com/api/auth).
    *  CLIENT_SECRET is a wrangler secret; the rest can be plain vars. */
-  KUNYE_ISSUER?: string;
-  KUNYE_CLIENT_ID?: string;
-  KUNYE_CLIENT_SECRET?: string;
-  KUNYE_REDIRECT_URI?: string;
+  WARDEN_ISSUER?: string;
+  WARDEN_CLIENT_ID?: string;
+  WARDEN_CLIENT_SECRET?: string;
+  WARDEN_REDIRECT_URI?: string;
 }
 
 type Runtime = import("@astrojs/cloudflare").Runtime<Env>;
 
 declare namespace App {
   interface Locals extends Runtime {
-    /** Email of the authenticated admin (now sourced from the Künye session,
+    /** Email of the authenticated admin (now sourced from the Warden session,
      *  formerly Cloudflare Access). Kept as the interface admin pages read. */
     adminEmail: string | null;
-    /** The Künye platform role of the current admin (super-admin | admin | …). */
+    /** The Warden platform role of the current admin (super-admin | admin | …). */
     adminRole?: string | null;
   }
 
   /** Shape of this app's own session (Astro KV `SESSION`). */
   interface SessionData {
-    /** Identity federated from Künye after OIDC login. */
+    /** Identity federated from Warden after OIDC login. */
     auth: {
       sub: string;
       email: string | null;

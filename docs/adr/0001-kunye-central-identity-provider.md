@@ -1,4 +1,4 @@
-# 0001 — Künye: a standalone OIDC identity provider replacing Cloudflare Access on /admin
+# 0001 — Warden: a standalone OIDC identity provider replacing Cloudflare Access on /admin
 
 - **Status:** Accepted
 - **Date:** 2026-07-04
@@ -15,11 +15,11 @@ same-origin, host-scoped cookies, no OIDC provider** — i.e. the opposite topol
 
 ## Decision
 
-Stand up **Künye**, a standalone **OAuth 2.1 / OIDC identity provider** (its own Worker +
+Stand up **Warden**, a standalone **OAuth 2.1 / OIDC identity provider** (its own Worker +
 D1 `kunye-db` at `auth.devmultigroup.com`), built on Better Auth's
 `@better-auth/oauth-provider` + `jwt` + `admin`. Apps are OIDC **relying parties**:
-devmultigroup-web's `/admin` federates to Künye and gates on the `role` claim. **Cloudflare
-Access is retired from `/admin`** — Künye is the gate.
+devmultigroup-web's `/admin` federates to Warden and gates on the `role` claim. **Cloudflare
+Access is retired from `/admin`** — Warden is the gate.
 
 Key sub-decisions:
 - **Full OIDC** (not shared-cookie / shared-DB). OIDC uses redirect + back-channel token
@@ -30,7 +30,7 @@ Key sub-decisions:
 - **Login factor: email + password.** Social/Google deferred.
 - **Universal identity with roles** (super-admin/admin/team now; partner/partner-member/
   member reserved). The multi-tenant `organization` plugin is **deferred** to a future ADR.
-- **Design: copy** devmultigroup-web's AMOLED system into Künye; **no monorepo** (a
+- **Design: copy** devmultigroup-web's AMOLED system into Warden; **no monorepo** (a
   Storybook design system on its own subdomain is a later drift-killer).
 - **Consumer session:** devmultigroup-web keeps its OWN session (Astro KV `SESSION`) from
   the federated login — OIDC federates login, not sessions.
@@ -40,7 +40,7 @@ Key sub-decisions:
 - **Positive:** one login for many apps; a real IdP foundation; `role` claim authorizes
   each RP; no Cloudflare-Access lock-in; workers.dev-testable before the apex cutover.
 - **Negative / risks:**
-  - Künye is now the **sole gate** on `/admin` — it must be hardened before the apex
+  - Warden is now the **sole gate** on `/admin` — it must be hardened before the apex
     cutover exposes `/admin` publicly (until then it's Furkan-only on workers.dev).
   - We own the login surface Cloudflare Access previously handled (password reset, rate
     limiting — Better Auth covers most).
@@ -54,5 +54,5 @@ Key sub-decisions:
 ## Deferred (future ADRs)
 
 - Adopting the multi-tenant **organization plugin** when a `partner` surface exists.
-- Folding the store's planned customer auth (`docs/store/02`) into Künye as a client when
-  the `member` surface lands (plan it as a Künye client to avoid a later migration).
+- Folding the store's planned customer auth (`docs/store/02`) into Warden as a client when
+  the `member` surface lands (plan it as a Warden client to avoid a later migration).
