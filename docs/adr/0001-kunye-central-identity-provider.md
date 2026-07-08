@@ -8,7 +8,7 @@
 
 devmultigroup.com's `/admin` was gated by **Cloudflare Access** (no app-side passwords).
 We now want **one MultiGroup identity** usable across *separate* apps — first the mailing
-tool (**Postacı**), later others — not just this site. The reference we studied
+tool (**Talaria**), later others — not just this site. The reference we studied
 (`kampus/phoenix`) does Better Auth on Cloudflare well but is deliberately **single-app,
 same-origin, host-scoped cookies, no OIDC provider** — i.e. the opposite topology from
 "share identity across separate deployments."

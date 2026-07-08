@@ -30,7 +30,7 @@ Bu kapsamlı bir uyum analizi görevi. Bulgular zaten JSON olarak verilmiş — 
 
 6. **mail-template-generator'da `middleware.ts` BULUNAMADI — PII endpoint'leri korumasız olabilir.** AGENTS.md ve route yorumları "middleware auth ile korunuyor" diyor ama dosya depo kökünde ve `src/` altında yok. Bu doğruysa, `/api/gdpr/export?email=` (herhangi bir kişinin tüm geçmişi) ve `/api/unsubscribes` (tüm abonelikten çıkma email'leri) kimlik doğrulamasız erişilebilir olabilir — KVKK m.12 (veri güvenliği) ciddi ihlali. **Bu acilen doğrulanmalı.**
 
-7. **`UNSUBSCRIBE_SECRET` prod'da set edilmezse `'mailing-manager-dev-secret'` sabitine düşüyor.** Bu durumda herkes geçerli unsubscribe/redirect token üretebilir — KVKK m.12 zafiyeti. Prod'da bu fallback'i reddeden bir guard gerekli.
+7. **`UNSUBSCRIBE_SECRET` prod'da set edilmezse `'talaria-dev-secret'` sabitine düşüyor.** Bu durumda herkes geçerli unsubscribe/redirect token üretebilir — KVKK m.12 zafiyeti. Prod'da bu fallback'i reddeden bir guard gerekli.
 
 ### ORTA ÖNCELİK
 
@@ -74,7 +74,7 @@ Aşağıdaki tablo, yazılacak metinlerin **dürüst temelidir** — burada yazm
 | PostHog (server): email = distinct_id (subscribe/contact/reserve) | Dönüşüm ölçümü | Tartışmalı (meşru menfaat iddiası) | PostHog **ABD** | **ABD** (düz metin email) | PostHog hesap varsayılanı |
 | Sentry (client + server): hata, URL, UA, referer, stack | Hata izleme | Meşru menfaat (avukat onayı gerekli) | Sentry **AB/Almanya** (de.sentry.io) | **AB** (ABD'den daha iyi ama yine yurt dışı; yeterlilik kararı yok) | Sentry plan varsayılanı |
 
-### mail-template-generator (Mailing Manager — ayrı uygulama, halihazırda çalışıyor)
+### mail-template-generator (Talaria — ayrı uygulama, halihazırda çalışıyor)
 
 | Veri | Amaç | Hukuki sebep | Nerede | Aktarım | Saklama |
 |---|---|---|---|---|---|
@@ -171,7 +171,7 @@ Mailing tool çoğunlukla bir backend/admin uygulaması (Next.js). Kampanya gön
 | **Tek Sentry projesi + environment/tag** | Tek kota | Tek yer | Web ve mailing hataları karışır, triyaj zorlaşır |
 
 **Öneri:**
-- **Sentry: AYRI PROJE** (mailing-manager). İki ayrı runtime/codebase olduğundan hataların ayrı projede olması triyajı ve alert'i temiz tutar; AB bölgesini (de.sentry.io) koru.
+- **Sentry: AYRI PROJE** (talaria). İki ayrı runtime/codebase olduğundan hataların ayrı projede olması triyajı ve alert'i temiz tutar; AB bölgesini (de.sentry.io) koru.
 - **PostHog: TEK PROJE + ayırt edici property** (`source: 'mailing'`) ile başla. Sebep: site↔mailing dönüşüm funnel'ı (ziyaretçi → abone → tıklayan) tek projede çok daha değerli; kota tek havuzdan yense de mailing tarafında replay/autocapture kapalı olacağı için event hacmi düşük. İleride hacim artarsa ayrı projeye böl.
 
 ### Açık/tıklama takibinin rıza/şeffaflık tarafı

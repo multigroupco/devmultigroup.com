@@ -98,7 +98,7 @@
 
 ## Doğrulanan Gerçekler (denetim — 2026-06-22)
 - **Henüz hiçbir veri toplanmıyor:** Site analitiği "apex-only" kapısıyla inert (apex henüz Astro worker'a geçmedi), PostHog `ingested_event: false`. → temiz sayfa; yanlış kurulumu yayına almadan düzeltme şansı.
-- **CF Access:** `mailing.devmultigroup.com` PII endpoint'leri (`/api/gdpr/export`, `/api/unsubscribes`) **Cloudflare Access ile korumalı** (login'e yönlendiriyor); `/unsubscribe` public (alıcılar için). → "middleware.ts yok" bulgusu pratikte düşük risk; koruma Access katmanında. Doc düzeltildi.
+- **CF Access:** `talaria.devmultigroup.com` PII endpoint'leri (`/api/gdpr/export`, `/api/unsubscribes`) **Cloudflare Access ile korumalı** (login'e yönlendiriyor); `/unsubscribe` public (alıcılar için). → "middleware.ts yok" bulgusu pratikte düşük risk; koruma Access katmanında. Doc düzeltildi.
 - **UNSUBSCRIBE_SECRET:** main + queue-consumer worker'larının ikisinde de **set** → prod'da dev-fallback kullanılmıyor.
 - **PostHog client IP:** proje düzeyinde artık `anonymize_ips: true` (yukarıda).
 

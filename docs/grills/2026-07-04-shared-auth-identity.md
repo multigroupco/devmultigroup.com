@@ -112,7 +112,7 @@ for the auth provider**.
 ### Q4 — OIDC now vs phased seam?
 
 **Answer → DECISION: Full OIDC, committed.** Testing plan resolved:
-- Nothing is live except the **mailing tool at `mailing.devmultigroup.com`** (live, but
+- Nothing is live except the **mailing tool at `talaria.devmultigroup.com`** (live, but
   used only by Furkan) — devmultigroup.com apex is **not** cut over yet.
 - Therefore: **test on the live `workers.dev` deployment.** Register the OIDC client
   **redirect URI as the `devmultigroup-web.*.workers.dev` URL** (not the apex
@@ -141,7 +141,7 @@ grilling for this turn and converge on names.)
 **Answer → NAMES LOCKED:**
 - **Auth / identity service = `Künye`** (Turkish: ID tag / credential). Becomes the
   worker name, D1 name (`kunye-db`), package name, and the OIDC **issuer (`iss`)**.
-- **Mailing service = `Postacı`** (Turkish: postman). Renames `mail-template-generator`.
+- **Mailing service = `Talaria`** (Turkish: postman). Renames `mail-template-generator`.
 
 (Process note: rejected the picker + first batches; chose from a 20-each table.)
 
@@ -207,7 +207,7 @@ implementation; ping only if blocked.
   store** for the post-OIDC local session (no new Better Auth client tables in
   `devmultigroup-db`); a light **Workers-compatible OIDC client** does the code exchange.
 - **C — client registration:** **static** OAuth-application rows in `kunye-db` (one for
-  devmultigroup-web, one for Postacı later); each app's `client_secret` = a wrangler secret.
+  devmultigroup-web, one for Talaria later); each app's `client_secret` = a wrangler secret.
 - **Local testing:** Künye deployed for real; consumers tested on `*.workers.dev` +
   `localhost` (both registered redirect URIs); `wrangler dev --remote` so local hits the
   real Künye + `kunye-db`.
@@ -227,7 +227,7 @@ implementation; ping only if blocked.
    topology. Apps are clients.
 2. **Seam — Full OIDC** (`better-auth` `oidcProvider`). Redirect + back-channel token
    exchange; **no shared cookie** → `workers.dev` pre-cutover is fine.
-3. **Names — `Künye`** (identity, = OIDC `iss`), **`Postacı`** (mail, renames
+3. **Names — `Künye`** (identity, = OIDC `iss`), **`Talaria`** (mail, renames
    `mail-template-generator`). Design system later: *Desen/Atölye/Kalıp* (parked).
 4. **`/admin` gate — Künye REPLACES Cloudflare Access.** Login = **email + password**;
    social deferred. Middleware swaps the `Cf-Access-…-Email` check → Künye session + role;
