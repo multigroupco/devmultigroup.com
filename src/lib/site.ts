@@ -55,14 +55,14 @@ export const NAV: NavItem[] = [
 ];
 
 export const COMPANIES: { name: string; logo: string }[] = [
-  { name: "Google", logo: "/companies/google.png" },
-  { name: "Trendyol", logo: "/companies/trendyol.png" },
-  { name: "Hepsiburada", logo: "/companies/hepsiburada.png" },
-  { name: "Akbank", logo: "/companies/akbank.png" },
-  { name: "Teknasyon", logo: "/companies/teknasyon.png" },
-  { name: "Softtech", logo: "/companies/softtech.png" },
-  { name: "Wite", logo: "/companies/wite.png" },
-  { name: "Lodos.io", logo: "/companies/lodos.png" },
+  { name: "Google", logo: "/media/companies/google.png" },
+  { name: "Trendyol", logo: "/media/companies/trendyol.png" },
+  { name: "Hepsiburada", logo: "/media/companies/hepsiburada.png" },
+  { name: "Akbank", logo: "/media/companies/akbank.png" },
+  { name: "Teknasyon", logo: "/media/companies/teknasyon.png" },
+  { name: "Softtech", logo: "/media/companies/softtech.png" },
+  { name: "Wite", logo: "/media/companies/wite.png" },
+  { name: "Lodos.io", logo: "/media/companies/lodos.png" },
 ];
 
 export const FOOTER_NAV: { label: string; href: string }[] = [
@@ -77,7 +77,7 @@ export const FOOTER_NAV: { label: string; href: string }[] = [
   { label: "Bağlantılar", href: "/links" },
 ];
 
-/** Gizlilik / KVKK footer links. Legal texts are DRAFT pending lawyer review. */
+/** Gizlilik / KVKK footer links. */
 export const LEGAL_NAV: { label: string; href: string }[] = [
   { label: "Aydınlatma Metni", href: "/privacy" },
   { label: "Çerez Politikası", href: "/privacy/cerez-politikasi" },

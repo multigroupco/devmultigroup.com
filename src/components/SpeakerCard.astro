@@ -51,7 +51,7 @@ const q = `${s.name} ${companyName} ${s.title}`.toLocaleLowerCase("tr");
 >
   <div class="flex items-start gap-3.5">
     <div
-      class="relative w-14 h-14 rounded-full bg-white/[0.05] border border-line grid place-items-center shrink-0 overflow-hidden"
+      class:list={["relative w-14 h-14 rounded-full bg-white/[0.05] border border-line grid place-items-center shrink-0 overflow-hidden", avatar && "skeleton"]}
     >
       {
         avatar ? (
@@ -59,7 +59,8 @@ const q = `${s.name} ${companyName} ${s.title}`.toLocaleLowerCase("tr");
             src={avatar}
             alt={s.name}
             loading="lazy"
-            class="w-full h-full object-cover transition duration-300 group-hover:scale-[1.06]"
+            decoding="async"
+            class="img-reveal absolute inset-0 w-full h-full object-cover group-hover:scale-[1.06]"
           />
         ) : (
           <span class="font-display text-base text-ink-dim">{initials}</span>

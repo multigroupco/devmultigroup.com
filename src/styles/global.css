@@ -88,6 +88,9 @@
     scrollbar-gutter: stable;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+    /* true-black base so no lighter frame can flash through during a
+       view transition (the fixed .site-bg is transition:persist'd above it). */
+    background-color: var(--color-ink-950);
   }
 
   body {
@@ -206,6 +209,29 @@
   }
   .card-hover:hover {
     border-color: rgba(255, 255, 255, 0.32);
+  }
+
+  /* opt-in colored glow — a soft violet→cyan gradient tint on the card body
+     itself (not a border ring) plus a coloured halo. Used on CTA / feature
+     cards to add colour without touching the otherwise monochrome card system.
+     Overrides .card's flat background; keeps its border/box-shadow transition. */
+  .card-glow {
+    background:
+      radial-gradient(115% 90% at 0% 0%, rgba(139, 92, 246, 0.15), transparent 52%),
+      radial-gradient(120% 95% at 100% 100%, rgba(34, 211, 238, 0.13), transparent 54%),
+      linear-gradient(180deg, var(--color-ink-850), var(--color-ink-900));
+    border-color: rgba(139, 92, 246, 0.24);
+    box-shadow: 0 16px 46px -24px rgba(139, 92, 246, 0.45);
+  }
+  .card-glow:hover {
+    border-color: rgba(168, 130, 250, 0.42);
+    box-shadow: 0 20px 58px -18px rgba(139, 92, 246, 0.55);
+  }
+  /* colour-tinted icon tile (academy) */
+  .tile-glow {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.16), rgba(34, 211, 238, 0.12));
+    border-color: rgba(139, 92, 246, 0.28) !important;
+    color: #fff;
   }
 
   /* buttons */

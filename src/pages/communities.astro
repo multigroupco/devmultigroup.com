@@ -39,10 +39,10 @@ const communitiesLd = communities.length
 
 const ECO_LOGO: Record<string, string> = {
   "MultiGroup UNIT": "/logo-small-white.png",
-  Google: "/ecosystems/google.svg",
-  Huawei: "/ecosystems/huawei.svg",
-  Amazon: "/ecosystems/amazon.svg",
-  IEEE: "/ecosystems/ieee.svg",
+  Google: "/media/ecosystems/google.svg",
+  Huawei: "/media/ecosystems/huawei.svg",
+  Amazon: "/media/ecosystems/amazon.svg",
+  IEEE: "/media/ecosystems/ieee.svg",
 };
 const ECO_LABEL: Record<string, string> = {
   "MultiGroup UNIT": "MultiGroup UNIT",
@@ -180,9 +180,9 @@ const initials = (name: string) =>
                 const q = `${c.name} ${c.city}`.toLocaleLowerCase("tr");
                 const inner = (
                   <div id={`c-${c.id}`} class="group card card-hover p-4 flex items-center gap-3.5 h-full scroll-mt-24">
-                    <div class="relative w-12 h-12 rounded-xl bg-white/[0.04] border border-line grid place-items-center shrink-0">
+                    <div class:list={["relative w-12 h-12 rounded-xl bg-white/[0.04] border border-line grid place-items-center shrink-0", c.logo_url && "skeleton"]}>
                       {c.logo_url ? (
-                        <img src={imageSrc(c.logo_url)} alt={c.name} loading="lazy" class="w-full h-full object-cover rounded-xl transition duration-300 group-hover:scale-[1.06]" />
+                        <img src={imageSrc(c.logo_url)} alt={c.name} loading="lazy" decoding="async" class="img-reveal absolute inset-0 w-full h-full object-cover rounded-xl group-hover:scale-[1.06]" />
                       ) : (
                         <span class="font-display text-sm text-ink-dim">{initials(c.name)}</span>
                       )}

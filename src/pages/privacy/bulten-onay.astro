@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
 
-// Bülten onay + aydınlatma metni. TASLAK — avukat onayı bekliyor.
+// Bülten onay + aydınlatma metni.
 // Bülten "ücretsiz etkinlik duyurusu / bilgilendirme" olarak konumlandı
 // (ticari değil → İYS dışı varsayımı; sponsor/satış girerse ETK 6563 onayı gerekir).
 const updated = "22.06.2026";
@@ -11,18 +11,11 @@ const updated = "22.06.2026";
   title="E-posta Bülteni — Onay ve Aydınlatma"
   description="Developer MultiGroup bülteni onay ve aydınlatma metni: ne gönderdiğimiz, hangi verileri işlediğimiz ve abonelikten çıkma."
   canonicalPath="/privacy/bulten-onay"
-  noindex={true}
 >
   <section class="container-x py-16 md:py-20">
     <div class="mx-auto max-w-3xl">
-      <div class="mb-8 rounded-xl border border-line bg-white/[0.03] px-4 py-3 text-sm text-ink-dim">
-        <strong class="text-ink-text">Taslak.</strong> Bu metin hukuki inceleme sürecindedir.
-        İçeriğe sponsor/indirim/satış öğesi eklenirse ileti "ticari elektronik ileti" niteliği kazanır ve
-        ETK 6563 kapsamında ayrı onay + İYS kaydı gerekir.
-      </div>
-
       <h1 class="fw text-3xl md:text-4xl mb-2">E-posta Bülteni — Onay ve Aydınlatma Metni</h1>
-      <p class="text-ink-faint text-sm mb-10">Son güncelleme: {updated} · Versiyon: Taslak</p>
+      <p class="text-ink-faint text-sm mb-10">Son güncelleme: {updated}</p>
 
       <div class="prose-dmg">
         <h2>Ne gönderiyoruz?</h2>

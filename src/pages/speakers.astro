@@ -38,11 +38,34 @@ const socList = (s: SpeakerRow) => {
     .filter((p): p is [(typeof p)[0], string] => Boolean(p[1]));
 };
 
-// featured = has a photo + a title, most prolific first
-const featured = speakers
-  .filter((s) => s.avatar_url && s.title)
-  .sort((a, b) => b.talk_count - a.talk_count || a.name.localeCompare(b.name, "tr"))
-  .slice(0, 12);
+// prestige ranking — global brands + senior/expert titles + prolific speakers
+// float to the top of the roster (and drive the featured marquee).
+const GLOBAL_CO =
+  /\b(google|alphabet|meta|facebook|instagram|whatsapp|amazon|aws|microsoft|apple|netflix|nvidia|intel|ibm|oracle|sap|salesforce|adobe|atlassian|stripe|shopify|spotify|uber|instacart|booking|linkedin|tiktok|bytedance|snap|huawei|samsung|jetbrains|github|gitlab|canva|revolut|klarna|zalando|delivery hero|trendyol|getir|hepsiburada|peak games|dream games|adesso)\b/i;
+const EXPERT_TITLE = /(google developer expert|\bgde\b|microsoft mvp|\bresearch)/i;
+const SENIOR_TITLE =
+  /(\bstaff\b|principal|distinguished|\barchitect\b|\blead\b|\bhead\b|director|\bvp\b|founder|co-?founder|\bcto\b|\bceo\b|chief|\bsenior\b|\bsr\.?\b)/i;
+
+const prestige = (s: SpeakerRow) => {
+  const c = co(s);
+  const hay = `${s.company || ""} ${c?.name || ""}`;
+  const title = s.title || "";
+  let score = 0;
+  if (GLOBAL_CO.test(hay)) score += 100;
+  if (EXPERT_TITLE.test(title)) score += 55;
+  if (SENIOR_TITLE.test(title)) score += 35;
+  score += Math.min(s.talk_count || 0, 25) * 3;
+  if (s.avatar_url) score += 6;
+  if (s.title) score += 4;
+  return score;
+};
+const rank = (a: SpeakerRow, b: SpeakerRow) =>
+  prestige(b) - prestige(a) || (b.talk_count || 0) - (a.talk_count || 0) || a.name.localeCompare(b.name, "tr");
+
+// roster: high-level / global names first
+const roster = [...speakers].sort(rank);
+// featured marquee: top-ranked speakers that have a photo + a title (modest count)
+const featured = speakers.filter((s) => s.avatar_url && s.title).sort(rank).slice(0, 10);
 
 const speakersLd = speakers.length
   ? {
@@ -86,25 +109,28 @@ const speakersLd = speakers.length
   </section>
 
   {
-    featured.length >= 4 && (
+    featured.length >= 6 && (
       <section class="container-x pb-3">
         <h2 class="text-[0.7rem] font-mono uppercase tracking-[0.18em] text-ink-faint mb-4">Öne çıkanlar</h2>
-        <div class="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 no-scrollbar snap-x">
-          {featured.map((s) => {
-            const c = co(s);
-            return (
-              <div class="snap-start shrink-0 w-60 card card-hover p-4">
-                <div class="w-14 h-14 rounded-full overflow-hidden bg-white/[0.05] border border-line grid place-items-center mb-3">
-                  <img src={imageSrc(s.avatar_url)} alt={s.name} loading="lazy" class="w-full h-full object-cover" />
+        {/* auto-scrolling marquee; edges fade (mask-fade-x) instead of hard-cropping */}
+        <div class="sp-marquee overflow-hidden mask-fade-x -mx-1">
+          <div class="sp-track flex gap-3 w-max animate-marquee py-1 px-1">
+            {[...featured, ...featured].map((s, i) => {
+              const c = co(s);
+              return (
+                <div class="shrink-0 w-60 card p-4" aria-hidden={i >= featured.length ? "true" : undefined}>
+                  <div class="relative w-14 h-14 rounded-full overflow-hidden bg-white/[0.05] border border-line mb-3 skeleton">
+                    <img src={imageSrc(s.avatar_url)} alt={s.name} loading="lazy" decoding="async" class="img-reveal absolute inset-0 w-full h-full object-cover" />
+                  </div>
+                  <h3 class="font-medium leading-snug truncate">{s.name}</h3>
+                  <p class="text-ink-dim text-xs mt-1 leading-snug line-clamp-2">{s.title}</p>
+                  <div class="mt-2.5 flex items-center gap-2 h-4">
+                    {c?.logo_url ? <img src={imageSrc(c.logo_url)} alt={c.name} class="h-3.5 w-auto max-w-[80px] object-contain opacity-70" loading="lazy" /> : <span class="text-ink-faint text-xs truncate">{s.company}</span>}
+                  </div>
                 </div>
-                <h3 class="font-medium leading-snug">{s.name}</h3>
-                <p class="text-ink-dim text-xs mt-1 leading-snug line-clamp-2">{s.title}</p>
-                <div class="mt-2.5 flex items-center gap-2 h-4">
-                  {c?.logo_url ? <img src={imageSrc(c.logo_url)} alt={c.name} class="h-3.5 w-auto max-w-[80px] object-contain opacity-70" loading="lazy" /> : <span class="text-ink-faint text-xs truncate">{s.company}</span>}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </section>
     )
@@ -119,7 +145,7 @@ const speakersLd = speakers.length
           class="w-full bg-white/[0.04] border border-line rounded-xl pl-9 pr-9 py-2.5 text-sm placeholder:text-ink-faint focus:outline-none focus:border-white/25 transition" />
         <button type="button" id="sp-search-clear" aria-label="Temizle" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink-text"><Icon name="close" size={15} /></button>
       </label>
-      <div class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
+      <div class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar edge-fade-r">
         <button type="button" class="sector-pill is-active" data-sector="">Tümü <span class="tabular-nums opacity-60">{speakers.length}</span></button>
         {sectors.map((s) => <button type="button" class="sector-pill" data-sector={s}>{s}</button>)}
       </div>
@@ -130,32 +156,31 @@ const speakersLd = speakers.length
   <section class="container-x py-6">
     <ol id="sp-roster" class="border-t border-line">
       {
-        speakers.map((s) => {
+        roster.map((s) => {
           const c = co(s);
           const socs = socList(s);
           return (
-            <li class="sp-row group grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1.4fr_1fr_auto] items-center gap-x-4 gap-y-1 py-3 border-b border-line-soft hover:bg-white/[0.02] transition-colors scroll-mt-24"
+            <li class="sp-row group grid grid-cols-[auto_1fr] sm:grid-cols-[auto_minmax(0,1fr)_13rem] md:grid-cols-[auto_minmax(0,1fr)_13rem_7rem] items-center gap-x-4 gap-y-1 py-3 border-b border-line-soft hover:bg-white/[0.02] transition-colors scroll-mt-24"
               id={`s-${s.id}`} data-q={`${s.name} ${s.company} ${s.title}`.toLocaleLowerCase("tr")} data-sector={c?.sector ?? ""}>
-              <div class="w-10 h-10 rounded-full overflow-hidden bg-white/[0.05] border border-line grid place-items-center shrink-0">
-                {s.avatar_url ? <img src={imageSrc(s.avatar_url)} alt={s.name} loading="lazy" class="w-full h-full object-cover" /> : <span class="font-display text-xs text-ink-dim">{initials(s.name)}</span>}
+              <div class:list={["relative w-10 h-10 rounded-full overflow-hidden bg-white/[0.05] border border-line grid place-items-center shrink-0", s.avatar_url && "skeleton"]}>
+                {s.avatar_url ? <img src={imageSrc(s.avatar_url)} alt={s.name} loading="lazy" decoding="async" class="img-reveal absolute inset-0 w-full h-full object-cover" /> : <span class="font-display text-xs text-ink-dim">{initials(s.name)}</span>}
               </div>
               <div class="min-w-0">
                 <h3 class="font-medium leading-tight truncate">{s.name}</h3>
                 {s.title && <p class="text-ink-faint text-xs mt-0.5 truncate">{s.title}</p>}
               </div>
-              <div class="hidden sm:flex items-center gap-2 min-w-0">
-                {c?.logo_url ? <img src={imageSrc(c.logo_url)} alt={c.name} loading="lazy" class="h-4 w-auto max-w-[110px] object-contain opacity-70" /> : <span class="text-ink-dim text-sm truncate">{s.company}</span>}
+              {/* company — fixed-width column, centered so every logo sits on one axis */}
+              <div class="hidden sm:flex items-center justify-center min-w-0">
+                {c?.logo_url ? <img src={imageSrc(c.logo_url)} alt={c.name} loading="lazy" class="h-4 w-auto max-w-[120px] object-contain opacity-70" /> : <span class="text-ink-dim text-sm truncate">{s.company}</span>}
               </div>
-              <div class="flex items-center gap-1 justify-end shrink-0">
-                <div class="hidden md:flex items-center gap-0.5 mr-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {socs.map(([icon, url]) => (
-                    <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`${s.name} · ${icon}`} class="grid place-items-center w-7 h-7 rounded-lg text-ink-faint hover:text-ink-text hover:bg-white/[0.06] transition"
-                      data-track="cta_click" data-track-props={JSON.stringify({ cta_id: `speaker_social_${icon}`, name: s.name, page: "speakers" })}>
-                      <Icon name={icon} size={14} />
-                    </a>
-                  ))}
-                </div>
-                {s.talk_count > 0 && <span class="text-ink-faint text-xs font-mono tabular-nums w-12 text-right">{s.talk_count} ×</span>}
+              {/* socials — fixed-width column (hover-revealed) so it never shifts the logo column */}
+              <div class="hidden md:flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                {socs.map(([icon, url]) => (
+                  <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`${s.name} · ${icon}`} class="grid place-items-center w-7 h-7 rounded-lg text-ink-faint hover:text-ink-text hover:bg-white/[0.06] transition"
+                    data-track="cta_click" data-track-props={JSON.stringify({ cta_id: `speaker_social_${icon}`, name: s.name, page: "speakers" })}>
+                    <Icon name={icon} size={14} />
+                  </a>
+                ))}
               </div>
             </li>
           );
@@ -174,6 +199,14 @@ const speakersLd = speakers.length
     .sector-pill.is-active { color: #000; background: #fff; border-color: #fff; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { scrollbar-width: none; }
+    /* right-only fade for the (left-anchored) sector chip row — soft crop, not flat */
+    .edge-fade-r {
+      -webkit-mask-image: linear-gradient(to right, #000 88%, transparent);
+      mask-image: linear-gradient(to right, #000 88%, transparent);
+    }
+    /* featured marquee: pause on hover, respect reduced-motion */
+    .sp-marquee:hover .sp-track { animation-play-state: paused; }
+    @media (prefers-reduced-motion: reduce) { .sp-track { animation: none; } }
   </style>
 
   <script is:inline>

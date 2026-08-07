@@ -13,10 +13,10 @@ const env = getEnv(Astro.locals);
 const team = await listTeam(env);
 // squads — grouped into the three teams (Pioneer A / Pioneer B / Initiate)
 const SQUADS = [
-  { name: "Pioneer A", members: ["Serkan Alç", "Batuhan Yalçın", "Furkan Ünsalan", "Zerrin Ayaz", "Alptuğ Gürler", "Azra Çalışkan", "Seda Savaş"] },
+  { name: "Pioneer A", members: ["Serkan Alç", "Batuhan Yalçın", "Furkan Ünsalan", "Zerrin Ayaz", "Alptuğ Gürler", "Azra Çalışkan"] },
   { name: "Pioneer B", members: ["Gizem Arpay", "Bilgehan Takım", "Burcu Aydın", "Sarp Can Karaman", "Dalida Dikici", "Hatice Rana Yamaç", "Nuriye Dezcan", "Mutlu Özkurt", "Evren Ozkip"] },
   { name: "Initiate Team", members: ["Olivia Üzümcü", "Tamer Usta", "Nurhan Uzun", "Selin Su Özdemir", "Emirhan Kurt", "Eray Keskinbaş", "Asya Yayla", "Koralp Selçuk"] },
-  { name: "Veteran Team", members: ["Ilgın Sel Balta", "Göker Güner", "Bilal Durnagöl", "Selin Çıldam"] },
+  { name: "Veteran Team", members: ["Ilgın Sel Balta", "Bilal Durnagöl", "Selin Çıldam"] },
 ];
 const norm = (s: string) => (s || "").toLocaleLowerCase("tr").trim();
 const byName = new Map(team.map((m) => [norm(m.name), m]));
@@ -82,22 +82,22 @@ const teamLd = team.length
           <div class="hero-bands absolute inset-0 flex flex-col justify-center gap-3 md:gap-4 mask-fade-x">
             <div class="flex gap-3 md:gap-4 w-max animate-marquee">
               {faceA.map((src) => (
-                <div class="hero-card card overflow-hidden h-24 sm:h-28 md:h-36 aspect-square shrink-0">
-                  <img src={src} alt="" loading="lazy" decoding="async" class="w-full h-full object-cover" />
+                <div class="hero-card card overflow-hidden h-24 sm:h-28 md:h-36 aspect-square shrink-0 skeleton">
+                  <img src={src} alt="" loading="lazy" decoding="async" class="img-reveal w-full h-full object-cover" />
                 </div>
               ))}
             </div>
             <div class="flex gap-3 md:gap-4 w-max animate-marquee-rev">
               {faceB.map((src) => (
-                <div class="hero-card card overflow-hidden h-24 sm:h-28 md:h-36 aspect-square shrink-0">
-                  <img src={src} alt="" loading="lazy" decoding="async" class="w-full h-full object-cover" />
+                <div class="hero-card card overflow-hidden h-24 sm:h-28 md:h-36 aspect-square shrink-0 skeleton">
+                  <img src={src} alt="" loading="lazy" decoding="async" class="img-reveal w-full h-full object-cover" />
                 </div>
               ))}
             </div>
             <div class="flex gap-3 md:gap-4 w-max animate-marquee">
               {faceC.map((src) => (
-                <div class="hero-card card overflow-hidden h-24 sm:h-28 md:h-36 aspect-square shrink-0">
-                  <img src={src} alt="" loading="lazy" decoding="async" class="w-full h-full object-cover" />
+                <div class="hero-card card overflow-hidden h-24 sm:h-28 md:h-36 aspect-square shrink-0 skeleton">
+                  <img src={src} alt="" loading="lazy" decoding="async" class="img-reveal w-full h-full object-cover" />
                 </div>
               ))}
             </div>
@@ -157,7 +157,7 @@ const teamLd = team.length
   }
 
   <section class="container-x py-8">
-    <div class="card p-8 md:p-10 text-center">
+    <div class="card card-glow p-8 md:p-10 text-center">
       <h2 class="font-display text-2xl font-semibold">Topluluğa destek olmak ister misin?</h2>
       <p class="text-ink-dim mt-3 max-w-lg mx-auto">Ekibimize katıl — organizatör, konuşmacı veya mentor olarak topluluğa destek ol.</p>
       <a href={JOIN_FORM} target="_blank" rel="noopener noreferrer" data-track="join_click" data-track-props={JSON.stringify({location:"team"})} class="btn btn-primary group mt-6">Aramıza katıl<span class="relative inline-flex w-4 h-4"><Icon name="user-check" size={16} class="absolute inset-0 transition-all duration-200 group-hover:opacity-0 group-hover:scale-50" /><Icon name="arrow-up-right" size={16} class="absolute inset-0 opacity-0 scale-50 transition-all duration-200 group-hover:opacity-100 group-hover:scale-100" /></span></a>
@@ -170,7 +170,7 @@ const teamLd = team.length
     }
     .hero-card img {
       filter: brightness(0.38) saturate(0.9);
-      transition: filter 0.45s var(--ease-out-soft), transform 0.6s var(--ease-out-soft);
+      transition: opacity 0.5s var(--ease-out-soft), filter 0.45s var(--ease-out-soft), transform 0.6s var(--ease-out-soft);
     }
     .hero-card:hover img {
       filter: brightness(1.08) saturate(1);

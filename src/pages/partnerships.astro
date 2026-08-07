@@ -18,14 +18,14 @@ const companiesLd = {
 };
 
 const wite = [
-  { img: "/partners/wite-1.jpg", title: "Architecture & Design Patterns", oturum: "Oturum 1", href: "https://gathin.com/events/architecture-design-patterns-583" },
-  { img: "/partners/wite-2.jpg", title: "Kotlin Deep Dive", oturum: "Oturum 2", href: "https://gathin.com/events/kotlin-deep-dive-%E2%80%94-aadc-2-997" },
-  { img: "/partners/wite-3.jpg", title: "Jetpack Compose & Accessibility", oturum: "Oturum 3", href: "https://gathin.com/events/jetpack-compose-accessibility-community-networking-100" },
+  { img: "/media/partners/wite-1.jpg", title: "Architecture & Design Patterns", oturum: "Oturum 1", href: "https://gathin.com/events/architecture-design-patterns-583" },
+  { img: "/media/partners/wite-2.jpg", title: "Kotlin Deep Dive", oturum: "Oturum 2", href: "https://gathin.com/events/kotlin-deep-dive-%E2%80%94-aadc-2-997" },
+  { img: "/media/partners/wite-3.jpg", title: "Jetpack Compose & Accessibility", oturum: "Oturum 3", href: "https://gathin.com/events/jetpack-compose-accessibility-community-networking-100" },
 ];
 const lodos = [
-  { img: "/partners/lodos-gathin.jpg", name: "ToGather", url: "https://gathin.com", label: "gathin.com", desc: "Etkinlik platformu" },
-  { img: "/partners/lodos-socialhive.jpg", name: "SocialHive", url: "https://socialhive.lodos.io", label: "socialhive.lodos.io", desc: "Topluluk & iletişim platformu" },
-  { img: "/partners/lodos-achieve.jpg", name: "Achieve", url: "https://achieve.lodos.io", label: "achieve.lodos.io", desc: "Sertifikasyon platformu" },
+  { img: "/media/partners/lodos-gathin.jpg", name: "ToGather", url: "https://gathin.com", label: "gathin.com", desc: "Etkinlik platformu" },
+  { img: "/media/partners/lodos-socialhive.jpg", name: "SocialHive", url: "https://socialhive.lodos.io", label: "socialhive.lodos.io", desc: "Topluluk & iletişim platformu" },
+  { img: "/media/partners/lodos-achieve.jpg", name: "Achieve", url: "https://achieve.lodos.io", label: "achieve.lodos.io", desc: "Sertifikasyon platformu" },
 ];
 const bwaiHref = "https://gathin.com/events/build-with-ai-program-2026-649";
 ---
@@ -89,7 +89,7 @@ const bwaiHref = "https://gathin.com/events/build-with-ai-program-2026-649";
     <!-- Wite -->
     <div class="card p-6 md:p-8">
       <div class="flex flex-wrap items-center gap-3">
-        <img src="/companies/wite.png" alt="Wite" height="24" class="h-6 w-auto" />
+        <img src="/media/companies/wite.png" alt="Wite" height="24" class="h-6 w-auto" />
         <span class="chip">Android</span>
       </div>
       <h3 class="font-display text-xl md:text-2xl font-semibold mt-4">Android Workshop Serisi</h3>
@@ -100,8 +100,8 @@ const bwaiHref = "https://gathin.com/events/build-with-ai-program-2026-649";
       <div class="grid sm:grid-cols-3 gap-3 mt-6">
         {
           wite.map((w) => (
-            <a href={w.href} target="_blank" rel="noopener noreferrer" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: `wite-${w.oturum.toLowerCase().replace(/\s+/g, "-")}`, page: "partnerships", href: w.href })} class="group relative block rounded-xl overflow-hidden ring-1 ring-line card-hover">
-              <img src={w.img} alt={`${w.title} — ${w.oturum}`} loading="lazy" class="w-full aspect-video object-cover transition duration-500 group-hover:scale-[1.03]" />
+            <a href={w.href} target="_blank" rel="noopener noreferrer" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: `wite-${w.oturum.toLowerCase().replace(/\s+/g, "-")}`, page: "partnerships", href: w.href })} class="group relative block rounded-xl overflow-hidden ring-1 ring-line card-hover skeleton">
+              <img src={w.img} alt={`${w.title} — ${w.oturum}`} loading="lazy" decoding="async" class="img-reveal w-full aspect-video object-cover group-hover:scale-[1.03]" />
               <div class="absolute inset-0 grid place-items-center bg-black/0 group-hover:bg-black/45 transition-colors">
                 <span class="flex items-center gap-1.5 text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition">
                   Etkinliğe git <Icon name="arrow-up-right" size={15} />
@@ -118,7 +118,7 @@ const bwaiHref = "https://gathin.com/events/build-with-ai-program-2026-649";
 
     <!-- Lodos -->
     <div class="card p-6 md:p-8">
-      <img src="/companies/lodos.png" alt="Lodos.io" height="24" class="h-6 w-auto" />
+      <img src="/media/companies/lodos.png" alt="Lodos.io" height="24" class="h-6 w-auto" />
       <h3 class="font-display text-xl md:text-2xl font-semibold mt-4">Platform Geliştirme</h3>
       <p class="text-ink-dim mt-2 max-w-2xl leading-relaxed">
         Lodos ile üç platformu birlikte inşa ediyoruz: <strong class="text-ink-text">ToGather</strong> (etkinlik),
@@ -130,7 +130,7 @@ const bwaiHref = "https://gathin.com/events/build-with-ai-program-2026-649";
         {
           lodos.map((l) => (
             <a href={l.url} target="_blank" rel="noopener noreferrer" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: `lodos-${l.name.toLowerCase()}`, page: "partnerships", href: l.url })} class="group rounded-xl overflow-hidden ring-1 ring-line card-hover block">
-              <img src={l.img} alt={l.name} loading="lazy" class="w-full aspect-video object-cover" />
+              <span class="block skeleton"><img src={l.img} alt={l.name} loading="lazy" decoding="async" class="img-reveal w-full aspect-video object-cover" /></span>
               <div class="flex items-center justify-between gap-2 p-4">
                 <div class="min-w-0">
                   <p class="font-medium text-sm">{l.name}</p>
@@ -148,7 +148,7 @@ const bwaiHref = "https://gathin.com/events/build-with-ai-program-2026-649";
     <div class="card p-6 md:p-8">
       <div class="flex flex-wrap items-start justify-between gap-6">
         <div>
-          <img src="/companies/google.png" alt="Google" height="24" class="h-6 w-auto" />
+          <img src="/media/companies/google.png" alt="Google" height="24" class="h-6 w-auto" />
           <h3 class="font-display text-xl md:text-2xl font-semibold mt-4">Build with AI</h3>
           <p class="text-ink-dim mt-2 max-w-xl leading-relaxed">
             Google for Developers ile Build with AI sertifika programını yürüttük.
@@ -171,7 +171,7 @@ const bwaiHref = "https://gathin.com/events/build-with-ai-program-2026-649";
       </div>
       <div class="grid sm:grid-cols-3 gap-3 mt-6">
         <a href={bwaiHref} target="_blank" rel="noopener noreferrer" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "build-with-ai", page: "partnerships", href: bwaiHref })} class="group relative block rounded-xl overflow-hidden ring-1 ring-line card-hover">
-          <img src="/partners/google-bwai.jpg" alt="Build with AI 2026" loading="lazy" class="w-full aspect-video object-cover transition duration-500 group-hover:scale-[1.03]" />
+          <img src="/media/partners/google-bwai.jpg" alt="Build with AI 2026" loading="lazy" class="w-full aspect-video object-cover transition duration-500 group-hover:scale-[1.03]" />
           <div class="absolute inset-0 grid place-items-center bg-black/0 group-hover:bg-black/45 transition-colors">
             <span class="flex items-center gap-1.5 text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition">
               Etkinliğe git <Icon name="arrow-up-right" size={15} />

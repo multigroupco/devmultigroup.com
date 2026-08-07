@@ -104,10 +104,13 @@ const companiesLd = companies.length
         wall.map((c) => {
           const logo = imageSrc(c.logo_url);
           const inner = (
-            <div class="mark group relative grid place-items-center h-36 px-5 bg-ink-950 hover:bg-ink-900 transition-colors"
+            <div class:list={["mark group relative grid place-items-center h-36 px-5 bg-ink-950 hover:bg-ink-900 transition-colors", logo && "skeleton"]}
               data-q={`${c.name} ${c.sector}`.toLocaleLowerCase("tr")} data-sector={c.sector}>
               {logo ? (
-                <img src={logo} alt={c.name} loading="lazy" class="max-h-10 max-w-[78%] w-auto object-contain opacity-55 group-hover:opacity-100 transition duration-300 group-hover:scale-[1.04]" />
+                <img src={logo} alt={c.name} loading="lazy" decoding="async"
+                  onload="this.parentElement.classList.remove('skeleton')"
+                  onerror="this.style.display='none';this.parentElement.classList.remove('skeleton')"
+                  class="max-h-10 max-w-[78%] w-auto object-contain opacity-55 group-hover:opacity-100 transition duration-300 group-hover:scale-[1.04]" />
               ) : (
                 <span class="font-display text-base md:text-lg font-medium text-center leading-tight text-ink-dim group-hover:text-ink-text transition-colors">{c.name}</span>
               )}

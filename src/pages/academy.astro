@@ -18,10 +18,26 @@ const [upcoming, past, recs] = await Promise.all([
 ]);
 
 const programs = [
-  { title: "Modern iOS", text: "SwiftUI, mimari ve App Store'a yayınlama.", icon: "smartphone" },
-  { title: "Android · Compose", text: "XML'den modern Android'e Jetpack Compose.", icon: "layers" },
-  { title: "GenAI Temelleri", text: "Google Gemini ile LLM'ler, prompt yazımı ve ajanlar.", icon: "cpu" },
-  { title: "Web Temelleri", text: "Tarayıcıdan üretim seviyesi uygulamalara.", icon: "code" },
+  { title: "Modern iOS", text: "SwiftUI, mimari ve App Store'a yayınlama.", icon: "smartphone", tag: "iOS · SwiftUI" },
+  { title: "Android · Compose", text: "XML'den modern Android'e Jetpack Compose.", icon: "layers", tag: "Android · Kotlin" },
+  { title: "GenAI Temelleri", text: "Google Gemini ile LLM'ler, prompt yazımı ve ajanlar.", icon: "cpu", tag: "AI · Gemini" },
+  { title: "Web Temelleri", text: "Tarayıcıdan üretim seviyesi uygulamalara.", icon: "code", tag: "Web · Fullstack" },
+];
+
+// value chips shown in the hero — honest, no invented numbers
+const VALUE = [
+  { icon: "check", label: "%100 ücretsiz" },
+  { icon: "users", label: "Mentör eşliğinde" },
+  { icon: "layers", label: "Proje odaklı" },
+  { icon: "sparkles", label: "Toplulukla birlikte" },
+];
+
+// "Neden MultiAcademy" value points
+const WHY = [
+  { icon: "check", title: "Katılım ücretsiz", text: "Tüm bootcamp'ler ücretsiz — gereken tek şey merak ve emek." },
+  { icon: "users", title: "Mentör eşliğinde", text: "Alanında üretmiş geliştiriciler yol boyunca yanında." },
+  { icon: "layers", title: "Gerçek projeler", text: "Öğrendiğini portföyüne koyabileceğin projelerle pekiştir." },
+  { icon: "sparkles", title: "Topluluk desteği", text: "Birlikte öğrenen, birbirini iten bir topluluğun parçası ol." },
 ];
 
 // hero: feature the next academy bootcamp (Events-style)
@@ -72,79 +88,138 @@ const academyLd = {
   jsonLd={academyLd}
   breadcrumbs={[{ name: "Akademi", item: `${BRAND.url}/academy` }]}
 >
+  {/* ── hero: always sells MultiAcademy (independent of any upcoming event) ── */}
+  <section class="relative isolate overflow-hidden">
+    <div class="absolute inset-0 -z-10" aria-hidden="true">
+      <div class="absolute inset-0"
+        style="background:radial-gradient(38% 42% at 26% 34%, rgba(139,92,246,.42), transparent 62%), radial-gradient(36% 40% at 72% 30%, rgba(236,72,153,.36), transparent 64%), radial-gradient(44% 46% at 50% 64%, rgba(34,211,238,.3), transparent 66%)"></div>
+    </div>
+    <div class="container-x pt-16 pb-10 md:pt-24 md:pb-14 text-center">
+      <p class="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-[0.22em] text-ink-faint">
+        <span class="inline-block w-1.5 h-1.5 rounded-full bg-white"></span>
+        MultiAcademy · Developer MultiGroup'un öğrenme kolu
+      </p>
+      <h1 class="mt-6 text-4xl md:text-6xl font-semibold leading-[1.05] max-w-4xl mx-auto text-balance">
+        Ücretsiz bootcamp'lerle <span class="text-grad">üreterek öğren.</span>
+      </h1>
+      <p class="mt-5 text-lg text-ink-dim max-w-2xl mx-auto leading-relaxed">
+        Modern iOS'tan GenAI'a — mentör eşliğinde, gerçek projelerle ilerleyen yoğun programlar.
+        Merakını üretime hazır beceriye dönüştür; katılım tamamen ücretsiz.
+      </p>
+      <ul class="mt-7 flex flex-wrap items-center justify-center gap-2.5">
+        {VALUE.map((v) => (
+          <li class="chip inline-flex items-center gap-1.5"><Icon name={v.icon} size={14} /> {v.label}</li>
+        ))}
+      </ul>
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <a href="#akademi-etkinlikler" class="btn btn-primary" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "academy_events_scroll", page: "academy" })}>
+          <Icon name="calendar" size={17} /> Akademi etkinlikleri
+        </a>
+        <a href={SOCIALS.multiacademy.instagram} target="_blank" rel="noopener noreferrer" class="btn btn-ghost" data-track="social_click" data-track-props={JSON.stringify({ platform: "instagram", location: "academy" })}>
+          <Icon name="instagram" size={16} /> @devmultiacademy
+        </a>
+      </div>
+    </div>
+  </section>
+
+  {/* ── next bootcamp highlight (only when there's an upcoming academy event) ── */}
   {
-    featured ? (
-      <>
-        <section class="relative isolate overflow-hidden">
-          <div class="absolute inset-0 -z-10" aria-hidden="true">
-            {fcover && (
-              <div class="container-x relative h-full hidden lg:block">
-                <div class="absolute right-8 top-1/2 -translate-y-1/2 w-[40%] max-w-[34rem] aspect-[16/9] rounded-3xl overflow-hidden skeleton">
-                  <img src={fcover} alt="" loading="eager" decoding="async" class="img-reveal w-full h-full object-cover" />
-                </div>
+    featured && (
+      <section class="container-x pb-4">
+        <div class="card card-glow overflow-hidden grid md:grid-cols-[1.05fr_1fr]">
+          <div class="relative min-h-[13rem] md:min-h-full bg-ink-900 skeleton">
+            {fcover ? (
+              <img src={fcover} alt="" loading="eager" decoding="async" class="img-reveal absolute inset-0 w-full h-full object-cover" />
+            ) : (
+              <div class="absolute inset-0 grid place-items-center text-ink-faint">
+                <Icon name="calendar" size={40} />
               </div>
             )}
-            <div class="absolute inset-0 bg-gradient-to-r from-ink-950 via-ink-950/80 to-transparent to-[54%]" />
           </div>
-          <div class="container-x pt-16 pb-12 md:pt-20 md:pb-16">
-            <p class="text-sm text-ink-dim font-medium uppercase tracking-[0.18em] mb-6 flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-white animate-pulse" /> MultiAcademy · Sıradaki bootcamp
+          <div class="p-6 md:p-8">
+            <p class="text-xs font-mono uppercase tracking-[0.18em] text-ink-faint flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-white animate-pulse" /> Sıradaki bootcamp
             </p>
-            <div class="max-w-3xl lg:max-w-none lg:pr-[44%]">
-              <div class="min-w-0">
-                <h1 class="text-3xl md:text-5xl font-semibold leading-[1.06]">{featured.title}</h1>
-                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-sm text-ink-dim">
-                  <span class="inline-flex items-center gap-1.5"><Icon name="calendar" size={15} /> {fday?.weekday} {fday?.day} {fday?.month}{ftime && ` · ${ftime}`}</span>
-                  {fwhere && <span class="inline-flex items-center gap-1.5"><Icon name="map-pin" size={15} /> {fwhere}</span>}
-                </div>
-                <div class="ev-countdown flex items-center gap-2.5 mt-6" data-countdown={featured.starts_at} aria-label="Etkinliğe kalan süre">
-                  {[
-                    { k: "d", label: "gün" },
-                    { k: "h", label: "saat" },
-                    { k: "m", label: "dk" },
-                    { k: "s", label: "sn" },
-                  ].map((u) => (
-                    <div class="flex flex-col items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-xl bg-ink-950/55 backdrop-blur border border-line">
-                      <span class="font-display text-xl md:text-2xl font-semibold tabular-nums leading-none" data-cd={u.k}>--</span>
-                      <span class="text-[0.58rem] font-mono uppercase tracking-wide text-ink-faint mt-1">{u.label}</span>
-                    </div>
-                  ))}
-                </div>
-                <div class="flex flex-wrap items-center gap-3 mt-6">
-                  <a href={freg} target="_blank" rel="noopener noreferrer" class="btn btn-primary" data-track="event_register_click" data-track-props={JSON.stringify({ event_slug: featured.slug, event_title: featured.title, event_community: "multiacademy", location: "academy_featured" })}><Icon name="arrow-up-right" size={16} /> Kayıt ol</a>
-                  <a href={`/academy/${featured.slug}`} class="btn btn-ghost" data-track="event_card_click" data-track-props={JSON.stringify({ event_slug: featured.slug, page: "academy" })}>Detaylar</a>
-                </div>
-              </div>
+            <h2 class="mt-3 text-2xl md:text-3xl font-semibold leading-tight">{featured.title}</h2>
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-sm text-ink-dim">
+              <span class="inline-flex items-center gap-1.5"><Icon name="calendar" size={15} /> {fday?.weekday} {fday?.day} {fday?.month}{ftime && ` · ${ftime}`}</span>
+              {fwhere && <span class="inline-flex items-center gap-1.5"><Icon name="map-pin" size={15} /> {fwhere}</span>}
             </div>
-          </div>
-        </section>
-      </>
-    ) : (
-      <section class="container-x pt-14 pb-8">
-        <div class="card relative overflow-hidden p-8 md:p-12">
-          <div class="absolute -right-16 -top-16 w-72 h-72 rounded-full blur-3xl opacity-50" style="background:radial-gradient(circle, rgba(255,255,255,.06), transparent 70%)"></div>
-          <div class="relative max-w-2xl">
-            <h1 class="text-4xl md:text-5xl font-semibold leading-tight">Üreterek öğren, işe hazır çık.</h1>
-            <p class="text-ink-dim mt-5 leading-relaxed">
-              MultiAcademy, uygulamalı ve mentör eşliğindeki bootcamp'ler düzenliyor — katılımı ücretsiz ve
-              gerçek projeler üzerine kurulu. Gerçekten üreten insanlarla birlikte öğren.
-            </p>
-            <div class="flex flex-wrap gap-3 mt-7">
-              <a href={GATHIN.multiacademy} target="_blank" rel="noopener noreferrer" class="btn btn-primary" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "academy_events", page: "academy", href: GATHIN.multiacademy })}>
-                <Icon name="calendar" size={17} /> Akademi etkinlikleri
-              </a>
-              <a href="https://academy.devmultigroup.com" target="_blank" rel="noopener noreferrer" class="btn btn-ghost" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "academy_external", page: "academy", href: "https://academy.devmultigroup.com" })}>
-                <Icon name="globe" size={16} /> academy.devmultigroup.com
-              </a>
-              <a href={SOCIALS.multiacademy.instagram} target="_blank" rel="noopener noreferrer" class="btn btn-ghost" data-track="social_click" data-track-props={JSON.stringify({ platform: "instagram", location: "academy" })}>
-                <Icon name="instagram" size={16} /> @devmultiacademy
-              </a>
+            <div class="ev-countdown flex items-center gap-2 mt-5" data-countdown={featured.starts_at} aria-label="Etkinliğe kalan süre">
+              {[
+                { k: "d", label: "gün" },
+                { k: "h", label: "saat" },
+                { k: "m", label: "dk" },
+                { k: "s", label: "sn" },
+              ].map((u) => (
+                <div class="flex flex-col items-center justify-center w-13 h-13 md:w-14 md:h-14 rounded-xl bg-ink-950/55 border border-line">
+                  <span class="font-display text-lg md:text-xl font-semibold tabular-nums leading-none" data-cd={u.k}>--</span>
+                  <span class="text-[0.55rem] font-mono uppercase tracking-wide text-ink-faint mt-1">{u.label}</span>
+                </div>
+              ))}
+            </div>
+            <div class="flex flex-wrap items-center gap-3 mt-6">
+              <a href={freg} target="_blank" rel="noopener noreferrer" class="btn btn-primary" data-track="event_register_click" data-track-props={JSON.stringify({ event_slug: featured.slug, event_title: featured.title, event_community: "multiacademy", location: "academy_featured" })}><Icon name="arrow-up-right" size={16} /> Kayıt ol</a>
+              <a href={`/academy/${featured.slug}`} class="btn btn-ghost" data-track="event_card_click" data-track-props={JSON.stringify({ event_slug: featured.slug, page: "academy" })}>Detaylar</a>
             </div>
           </div>
         </div>
       </section>
     )
   }
+
+  {/* ── programs / tracks — what you actually learn (the core sell) ── */}
+  <section class="container-x py-8">
+    <SectionHeader title="Programlar" description="MultiAcademy'de öğrenebileceğin alanlar — her biri sıfırdan üretime, uygulamalı." />
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+      {programs.map((p) => (
+        <div class="card card-glow p-6 flex flex-col">
+          <div class="tile-glow w-11 h-11 rounded-xl border border-line grid place-items-center">
+            <Icon name={p.icon} size={22} />
+          </div>
+          <h3 class="font-display text-lg font-semibold mt-4">{p.title}</h3>
+          <p class="text-ink-dim text-sm mt-2 leading-relaxed flex-1">{p.text}</p>
+          <p class="font-mono text-[0.68rem] uppercase tracking-[0.14em] text-ink-faint mt-4">{p.tag}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  {/* ── why MultiAcademy ── */}
+  <section class="container-x py-8">
+    <div class="card card-glow p-8 md:p-10">
+      <div class="grid md:grid-cols-[1fr_1.25fr] gap-8 md:gap-12 items-center">
+        <div>
+          <h2 class="text-2xl md:text-3xl font-semibold leading-tight">Neden MultiAcademy?</h2>
+          <p class="text-ink-dim mt-4 leading-relaxed">
+            Bootcamp'lerimiz ürün çıkarmış geliştiricilerle birlikte kurgulanır — teoriyle değil,
+            üreterek ilerlersin. Sonunda portföyünde gerçek bir proje olur.
+          </p>
+          <div class="flex flex-wrap gap-3 mt-6">
+            <a href={GATHIN.multiacademy} target="_blank" rel="noopener noreferrer" class="btn btn-primary" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "academy_apply", page: "academy", href: GATHIN.multiacademy })}>
+              <Icon name="arrow-up-right" size={16} /> Hemen başvur
+            </a>
+          </div>
+        </div>
+        <ul class="grid sm:grid-cols-2 gap-x-6 gap-y-5">
+          {WHY.map((w) => (
+            <li class="flex gap-3">
+              <span class="tile-glow mt-0.5 w-8 h-8 rounded-lg border border-line grid place-items-center shrink-0">
+                <Icon name={w.icon} size={16} />
+              </span>
+              <div class="min-w-0">
+                <p class="font-medium text-ink-text text-sm">{w.title}</p>
+                <p class="text-ink-dim text-sm mt-0.5 leading-relaxed">{w.text}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  {/* scroll target for the hero "Akademi etkinlikleri" button */}
+  <span id="akademi-etkinlikler" class="block scroll-mt-24" aria-hidden="true"></span>
 
   {
     moreUpcoming.length > 0 && (

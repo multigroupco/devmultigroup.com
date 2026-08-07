@@ -63,7 +63,6 @@ INSERT OR REPLACE INTO team_members (id, name, role, team, bio, avatar_url, comm
   ('team-04', 'Zerrin Ayaz', 'Associate Member', 'Operation Team', '', '', 'multigroup', '{}', 40, 1),
   ('team-05', 'Alptuğ Gürler', 'Associate Member', 'Mobile Development Team', '', '', 'multigroup', '{}', 50, 1),
   ('team-06', 'Azra Çalışkan', 'Pioneer Member', 'Social Media Team', '', '', 'multigroup', '{}', 60, 1),
-  ('team-07', 'Seda Savaş', 'Pioneer Member', '', '', '', 'multigroup', '{}', 70, 1),
   ('team-08', 'Gizem Arpay', 'Pioneer Member', 'Web Development Team', '', '', 'multigroup', '{}', 80, 1),
   ('team-09', 'Mutlu Ozkurt', 'Pioneer Member', 'Data Science Team', '', '', 'multigroup', '{}', 90, 1),
   ('team-10', 'Dalida Dikici', 'Pioneer Member', 'Data Science Team', '', '', 'multigroup', '{}', 100, 1),
@@ -82,7 +81,6 @@ INSERT OR REPLACE INTO team_members (id, name, role, team, bio, avatar_url, comm
   ('team-23', 'Asya Yayla', 'Initiate Member', 'Data Science Team', '', '', 'multigroup', '{}', 230, 1),
   ('team-24', 'Emirhan Kurt', 'Initiate Member', 'Data Science Team', '', '', 'multigroup', '{}', 240, 1),
   ('team-25', 'Ilgın Sel Balta', 'Veteran Member', 'Design Team', '', '', 'multigroup', '{}', 250, 1),
-  ('team-26', 'Göker Güner', 'Veteran Member', 'Data Science Team', '', '', 'multigroup', '{}', 260, 1),
   ('team-27', 'Bilal Durnagöl', 'Veteran Member', 'Mobile Development Team', '', '', 'multigroup', '{}', 270, 1),
   ('team-28', 'Selin Çıldam', 'Veteran Member', 'Data Science Team', '', '', 'multigroup', '{}', 280, 1);
 

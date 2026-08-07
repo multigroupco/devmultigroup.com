@@ -11,26 +11,11 @@
 // shell (header, footer, grain, animated bg blobs, ClientRouter). No page chrome
 // is added here.
 import AsciiFlower from "@/components/AsciiFlower.astro";
-import BinaryBackdrop from "@/components/store/BinaryBackdrop.astro";
 import Icon from "@/components/Icon.astro";
 import { BRAND, SOCIALS } from "@/lib/site";
-
-// "haberdar ol" is a real mailto — no fake form, no invented endpoint.
-const NOTIFY_MAILTO =
-  "mailto:support@devmultigroup.com?subject=" +
-  encodeURIComponent("Mağaza açılışından haberdar et") +
-  "&body=" +
-  encodeURIComponent(
-    "Merhaba, Developer MultiGroup mağazası açıldığında bana haber verir misiniz?",
-  );
 ---
 
 <section class="store-soon container-x">
-  <!-- dim binary backdrop, radial-masked; decorative, fades at the edges -->
-  <div class="soon-binary" aria-hidden="true">
-    <BinaryBackdrop rows={28} cols={78} density={0.26} />
-  </div>
-
   <div class="soon-inner">
     <!-- centerpiece: the rotating 3D ASCII flower brand mark -->
     <div class="flower-stage animate-rise">
@@ -52,15 +37,11 @@ const NOTIFY_MAILTO =
       Topluluk merch'i hazırlanıyor — tişört, çıkartma ve koleksiyon parçaları.
     </p>
 
-    <!-- single quiet CTA back to events, plus a real mailto for "haberdar ol" -->
+    <!-- single quiet CTA back to events -->
     <div class="soon-actions animate-rise" style="animation-delay: 280ms">
       <a href="/events" class="btn btn-primary">
         Topluluğa dön
         <Icon name="arrow-right" size={16} class="soon-arrow" />
-      </a>
-      <a href={NOTIFY_MAILTO} class="soon-notify font-mono">
-        <Icon name="mail" size={13} class="soon-notify-ic" />
-        haberdar ol
       </a>
     </div>
 
@@ -95,21 +76,6 @@ const NOTIFY_MAILTO =
     .store-soon {
       padding-block: 7rem;
     }
-  }
-
-  /* binary backdrop sits behind everything, very dim. BinaryBackdrop's own mask
-     is centred at 78% x (it was authored for a right-aligned hero) — recentre it
-     so the texture pools symmetrically behind this centred lockup. */
-  .soon-binary {
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    opacity: 0.5;
-    pointer-events: none;
-  }
-  .soon-binary :global(.binary-bg) {
-    -webkit-mask-image: radial-gradient(120% 115% at 50% 44%, #000 28%, transparent 84%);
-    mask-image: radial-gradient(120% 115% at 50% 44%, #000 28%, transparent 84%);
   }
 
   .soon-inner {
@@ -183,22 +149,6 @@ const NOTIFY_MAILTO =
   }
   .btn-primary:hover .soon-arrow {
     transform: translateX(3px);
-  }
-  .soon-notify {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.42rem;
-    padding: 0.45rem 0.55rem;
-    font-size: 0.78rem;
-    letter-spacing: 0.02em;
-    color: var(--color-ink-faint);
-    transition: color 0.2s var(--ease-out-soft);
-  }
-  .soon-notify:hover {
-    color: var(--color-ink-text);
-  }
-  .soon-notify-ic {
-    opacity: 0.7;
   }
 
   .soon-foot {

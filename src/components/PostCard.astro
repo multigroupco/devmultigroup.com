@@ -34,8 +34,7 @@ const href = `/blog/${post.slug}`;
       alt=""
       loading="lazy"
       decoding="async"
-      onload="this.parentElement.classList.remove('skeleton')"
-      class="absolute inset-0 w-full h-full object-cover"
+      class="img-reveal absolute inset-0 w-full h-full object-cover"
     />
   </div>
   <div class:list={["flex flex-col", featured ? "p-6 md:p-7" : "p-5 flex-1"]}>

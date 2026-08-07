@@ -173,7 +173,7 @@ const structured = [orgLd, ...extra, ...(breadcrumbLd ? [breadcrumbLd] : [])];
     {!bare && <Footer />}
     {!bare && <ContactModal />}
     {!bare && <SearchPalette />}
-    {analyticsActive && (site.gaMeasurementId || site.posthogKey) && <ConsentBanner />}
+    {!bare && <ConsentBanner />}
 
     <script is:inline>
       (() => {

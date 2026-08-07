@@ -46,6 +46,47 @@
   </div>
 </div>
 
+<script is:inline>
+  // Fallback consent-UI handler. When the full analytics layer is active
+  // (apex + keys), Analytics.astro owns all consent handling and sets
+  // __dmgAnalyticsBound before this runs — so we no-op to avoid double-binding.
+  // When analytics is inert (staging / localhost / no keys) the banner element
+  // still renders, so the footer "Çerez Tercihleri" link needs *something* to
+  // open it. This handler provides that (open / manage / persist choice) without
+  // loading any tracker — there are none to load in that state.
+  (function () {
+    var w = window, d = document;
+    if (w.__dmgAnalyticsBound || w.__dmgConsentFallback) return;
+    w.__dmgConsentFallback = true;
+    var CK = "dmg_consent";
+    function banner() { return d.getElementById("dmg-consent"); }
+    function prefs() { return d.getElementById("dmg-consent-prefs"); }
+    function close(choice) {
+      if (choice) { try { localStorage.setItem(CK, choice); } catch (e) {} }
+      var b = banner(); if (b) b.setAttribute("hidden", "");
+      var p = prefs(); if (p) p.hidden = true;
+    }
+    function onClick(e) {
+      var t = e.target; if (!t || !t.closest) return;
+      if (t.closest("[data-consent-open]")) {
+        e.preventDefault();
+        var b = banner(); if (b) b.removeAttribute("hidden");
+        var p = prefs(); if (p) p.hidden = false;
+        return;
+      }
+      if (t.closest("[data-consent-manage]")) { var pm = prefs(); if (pm) pm.hidden = !pm.hidden; return; }
+      if (t.closest("[data-consent='granted']")) { close("granted"); return; }
+      if (t.closest("[data-consent='denied']")) { close("denied"); return; }
+      if (t.closest("[data-consent-save]")) {
+        var a = d.getElementById("dmg-cat-analytics");
+        close(a && a.checked ? "granted" : "denied");
+        return;
+      }
+    }
+    d.addEventListener("click", onClick);
+  })();
+</script>
+
 <style>
   .consent {
     position: fixed;

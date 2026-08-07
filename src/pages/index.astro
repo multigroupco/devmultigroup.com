@@ -38,11 +38,11 @@ if (env) {
 }
 
 const photos = [
-  "/main/main-1.jpg",
-  "/main/main-2.jpg",
-  "/main/main-3.jpg",
-  "/main/main-4.jpg",
-  "/main/main-5.jpg",
+  "/media/main/main-1.jpg",
+  "/media/main/main-2.jpg",
+  "/media/main/main-3.jpg",
+  "/media/main/main-4.jpg",
+  "/media/main/main-5.jpg",
 ];
 // hero background: horizontal photo bands flowing behind the centered text
 const rev = [...photos].reverse();
@@ -108,22 +108,22 @@ recordings = recordings.slice(0, 3);
       <div class="hero-bands absolute inset-0 flex flex-col justify-center gap-3 md:gap-4 mask-fade-x">
         <div class="flex gap-3 md:gap-4 w-max animate-marquee">
           {strip.map((src) => (
-            <div class="hero-card card overflow-hidden h-24 sm:h-32 md:h-40 aspect-[4/3] shrink-0">
-              <img src={src} alt="" loading="eager" decoding="async" class="w-full h-full object-cover" />
+            <div class="hero-card card overflow-hidden h-24 sm:h-32 md:h-40 aspect-[4/3] shrink-0 skeleton">
+              <img src={src} alt="" loading="eager" decoding="async" class="img-reveal w-full h-full object-cover" />
             </div>
           ))}
         </div>
         <div class="flex gap-3 md:gap-4 w-max animate-marquee-rev">
           {stripB.map((src) => (
-            <div class="hero-card card overflow-hidden h-24 sm:h-32 md:h-40 aspect-[4/3] shrink-0">
-              <img src={src} alt="" loading="eager" decoding="async" class="w-full h-full object-cover" />
+            <div class="hero-card card overflow-hidden h-24 sm:h-32 md:h-40 aspect-[4/3] shrink-0 skeleton">
+              <img src={src} alt="" loading="eager" decoding="async" class="img-reveal w-full h-full object-cover" />
             </div>
           ))}
         </div>
         <div class="flex gap-3 md:gap-4 w-max animate-marquee">
           {strip.map((src) => (
-            <div class="hero-card card overflow-hidden h-24 sm:h-32 md:h-40 aspect-[4/3] shrink-0">
-              <img src={src} alt="" loading="eager" decoding="async" class="w-full h-full object-cover" />
+            <div class="hero-card card overflow-hidden h-24 sm:h-32 md:h-40 aspect-[4/3] shrink-0 skeleton">
+              <img src={src} alt="" loading="eager" decoding="async" class="img-reveal w-full h-full object-cover" />
             </div>
           ))}
         </div>
@@ -194,7 +194,7 @@ recordings = recordings.slice(0, 3);
 
   <!-- ───────────────────── academy band ───────────────────── -->
   <section class="container-x py-8">
-    <div class="card relative overflow-hidden p-8 md:p-12">
+    <div class="card card-glow relative overflow-hidden p-8 md:p-12">
       <div class="absolute -right-20 -top-20 w-72 h-72 rounded-full blur-3xl opacity-50" style="background:radial-gradient(circle, rgba(255,255,255,.06), transparent 70%)"></div>
       <div class="relative grid md:grid-cols-[1.4fr_1fr] gap-8 items-center">
         <div>
@@ -264,7 +264,7 @@ recordings = recordings.slice(0, 3);
 
   <!-- ───────────────────── join CTA ───────────────────── -->
   <section class="container-x py-10">
-    <div class="card relative overflow-hidden p-10 md:p-14 text-center">
+    <div class="card card-glow relative overflow-hidden p-10 md:p-14 text-center">
       <div class="absolute inset-0 -z-10 opacity-50" style="background:radial-gradient(60% 80% at 50% 0%, rgba(255,255,255,.08), transparent 70%)"></div>
       <h2 class="text-3xl md:text-4xl font-semibold max-w-2xl mx-auto">Bizimle inşa etmeye hazır mısın?</h2>
       <p class="text-ink-dim mt-4 max-w-xl mx-auto leading-relaxed">
@@ -286,7 +286,7 @@ recordings = recordings.slice(0, 3);
     /* hero foto bandları: dinlenmede sönük, hover ettiğin fotoğraf aydınlanır */
     .hero-card img {
       filter: brightness(0.4) saturate(0.92);
-      transition: filter 0.45s var(--ease-out-soft), transform 0.6s var(--ease-out-soft);
+      transition: opacity 0.5s var(--ease-out-soft), filter 0.45s var(--ease-out-soft), transform 0.6s var(--ease-out-soft);
     }
     .hero-card:hover img {
       filter: brightness(1.08) saturate(1);

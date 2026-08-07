@@ -100,6 +100,30 @@ One registry, `RESOURCES`, drives list views, edit forms, and generic persistenc
 - Image fields can be a full URL, an absolute path, or a bare R2 key; `imageSrc` in
   [`src/lib/ui.ts`](./src/lib/ui.ts) resolves bare keys to `/media/<key>`.
 
+### Images & media (R2) — [`src/pages/media/[...key].ts`](./src/pages/media/[...key].ts)
+
+**Content images are served from R2, not bundled as static assets.** The former
+`public/{logos,main,partners,companies,ecosystems}` folders were migrated into the
+R2 `MEDIA` bucket and are served by the `/media/<key>` route (immutable long-cache;
+content-type comes from the object's `httpMetadata`, so it must be set at upload).
+Keys mirror the old paths — `logos/<f>.png`, `main/main-N.jpg`, `partners/<f>.jpg`,
+`companies/<f>.png`, `ecosystems/<f>.svg`.
+
+- **Company logos** are DB-driven: `companies.logo_url` holds a **bare R2 key**
+  (`logos/akbank.png`), which `imageSrc` resolves to `/media/logos/akbank.png`.
+- **Code-referenced images** (landing hero in `index.astro`, `partnerships.astro`,
+  `communities.astro`, featured-company marks in `site.ts`) use `/media/…` paths.
+- **Only infra/brand images stay static** in `public/` — favicons, `apple-touch-icon`,
+  `favicon-192/512`, `og-default.png`, the header/loader/word marks
+  (`dmg-logo.webp`, `logo-small-*.png`, `multiacademy-*.png`), `turkey.svg` — plus
+  `public/fonts/`. Browsers/crawlers/the manifest fetch these at fixed paths.
+- **Uploading**: [`scripts/media-sync.sh`](./scripts/media-sync.sh) `remote|local`
+  pushes the source content-image folders to R2 with correct content-types (used by
+  the migration; run `remote` before deploying, `local` for `astro dev`). Ad-hoc
+  images (event covers, admin uploads) go straight to R2 via `wrangler r2 object put`
+  or the admin image pipeline. **Never add content images back to `public/`** — put
+  them in R2 and reference the key. After a direct R2 + D1 write, bump `cv:<ns>`.
+
 ### Other lib helpers
 
 - [`src/lib/db.ts`](./src/lib/db.ts) — D1 helpers `all` / `first` / `run`, plus `uuid`,
@@ -299,7 +323,15 @@ npm run build                 # astro build only
 npm run deploy                # astro build + node scripts/postbuild.mjs + wrangler deploy
 npm run db:migrate:remote     # migrations → remote D1
 npm run db:seed:remote        # seed → remote D1
+
+bash scripts/media-sync.sh remote   # push content images → remote R2 (see Images & media)
+bash scripts/media-sync.sh local    # …and into local R2 for astro dev
 ```
+
+> **Content images live in R2**, not `public/` (see [Images & media](#images--media-r2--srcpagesmediakeyts)).
+> Local and remote R2 are separate stores — populate **both** (`media-sync.sh local`
+> and `remote`), and remember prod reads remote R2 + remote D1 + remote KV: a data or
+> image change only shows in prod after it's applied remotely (and `cv:<ns>` bumped).
 
 > **`scripts/postbuild.mjs` is required.** The Cloudflare adapter writes
 > `dist/_worker.js` and `dist/_routes.json`; deploying as a Worker-with-Assets,
