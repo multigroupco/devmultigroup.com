@@ -26,7 +26,7 @@ const isActive = (href: string) =>
 ---
 
 <header id="site-header" class="site-header">
-  <div class="container-x flex items-center justify-between gap-4 h-16">
+  <div class="header-bar container-x relative z-[60] flex items-center justify-between gap-4 h-16">
     <a href={brand.href} class="brand shrink-0" aria-label={brand.name} style={`--brand-w:${brand.w}px;--brand-word-left:${brand.wordLeft}px;--brand-h:${brand.h}px;--brand-spin:${brand.spin}deg;--store-word-size:${wordSize}`}>
       <span class="brand-mark">
         <img src={brand.mark} alt="" height="28" aria-hidden="true" />
@@ -103,15 +103,16 @@ const isActive = (href: string) =>
           <Icon name="arrow-up-right" size={15} class="absolute inset-0 opacity-0 scale-50 transition-all duration-200 group-hover:opacity-100 group-hover:scale-100" />
         </span>
       </a>
-      <button id="menu-toggle" class="md:hidden btn btn-ghost !p-2.5" aria-label="Menu" aria-expanded="false">
-        <Icon name="menu" size={20} />
+      <button id="menu-toggle" class="md:hidden btn btn-ghost !p-2.5" aria-label="Menü" aria-expanded="false" aria-controls="mobile-nav">
+        <span class="i-menu"><Icon name="menu" size={20} /></span>
+        <span class="i-close"><Icon name="close" size={20} /></span>
       </button>
     </div>
   </div>
 
-  <!-- mobile drawer -->
+  <!-- mobile fullscreen menu -->
   <div id="mobile-nav" class="mobile-nav md:hidden">
-    <nav class="container-x flex flex-col py-3" aria-label="Mobile">
+    <nav class="container-x flex flex-col pt-24 pb-10" aria-label="Mobile">
       {
         NAV.map((item) =>
           item.children ? (
@@ -153,6 +154,15 @@ const isActive = (href: string) =>
     z-index: 50;
     border-bottom: 1px solid transparent;
     transition: background-color 0.3s ease, border-color 0.3s ease;
+  }
+  /* Only while the fullscreen menu is open, pin the navbar to the very top so it
+     sits at the top of the overlay. Normal scrolling keeps the original sticky
+     behaviour (the navbar rides up as the banner scrolls away). */
+  :global(html.menu-open) .site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
   }
   /* soft top scrim so the transparent navbar never reveals hero photos behind it */
   .site-header::before {
@@ -340,18 +350,41 @@ const isActive = (href: string) =>
     color: var(--color-ink-faint);
   }
 
+  /* Fullscreen overlay menu: pinned to the viewport, opaque, and scrollable on
+     its own so the page behind never moves (background scroll is also locked via
+     html.menu-open). Sits below the header's top bar (z-60) so the logo + the
+     toggle-turned-close stay tappable. */
   .mobile-nav {
-    overflow: hidden;
-    max-height: 0;
-    border-bottom: 1px solid transparent;
-    background: rgba(0, 0, 0, 0.95);
-    backdrop-filter: blur(14px);
-    transition: max-height 0.35s var(--ease-out-soft), border-color 0.35s;
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    background: var(--color-ink-950);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.28s var(--ease-out-soft), visibility 0.28s;
   }
   .mobile-nav.open {
-    max-height: 40rem;
-    border-bottom-color: var(--color-line);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
   }
+  /* While the fullscreen menu is open, make the top bar opaque so the menu's
+     own scrolling items pass *behind* it instead of showing through around the
+     logo / search / close. */
+  :global(html.menu-open) .header-bar {
+    background: var(--color-ink-950);
+  }
+
+  /* toggle icon: hamburger when closed, X when open */
+  #menu-toggle .i-menu,
+  #menu-toggle .i-close { display: inline-flex; }
+  #menu-toggle .i-close { display: none; }
+  #menu-toggle.is-open .i-menu { display: none; }
+  #menu-toggle.is-open .i-close { display: inline-flex; }
   .mnav-link {
     display: flex;
     align-items: center;
@@ -379,19 +412,35 @@ const isActive = (href: string) =>
       const h = document.getElementById("site-header");
       if (h) h.classList.toggle("scrolled", window.scrollY > 8);
     };
+    const setMenu = (open) => {
+      const t = document.getElementById("menu-toggle");
+      const d = document.getElementById("mobile-nav");
+      if (!t || !d) return;
+      d.classList.toggle("open", open);
+      t.classList.toggle("is-open", open);
+      t.setAttribute("aria-expanded", String(open));
+      // lock background scroll while the fullscreen menu is open
+      document.documentElement.classList.toggle("menu-open", open);
+    };
     const bind = () => {
       onScroll();
       const t = document.getElementById("menu-toggle");
       const d = document.getElementById("mobile-nav");
-      if (t && d)
-        t.onclick = () => {
-          const open = d.classList.toggle("open");
-          t.setAttribute("aria-expanded", String(open));
-        };
+      if (t && d && !t.dataset.bound) {
+        t.dataset.bound = "1";
+        t.addEventListener("click", () => setMenu(!d.classList.contains("open")));
+        // tapping any link inside the menu closes it (and unlocks scroll)
+        d.addEventListener("click", (e) => {
+          if (e.target.closest("a")) setMenu(false);
+        });
+      }
     };
     if (!window.__dmgHeader) {
       window.__dmgHeader = true;
       window.addEventListener("scroll", onScroll, { passive: true });
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape") setMenu(false); });
+      // any client-side navigation closes the menu + clears the scroll lock on <html>
+      document.addEventListener("astro:before-swap", () => setMenu(false));
       document.addEventListener("astro:page-load", bind);
     }
     bind();

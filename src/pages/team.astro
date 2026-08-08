@@ -139,7 +139,7 @@ const teamLd = team.length
         {groups.filter((g) => g.items.length).map((g) => (
           <div class="mt-12 first:mt-2">
             <SectionHeader title={g.name} />
-            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-8">
               {g.items.map((m) => <TeamCard member={m} />)}
             </div>
           </div>
@@ -147,7 +147,7 @@ const teamLd = team.length
         {leftover.length > 0 && (
           <div class="mt-12">
             <SectionHeader title="Diğer" />
-            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-8">
               {leftover.map((m) => <TeamCard member={m} />)}
             </div>
           </div>

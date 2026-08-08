@@ -93,6 +93,22 @@
     background-color: var(--color-ink-950);
   }
 
+  /* Lock background scroll while the fullscreen mobile menu is open. */
+  html.menu-open {
+    overflow: hidden;
+  }
+
+  /* The fullscreen mobile menu scrolls but shows no scrollbar. Kept global (not
+     Astro-scoped) so it reliably overrides the custom ::-webkit-scrollbar theme. */
+  .mobile-nav {
+    scrollbar-width: none;
+  }
+  .mobile-nav::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+
   body {
     background-color: var(--color-ink-950);
     color: var(--color-ink-text);
@@ -102,6 +118,13 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100dvh;
+  }
+
+  /* Horizontal-overflow containment lives on #main (a SIBLING of the header),
+     never on html/body. `overflow-x` on the header's ancestor chain offsets the
+     sticky navbar by a couple of pixels when it pins; keeping it off body/html
+     lets the navbar sit flush at top:0. */
+  #main {
     overflow-x: clip;
   }
 
