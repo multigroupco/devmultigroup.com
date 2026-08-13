@@ -11,12 +11,15 @@ interface Props {
 const { link, group } = Astro.props;
 const hex = accentHex(link.accent);
 // Route through /go/<id> so we can count clicks before redirecting out.
+// Prefetch is disabled on purpose: /go/<id> counts a click, so letting the
+// viewport prefetcher hit it would inflate every link's counter.
 const href = `/go/${link.id}`;
 ---
 
 <a
   href={href}
   class="card card-hover relative flex items-center gap-4 p-4"
+  data-astro-prefetch="false"
   data-link
   data-track="link_click"
   data-track-props={JSON.stringify({ link_id: link.id, link_label: link.label, link_group: group })}

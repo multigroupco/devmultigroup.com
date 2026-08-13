@@ -1,31 +1,37 @@
 ---
+// MultiAcademy linktree — the /links sibling for the academy brand.
+// Latest MultiAcademy event on top (upcoming when there is one, otherwise the
+// most recent past one), then the admin-managed academy link list
+// (/admin/academy-links).
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import LinkButton from "@/components/LinkButton.astro";
 import Icon from "@/components/Icon.astro";
 import { getEnv } from "@/lib/runtime";
-import { listLinks, listEvents } from "@/lib/content";
+import { listAcademyLinks, listEvents } from "@/lib/content";
 import { BRAND, SOCIALS } from "@/lib/site";
 import { formatDayLabel, formatTime } from "@/lib/format";
 import { imageSrc } from "@/lib/ui";
 import type { LinkRow } from "@/lib/types";
 
 const env = getEnv(Astro.locals);
-const [links, upcoming] = await Promise.all([
-  listLinks(env),
-  listEvents(env, { when: "upcoming", limit: 1 }),
+const [links, upcoming, past] = await Promise.all([
+  listAcademyLinks(env),
+  listEvents(env, { community: "multiacademy", when: "upcoming", limit: 1 }),
+  listEvents(env, { community: "multiacademy", when: "past", limit: 1 }),
 ]);
 
-// the soonest upcoming event (either community) — shown as a card above the links
-const nextEvent = upcoming[0] ?? null;
+// soonest upcoming academy event, else the most recent past one
+const nextEvent = upcoming[0] ?? past[0] ?? null;
+const isUpcoming = upcoming.length > 0;
+const evBadge = isUpcoming ? "Yaklaşan etkinlik" : "Son etkinlik";
 const evCover = nextEvent ? imageSrc(nextEvent.cover_image) : "";
 const evDay = nextEvent ? formatDayLabel(nextEvent.starts_at) : null;
 const evTime = nextEvent ? formatTime(nextEvent.starts_at) : "";
 const evWhere = nextEvent ? (nextEvent.is_online ? "Çevrimiçi" : nextEvent.city) : "";
 
-const ORDER = ["primary", "communities", "academy", "resources", "social", "links"];
+const ORDER = ["primary", "academy", "resources", "social", "links"];
 const LABELS: Record<string, string> = {
   primary: "",
-  communities: "Communities",
   academy: "Academy",
   resources: "Resources",
   social: "Follow us",
@@ -43,28 +49,32 @@ const orderedGroups = [
 ];
 
 const social = [
-  { icon: "instagram", href: SOCIALS.multigroup.instagram },
-  { icon: "twitter", href: SOCIALS.multigroup.twitter },
-  { icon: "linkedin", href: SOCIALS.multigroup.linkedin },
-  { icon: "youtube", href: SOCIALS.multigroup.youtube },
+  { icon: "instagram", href: SOCIALS.multiacademy.instagram },
+  { icon: "linkedin", href: SOCIALS.multiacademy.linkedin },
+  { icon: "youtube", href: SOCIALS.multiacademy.youtube },
 ];
 ---
 
-<BaseLayout title="Bağlantılar" description="Developer MultiGroup'la ilgili her şey — tek dokunuşta." canonicalPath="/links" bare>
+<BaseLayout
+  title="MultiAcademy Bağlantılar"
+  description="MultiAcademy'yle ilgili her şey — bootcamp'ler, etkinlikler ve sosyal hesaplar, tek dokunuşta."
+  canonicalPath="/academy-links"
+  bare
+>
   <div class="min-h-dvh flex flex-col items-center px-5 py-8">
     <main class="w-full max-w-md">
       <!-- profile -->
       <div class="text-center">
-        <a href="/" class="inline-block">
-          <img src="/dmg-logo.webp" alt={BRAND.name} width="245" height="51" class="h-12 w-auto mx-auto" />
+        <a href="/academy" class="inline-block">
+          <img src="/multiacademy-logo.png" alt="MultiAcademy" width="245" height="51" class="h-12 w-auto mx-auto" />
         </a>
-        <h1 class="sr-only">Developer MultiGroup</h1>
-        <p class="text-ink-dim text-sm mt-4">{BRAND.tagline}</p>
+        <h1 class="sr-only">MultiAcademy</h1>
+        <p class="text-ink-dim text-sm mt-4">Ücretsiz bootcamp'ler, atölyeler ve eğitimlerle geliştiricileri birlikte büyütüyoruz.</p>
 
         <div class="flex items-center justify-center gap-2 mt-5">
           {
             social.map((s) => (
-              <a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.icon} data-track="social_click" data-track-props={JSON.stringify({ platform: s.icon, location: "links" })} class="grid place-items-center w-10 h-10 rounded-full border border-line text-ink-dim hover:text-ink-text hover:border-line-strong transition-colors">
+              <a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.icon} data-track="social_click" data-track-props={JSON.stringify({ platform: s.icon, location: "academy-links" })} class="grid place-items-center w-10 h-10 rounded-full border border-line text-ink-dim hover:text-ink-text hover:border-line-strong transition-colors">
                 <Icon name={s.icon} size={18} />
               </a>
             ))
@@ -72,24 +82,24 @@ const social = [
         </div>
       </div>
 
-      <!-- next upcoming event — shown above the links when one exists -->
+      <!-- latest academy event -->
       {
         nextEvent && (
           <a
             href={`/events/${nextEvent.slug}`}
             class="card card-hover group block overflow-hidden text-left mt-8"
             data-track="event_card_click"
-            data-track-props={JSON.stringify({ event_slug: nextEvent.slug, page: "links" })}
+            data-track-props={JSON.stringify({ event_slug: nextEvent.slug, page: "academy-links" })}
           >
             {evCover ? (
               <div class="relative aspect-[16/9] bg-ink-900 skeleton">
                 <img src={evCover} alt="" loading="eager" decoding="async" class="img-reveal absolute inset-0 w-full h-full object-cover" />
                 <div class="absolute inset-0 bg-gradient-to-t from-ink-950/85 via-ink-950/15 to-transparent" />
-                <span class="absolute top-2.5 left-2.5 z-[2] inline-flex items-center gap-1.5 rounded-full pl-2 pr-2.5 py-1 text-[0.7rem] font-semibold text-white" style="background:linear-gradient(135deg,#8b5cf6,#ec4899);box-shadow:0 6px 18px -5px rgba(236,72,153,.55)"><span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> Yaklaşan etkinlik</span>
+                <span class="absolute top-2.5 left-2.5 z-[2] inline-flex items-center gap-1.5 rounded-full pl-2 pr-2.5 py-1 text-[0.7rem] font-semibold text-white" style="background:linear-gradient(135deg,#8b5cf6,#ec4899);box-shadow:0 6px 18px -5px rgba(236,72,153,.55)"><span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> {evBadge}</span>
               </div>
             ) : null}
             <div class="p-4">
-              {!evCover && <span class="inline-flex items-center gap-1.5 rounded-full pl-2 pr-2.5 py-1 text-[0.7rem] font-semibold text-white mb-2.5" style="background:linear-gradient(135deg,#8b5cf6,#ec4899);box-shadow:0 6px 18px -5px rgba(236,72,153,.55)"><span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> Yaklaşan etkinlik</span>}
+              {!evCover && <span class="inline-flex items-center gap-1.5 rounded-full pl-2 pr-2.5 py-1 text-[0.7rem] font-semibold text-white mb-2.5" style="background:linear-gradient(135deg,#8b5cf6,#ec4899);box-shadow:0 6px 18px -5px rgba(236,72,153,.55)"><span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> {evBadge}</span>}
               <h2 class="font-display font-semibold leading-snug">{nextEvent.title}</h2>
               <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-ink-dim">
                 <span class="inline-flex items-center gap-1"><Icon name="calendar" size={13} /> {evDay?.weekday} {evDay?.day} {evDay?.month}{evTime && ` · ${evTime}`}</span>

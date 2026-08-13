@@ -15,6 +15,7 @@ const STATIC: { path: string; priority: string }[] = [
   { path: "/partnerships", priority: "0.6" },
   { path: "/about", priority: "0.6" },
   { path: "/links", priority: "0.4" },
+  { path: "/academy-links", priority: "0.4" },
 ];
 
 const esc = (s: string) =>

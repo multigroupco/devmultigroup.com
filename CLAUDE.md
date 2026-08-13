@@ -47,7 +47,9 @@ SQLite (D1). Timestamps are **unix epoch seconds (UTC)**; booleans are `0/1`. Ta
 | `settings`      | key/value site config (title, tagline, GA4 id, GSC token, stat strings…) |
 | `events`        | events for both communities; `is_featured` drives the site banner        |
 | `posts`         | blog posts (markdown `body_md`, `status` draft/published, `featured`)    |
-| `links`         | linktree-style outbound links, with a `clicks` counter                   |
+| `links`         | linktree-style outbound links (`/links`), with a `clicks` counter        |
+| `academy_links` | same shape as `links`, for the MultiAcademy linktree (`/academy-links`)  |
+| `hero_slides`   | the photo bands flowing behind the homepage hero (admin-managed)        |
 | `recordings`    | YouTube playlists (talks / bootcamp series)                              |
 | `gallery_items` | photos — `image_url` (external or `/media/<key>`) or `image_key` (R2)    |
 | `team_members`  | organizers/volunteers; `socials` is a JSON string                        |
@@ -99,6 +101,18 @@ One registry, `RESOURCES`, drives list views, edit forms, and generic persistenc
   fixed **UTC+3** (`TR_OFFSET`, no DST) via `toLocalInput` / `fromLocalInput`.
 - Image fields can be a full URL, an absolute path, or a bare R2 key; `imageSrc` in
   [`src/lib/ui.ts`](./src/lib/ui.ts) resolves bare keys to `/media/<key>`.
+
+**Surfaces that used to be hardcoded and are now rows** (migration `0007`):
+
+- `/admin/hero` → `hero_slides`, the photo marquee behind the homepage hero. `index.astro`
+  falls back to the five static `main/main-N.jpg` paths only when the table comes back
+  empty, so the hero can never render blank.
+- `/admin/companies` → the `in_strip` flag ("Ana sayfa logo şeridi") picks which companies
+  appear in `CompanyStrip`; `listStripCompanies` falls back to `featured=1`, then to the
+  static `COMPANIES` const in `site.ts` if D1 is unreachable.
+- `/admin/academy-links` → `academy_links`, the MultiAcademy linktree at `/academy-links`
+  (`/links` stays MultiGroup). Same shape as `links`, so it reuses `LinkButton`, and
+  `/go/<id>` looks in both tables when counting a click.
 
 ### Images & media (R2) — [`src/pages/media/[...key].ts`](./src/pages/media/[...key].ts)
 
@@ -196,8 +210,16 @@ banner in `PostCard.astro` (`/blog/banner/${slug}.svg` when no cover).
   (list), `/admin/[resource]/[id]` (edit/new/delete; `id === "new"` is create), and
   `/admin/settings`. All driven by `RESOURCES` / `SETTINGS_FIELDS`. The shared form
   control is [`src/components/admin/Field.astro`](./src/components/admin/Field.astro).
-- Sign-out links to `/auth/logout` (clears the local session; Warden's own session is
-  separate). App-side passwords live in **Warden**, not here — this app never sees them.
+  Below `md` the sidebar is a **hamburger drawer** (sticky topbar + backdrop, closes on
+  Escape / backdrop / link tap); from `md` up it is the plain sticky sidebar. Its
+  breakpoint rules live in the layout's own `<style>` (not Tailwind `md:hidden`) because
+  Astro's scoped selectors out-specify single-class utilities and would beat them.
+- **Sign-out is a POST form** to `/auth/logout` (clears the local session; Warden's own
+  session is ended by the redirect that follows). It is POST **on purpose**: as a GET it
+  was fetched by Astro's viewport prefetcher on every admin page load, which destroyed
+  the session and bounced the admin through `/auth/login` on every navigation. A GET to
+  `/auth/logout` now just redirects to `/admin`. App-side passwords live in **Warden**,
+  not here — this app never sees them.
 
 ## Analytics & observability
 
@@ -378,6 +400,12 @@ Console, and Access finalisation.
   Keep authoring behind Access.
 - Datetime handling assumes **fixed UTC+3 (no DST)** — correct for Turkey, but don't
   reuse that assumption for other timezones.
+- **Never give a side-effecting action a GET route.** `prefetch.prefetchAll` +
+  `defaultStrategy: "viewport"` means the browser fetches every same-origin link that
+  scrolls into view — a GET that logs out, deletes, or counts something will fire without
+  a user. This already cost us a session-destroying `/auth/logout` (now POST-only) and
+  inflated `/go/<id>` click counts (now `data-astro-prefetch="false"` on `LinkButton`).
+  Use POST for state changes; add `data-astro-prefetch="false"` to any counted link.
 - Keep copy **Turkish**; keep the **English motto** as-is.
 - **Analytics is dependency-free** — no `@sentry/*` / `posthog-js` npm packages;
   client SDKs load via snippet/loader, server capture speaks the HTTP APIs

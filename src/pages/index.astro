@@ -15,35 +15,44 @@ import {
   getStats,
   getSettings,
   listCommunities,
+  listHeroSlides,
 } from "@/lib/content";
 import { resolveSite, GATHIN, BRAND, SOCIALS } from "@/lib/site";
-import type { EventRow, RecordingRow, PostRow, CommunityRow, Settings } from "@/lib/types";
+import { imageSrc } from "@/lib/ui";
+import type { EventRow, RecordingRow, PostRow, CommunityRow, HeroSlideRow, Settings } from "@/lib/types";
 
 const env = tryEnv(Astro.locals);
 let upcoming: EventRow[] = [];
 let recordings: RecordingRow[] = [];
 let posts: PostRow[] = [];
 let communities: CommunityRow[] = [];
+let heroSlides: HeroSlideRow[] = [];
 let stats = { events: 0, pastEvents: 0, posts: 0, recordings: 0 };
 let settings: Settings = {};
 if (env) {
-  try { [upcoming, recordings, posts, stats, settings, communities] = await Promise.all([
+  try { [upcoming, recordings, posts, stats, settings, communities, heroSlides] = await Promise.all([
     listEvents(env, { when: "upcoming", limit: 4 }),
     listRecordings(env),
     listPosts(env, { limit: 3 }),
     getStats(env),
     getSettings(env),
     listCommunities(env),
+    listHeroSlides(env),
   ]); } catch { /* pre-seed */ }
 }
 
-const photos = [
+// Hero photos are admin-managed (/admin/hero). The static list is only a
+// fallback for a cold/unreachable DB so the hero is never empty.
+const FALLBACK_PHOTOS = [
   "/media/main/main-1.jpg",
   "/media/main/main-2.jpg",
   "/media/main/main-3.jpg",
   "/media/main/main-4.jpg",
   "/media/main/main-5.jpg",
 ];
+const photos = heroSlides.length
+  ? heroSlides.map((s) => imageSrc(s.image_url)).filter(Boolean)
+  : FALLBACK_PHOTOS;
 // hero background: horizontal photo bands flowing behind the centered text
 const rev = [...photos].reverse();
 const strip = [...photos, ...photos, ...photos, ...photos];

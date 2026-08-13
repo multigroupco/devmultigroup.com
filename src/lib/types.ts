@@ -73,6 +73,21 @@ export interface LinkRow {
   updated_at: number;
 }
 
+/** MultiAcademy linktree row (/academy-links). Same shape as `LinkRow` so it
+ *  renders through the same LinkButton and counts clicks via /go/<id>. */
+export type AcademyLinkRow = LinkRow;
+
+/** One photo in the marquee flowing behind the homepage hero. */
+export interface HeroSlideRow {
+  id: string;
+  title: string;
+  image_url: string;
+  sort_order: number;
+  is_active: number;
+  created_at: number;
+  updated_at: number;
+}
+
 /** Curated open-source content repo shown on /kaynakca. */
 export interface ResourceRow {
   id: string;
@@ -175,6 +190,8 @@ export interface CompanyRow {
   website: string;
   description: string;
   featured: number;
+  /** Shown in the homepage logo marquee (CompanyStrip). */
+  in_strip: number;
   sort_order: number;
   is_active: number;
   created_at: number;

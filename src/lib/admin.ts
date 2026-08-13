@@ -177,6 +177,53 @@ export const RESOURCES: Record<string, Resource> = {
     ],
   },
 
+  "academy-links": {
+    key: "academy-links",
+    label: "Academy Links",
+    singular: "Academy link",
+    table: "academy_links",
+    icon: "sparkles",
+    ns: [NS.academyLinks],
+    defaultSort: "sort_order ASC",
+    listColumns: [
+      { name: "label", label: "Label" },
+      { name: "group_name", label: "Group" },
+      { name: "clicks", label: "Clicks" },
+      { name: "is_active", label: "Active" },
+    ],
+    fields: [
+      { name: "label", label: "Label", type: "text", required: true },
+      { name: "url", label: "URL", type: "text", required: true, full: true },
+      { name: "description", label: "Description", type: "text", full: true },
+      { name: "icon", label: "Icon", type: "select", options: ICONS },
+      { name: "group_name", label: "Group", type: "select", options: opt("primary", "academy", "resources", "social", "links") },
+      { name: "accent", label: "Accent colour", type: "color", options: ACCENTS },
+      { name: "sort_order", label: "Sort order", type: "number" },
+      { name: "is_active", label: "Active", type: "boolean" },
+    ],
+  },
+
+  hero: {
+    key: "hero",
+    label: "Hero slides",
+    singular: "Hero slide",
+    table: "hero_slides",
+    icon: "camera",
+    ns: [NS.hero, NS.home],
+    defaultSort: "sort_order ASC, created_at ASC",
+    listColumns: [
+      { name: "title", label: "Title" },
+      { name: "sort_order", label: "Order" },
+      { name: "is_active", label: "Active" },
+    ],
+    fields: [
+      { name: "image_url", label: "Photo", type: "image", required: true, full: true, help: "Ana sayfadaki hero'nun arkasında akan foto bandı. Yükle ya da URL yapıştır. Liste tamamen boşalırsa varsayılan 5 fotoğrafa döner." },
+      { name: "title", label: "Title", type: "text", help: "Sadece admin listesinde görünür." },
+      { name: "sort_order", label: "Sort order", type: "number" },
+      { name: "is_active", label: "Active", type: "boolean" },
+    ],
+  },
+
   resources: {
     key: "resources",
     label: "Kaynakça",
@@ -328,6 +375,7 @@ export const RESOURCES: Record<string, Resource> = {
       { name: "name", label: "Name" },
       { name: "sector", label: "Sector" },
       { name: "featured", label: "Featured" },
+      { name: "in_strip", label: "Strip" },
       { name: "is_active", label: "Active" },
     ],
     fields: [
@@ -338,6 +386,7 @@ export const RESOURCES: Record<string, Resource> = {
       { name: "website", label: "Website", type: "text", full: true },
       { name: "description", label: "Description", type: "textarea", full: true, help: "One-line note about the company (optional)." },
       { name: "featured", label: "Featured", type: "boolean" },
+      { name: "in_strip", label: "Ana sayfa logo şeridi", type: "boolean", help: "İşaretli şirketler ana sayfadaki kayan logo bandında görünür." },
       { name: "sort_order", label: "Sort order", type: "number" },
       { name: "is_active", label: "Active", type: "boolean" },
     ],

@@ -3,8 +3,10 @@
 import { cached, NS } from "./cache";
 import { all, first } from "./db";
 import type {
+  AcademyLinkRow,
   EventRow,
   GalleryRow,
+  HeroSlideRow,
   LinkRow,
   PostRow,
   RecordingRow,
@@ -232,6 +234,27 @@ export async function listLinks(env: Env): Promise<LinkRow[]> {
   );
 }
 
+/* ── academy links (MultiAcademy linktree — /academy-links) ───────────────── */
+export async function listAcademyLinks(env: Env): Promise<AcademyLinkRow[]> {
+  return cached(env, NS.academyLinks, "active", () =>
+    all<AcademyLinkRow>(
+      env.DB,
+      `SELECT * FROM academy_links WHERE is_active=1 ORDER BY sort_order ASC, created_at ASC`,
+    ),
+  );
+}
+
+/* ── hero slides (photo marquee behind the homepage hero) ─────────────────── */
+export async function listHeroSlides(env: Env): Promise<HeroSlideRow[]> {
+  return cached(env, NS.hero, "active", () =>
+    all<HeroSlideRow>(
+      env.DB,
+      `SELECT * FROM hero_slides WHERE is_active=1 AND image_url <> ''
+       ORDER BY sort_order ASC, created_at ASC`,
+    ),
+  );
+}
+
 /* ── resources (open-source content repos — /kaynakca) ─────────────────────── */
 export async function listResources(env: Env): Promise<ResourceRow[]> {
   return cached(env, NS.resources, "active", () =>
@@ -351,6 +374,24 @@ export async function listCompanies(
       `SELECT * FROM companies WHERE is_active=1
        ORDER BY featured DESC, sort_order ASC, name ASC LIMIT ?`,
       [limit],
+    );
+  });
+}
+
+/** Companies ticked for the homepage logo marquee (admin: "Logo şeridi").
+ *  Falls back to the featured set so the strip is never empty by accident. */
+export async function listStripCompanies(env: Env): Promise<CompanyRow[]> {
+  return cached(env, NS.companies, "strip", async () => {
+    const picked = await all<CompanyRow>(
+      env.DB,
+      `SELECT * FROM companies WHERE is_active=1 AND in_strip=1 AND logo_url <> ''
+       ORDER BY sort_order ASC, name ASC`,
+    );
+    if (picked.length) return picked;
+    return all<CompanyRow>(
+      env.DB,
+      `SELECT * FROM companies WHERE is_active=1 AND featured=1 AND logo_url <> ''
+       ORDER BY sort_order ASC, name ASC LIMIT 12`,
     );
   });
 }

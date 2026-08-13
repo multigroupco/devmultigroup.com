@@ -27,12 +27,38 @@ const active = (href: string) => path === href || path.startsWith(href + "/");
   </head>
   <body>
     <SiteBackground />
+
+    <!-- mobile top bar: the nav lives behind the hamburger below md -->
+    <header class="admin-topbar">
+      <button
+        type="button"
+        id="admin-nav-toggle"
+        class="admin-icon-btn"
+        aria-controls="admin-nav"
+        aria-expanded="false"
+        aria-label="Menüyü aç"
+      >
+        <Icon name="menu" size={20} />
+      </button>
+      <a href="/admin" class="flex items-center gap-2 min-w-0">
+        <img src="/dmg-logo.webp" alt="" width="106" height="22" class="h-[20px] w-auto" />
+        <span class="font-display font-semibold text-ink-dim text-sm truncate">/ Admin</span>
+      </a>
+    </header>
+
+    <div class="admin-backdrop" id="admin-nav-backdrop" aria-hidden="true"></div>
+
     <div class="min-h-dvh md:grid md:grid-cols-[16rem_1fr]">
-      <aside class="border-b md:border-b-0 md:border-r border-line md:min-h-dvh p-4 md:sticky md:top-0 md:h-dvh md:overflow-y-auto">
-        <a href="/admin" class="flex items-center gap-2 mb-6 px-2">
-          <img src="/dmg-logo.webp" alt="" width="106" height="22" class="h-[22px] w-auto" />
-          <span class="font-display font-semibold text-ink-dim">/ Admin</span>
-        </a>
+      <aside class="admin-aside" id="admin-nav">
+        <div class="flex items-center justify-between gap-2 mb-6 px-2">
+          <a href="/admin" class="flex items-center gap-2 min-w-0">
+            <img src="/dmg-logo.webp" alt="" width="106" height="22" class="h-[22px] w-auto" />
+            <span class="font-display font-semibold text-ink-dim">/ Admin</span>
+          </a>
+          <button type="button" id="admin-nav-close" class="admin-icon-btn" aria-label="Menüyü kapat">
+            <Icon name="close" size={18} />
+          </button>
+        </div>
         <nav class="space-y-1">
           <a href="/admin" class:list={["admin-nav", path === "/admin" && "admin-nav-active"]}>
             <Icon name="layers" size={17} /> Dashboard
@@ -53,7 +79,11 @@ const active = (href: string) => path === href || path.startsWith(href + "/");
         </nav>
         <div class="mt-6 pt-4 border-t border-line space-y-1">
           <a href="/" target="_blank" class="admin-nav"><Icon name="external" size={17} /> View site</a>
-          <a href="/auth/logout" class="admin-nav"><Icon name="arrow-up-right" size={17} /> Sign out</a>
+          <!-- Sign-out is a POST: a GET here would be logged out by any
+               speculative fetch (prefetch, preloading, link scanners). -->
+          <form method="POST" action="/auth/logout">
+            <button type="submit" class="admin-nav w-full"><Icon name="arrow-up-right" size={17} /> Sign out</button>
+          </form>
         </div>
         {email && <p class="mt-4 px-2 text-xs text-ink-faint font-mono truncate">{email}</p>}
       </aside>
@@ -64,6 +94,110 @@ const active = (href: string) => path === href || path.startsWith(href + "/");
     </div>
 
     <style>
+      /* ── mobile chrome ─────────────────────────────────────────────────── */
+      .admin-topbar {
+        position: sticky;
+        top: 0;
+        z-index: 45;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        height: 3.5rem;
+        padding: 0 0.9rem;
+        border-bottom: 1px solid var(--color-line);
+        background: color-mix(in srgb, var(--color-ink-950) 88%, transparent);
+        backdrop-filter: blur(10px);
+      }
+      .admin-icon-btn {
+        display: grid;
+        place-items: center;
+        width: 2.35rem;
+        height: 2.35rem;
+        border-radius: 0.7rem;
+        border: 1px solid var(--color-line);
+        color: var(--color-ink-dim);
+        background: rgba(255, 255, 255, 0.03);
+        transition: color 0.2s, background-color 0.2s, border-color 0.2s;
+        flex-shrink: 0;
+      }
+      .admin-icon-btn:hover {
+        color: var(--color-ink-text);
+        border-color: var(--color-line-strong);
+        background: rgba(255, 255, 255, 0.07);
+      }
+
+      .admin-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 48;
+        background: rgba(0, 0, 0, 0.62);
+        backdrop-filter: blur(2px);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease;
+      }
+
+      /* ── nav: off-canvas drawer below md, static sidebar from md up ────── */
+      .admin-aside {
+        position: fixed;
+        inset-block: 0;
+        left: 0;
+        z-index: 50;
+        width: 17rem;
+        max-width: 86vw;
+        overflow-y: auto;
+        padding: 1rem;
+        background: var(--color-ink-950);
+        border-right: 1px solid var(--color-line);
+        transform: translateX(-100%);
+        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      body[data-nav="open"] .admin-aside {
+        transform: none;
+      }
+      body[data-nav="open"] .admin-backdrop {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      :global(body[data-nav="open"]) {
+        overflow: hidden;
+      }
+
+      /* From md up the drawer becomes the plain sticky sidebar and every piece
+         of mobile chrome disappears. These live here rather than as Tailwind
+         `md:hidden` classes because Astro's scoped selectors out-specify
+         Tailwind's single-class utilities and would win over them. */
+      @media (min-width: 768px) {
+        .admin-topbar,
+        .admin-backdrop,
+        #admin-nav-close {
+          display: none;
+        }
+        .admin-aside {
+          position: sticky;
+          top: 0;
+          z-index: 1;
+          height: 100dvh;
+          min-height: 100dvh;
+          width: auto;
+          max-width: none;
+          transform: none;
+          background: transparent;
+        }
+        :global(body[data-nav="open"]) {
+          overflow: visible;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .admin-aside,
+        .admin-backdrop {
+          transition: none;
+        }
+      }
+
+      /* ── nav items ─────────────────────────────────────────────────────── */
       .admin-nav {
         display: flex;
         align-items: center;
@@ -73,6 +207,7 @@ const active = (href: string) => path === href || path.startsWith(href + "/");
         font-size: 0.9rem;
         color: var(--color-ink-dim);
         transition: color 0.2s, background-color 0.2s;
+        text-align: left;
       }
       .admin-nav:hover {
         color: var(--color-ink-text);
@@ -83,5 +218,39 @@ const active = (href: string) => path === href || path.startsWith(href + "/");
         background: rgba(255, 255, 255, 0.07);
       }
     </style>
+
+    <script is:inline>
+      (() => {
+        const nav = document.getElementById("admin-nav");
+        const toggle = document.getElementById("admin-nav-toggle");
+        const backdrop = document.getElementById("admin-nav-backdrop");
+        const closeBtn = document.getElementById("admin-nav-close");
+        if (!nav || !toggle) return;
+
+        const set = (open) => {
+          document.body.dataset.nav = open ? "open" : "";
+          toggle.setAttribute("aria-expanded", open ? "true" : "false");
+          toggle.setAttribute("aria-label", open ? "Menüyü kapat" : "Menüyü aç");
+        };
+
+        toggle.addEventListener("click", () =>
+          set(document.body.dataset.nav !== "open"),
+        );
+        closeBtn?.addEventListener("click", () => set(false));
+        backdrop?.addEventListener("click", () => set(false));
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") set(false);
+        });
+        // Tapping a nav link navigates (full page load) — close so the drawer
+        // isn't briefly visible on slow connections.
+        nav.addEventListener("click", (e) => {
+          if (e.target.closest("a")) set(false);
+        });
+        // Never leave the drawer state stuck when resizing up to desktop.
+        matchMedia("(min-width: 768px)").addEventListener("change", (e) => {
+          if (e.matches) set(false);
+        });
+      })();
+    </script>
   </body>
 </html>

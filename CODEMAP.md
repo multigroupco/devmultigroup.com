@@ -90,13 +90,13 @@ devmultigroup.com/
     │
     ├── layouts/
     │   ├── BaseLayout.astro      Public shell: Seo + Analytics + JsonLd (Organization/Breadcrumb), ClientRouter, PageLoader, SiteBackground, EventBanner, Header/Footer, ContactModal, SearchPalette, ConsentBanner; img-reveal script.
-    │   └── AdminLayout.astro     Admin shell: noindex, sidebar nav from RESOURCES + Mağaza + Settings, View-site/Sign-out (/auth/logout), admin email; no public chrome.
+    │   └── AdminLayout.astro     Admin shell: noindex, sidebar nav from RESOURCES + Mağaza + Settings, View-site + Sign-out (POST form → /auth/logout), admin email; below md the nav is a hamburger drawer (topbar + backdrop, Escape/backdrop to close); no public chrome.
     │
     ├── styles/
     │   └── global.css            AMOLED monochrome design system (Tailwind v4 @theme + layers): true-black surfaces, white-only accent, Hanken @font-face, .card/.btn/.chip/.prose-dmg, skeleton shimmer, grain, marquee, custom scrollbar, motion.
     │
     ├── lib/                      ── DATA / DOMAIN LAYER ──
-    │   ├── types.ts              Row interfaces mirroring the D1 schema (events/posts/links/resources/recordings/gallery/team/social/community/company/speaker) + Community/AccentKey + ACCENTS palette.
+    │   ├── types.ts              Row interfaces mirroring the D1 schema (events/posts/links/academy links/hero slides/resources/recordings/gallery/team/social/community/company/speaker) + Community/AccentKey + ACCENTS palette.
     │   ├── db.ts                 D1 helpers all/first/run + uuid, nowSec, slugify (TR transliteration), csv, bool.
     │   ├── cache.ts              Version-stamped KV read-through cache: cached() (+shouldCache), invalidate/invalidateMany, NS namespaces (incl. search).
     │   ├── content.ts            Cached public read layer over D1 — the only content API pages call (events/posts/links/resources/recordings/gallery/team/communities/companies/speakers/social/settings/stats + pagination).
@@ -131,10 +131,10 @@ devmultigroup.com/
     │   ├── RecordingCard.astro   Playlist card: thumbnail (cover or /yt/<id> fallback), play overlay, video count; emits recording_play.
     │   ├── SpeakerCard.astro     Speaker card: avatar/initials, title, company logo/name, talk-count or event-role chip, social links; carries data-q/company/sector for client filtering.
     │   ├── TeamCard.astro        Member card: avatar/initials, name, role, active area, social icons; whole card links to the primary profile (LinkedIn first).
-    │   ├── LinkButton.astro      Link card routing through /go/<id> for click counting; icon + label + description + arrow; emits link_click.
+    │   ├── LinkButton.astro      Link card routing through /go/<id> for click counting; icon + label + description + arrow; emits link_click. data-astro-prefetch="false" so the viewport prefetcher can't inflate the counter.
     │   ├── GalleryGrid.astro     Masonry photo grid with load skeletons + lightbox modal (Escape/click; re-binds on astro:page-load).
     │   ├── CommunitiesMap.astro  Türkiye map of partner communities: sized city dots (counts), animated hub-and-spoke connection arcs, hover tooltips (uses turkey.svg + turkey-map).
-    │   ├── CompanyStrip.astro    Infinite marquee of company logos from COMPANIES (R2 /media logos), forward/reverse, pause on hover.
+    │   ├── CompanyStrip.astro    Infinite marquee of company logos, admin-picked (companies.in_strip → listStripCompanies, falls back to featured then the static COMPANIES), forward/reverse, pause on hover.
     │   ├── ImpactStrip.astro     Scroll-revealed KPI strip with a digit "odometer" roll; SSR renders final values (correct with JS off).
     │   ├── AsciiFlower.astro     Rotating 3D ASCII flower brand mark (donut.c-style, drag-to-spin with inertia, off-screen pause, reduced-motion static); samples logo-small-white.png.
     │   ├── ContactModal.astro    Multi-purpose modal (partner/sponsor/support/newsletter): posts to /api/contact or /api/subscribe, honeypot, success confetti; fires generate_lead / newsletter_signup.
@@ -162,7 +162,7 @@ devmultigroup.com/
     │
     └── pages/                    ── ROUTES ──
         │   ── Public pages (BaseLayout) ──
-        ├── index.astro           Home: hero, ImpactStrip stats, pillar cards, Academy/recordings/blog teasers, CompanyStrip, community map, join CTA; WebSite JSON-LD.
+        ├── index.astro           Home: hero (photo bands from hero_slides, static fallback), ImpactStrip stats, pillar cards, Academy/recordings/blog teasers, CompanyStrip, community map, join CTA; WebSite JSON-LD.
         ├── about.astro           About: mission, values cards, MultiAcademy card; reads stats/settings.
         ├── academy.astro         MultiAcademy: hero + value chips, programs, upcoming + past academy events, bootcamp recordings.
         ├── team.astro            Team: members grouped into named squads (Pioneer/Initiate/Veteran) via TeamCard, join CTA.
@@ -171,7 +171,8 @@ devmultigroup.com/
         ├── communities.astro     Partner communities: CommunitiesMap + list; emits ItemList JSON-LD.
         ├── partnerships.astro    İş birlikleri: featured collaborations (Wite/Lodos sessions), CompanyStrip; ItemList JSON-LD.
         ├── kaynakca.astro        Curated open-source resources (/kaynakca), grouped (kaynakça/bootcamp/diğer) from the resources table.
-        ├── links.astro           Linktree-style page: next-event card + grouped LinkButton links + socials.
+        ├── links.astro           Linktree-style page: next-event card (16:9 cover) + grouped LinkButton links + socials.
+        ├── academy-links.astro   MultiAcademy linktree: latest academy event (upcoming, else most recent past) + grouped academy_links + MultiAcademy socials.
         ├── 404.astro             Not-found page (noindex, no banner) with navigation buttons.
         ├── privacy.astro         KVKK aydınlatma metni (privacy notice) page.
         ├── privacy/
@@ -216,7 +217,7 @@ devmultigroup.com/
         ├── auth/
         │   ├── login.ts          Begin OIDC login: mint PKCE/state/nonce, stash in session, redirect to Warden authorize.
         │   ├── callback.ts       OIDC callback: validate state, exchange code, verify ID token, persist identity (+role) in the app session.
-        │   └── logout.ts         Full logout: destroy app session, then redirect to Warden /api/logout to end the SSO session.
+        │   └── logout.ts         Full logout — POST ONLY (a GET here would be triggered by prefetch/link scanners): destroys the app session, then redirects to Warden /api/logout to end the SSO session. GET just bounces to /admin.
         │
         │   ── API (POST/JSON) ──
         ├── api/
@@ -236,6 +237,6 @@ devmultigroup.com/
         ├── llms-full.txt.ts      GEO full-content companion — community overview, tracks, facts + latest posts as one markdown doc (live from D1).
         ├── site.webmanifest.ts   PWA web manifest JSON (name, icons, theme color #0d0d0e).
         ├── media/[...key].ts     Streams an R2 MEDIA object with immutable long-cache headers; 404 if absent.
-        ├── go/[id].ts            Outbound link redirect + click counter (waitUntil); server-mirrors link_redirect.
+        ├── go/[id].ts            Outbound link redirect + click counter for links and academy_links (waitUntil); server-mirrors link_redirect.
         └── yt/[id].ts            Scrapes a YouTube playlist's first-video thumbnail (no Data API), caches it in KV 7 days, 302s to the i.ytimg image.
 ```
