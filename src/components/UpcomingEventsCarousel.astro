@@ -173,15 +173,29 @@ const DURATION = 5000; // ms per slide — also the progress-bar fill duration
   /* ── slider ────────────────────────────────────────────────────────────── */
   .ue-viewport {
     overflow: hidden;
+    /* Keep vertical scrolling with the browser and claim only the horizontal
+       axis. Without this the page cannot be scrolled by starting the gesture on
+       the carousel, which on a linktree page is most of the screen. */
+    touch-action: pan-y;
   }
   .ue-track {
     display: flex;
     transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
     will-change: transform;
   }
+  /* While a finger is down the track must follow it exactly, so the easing is
+     switched off for the duration of the drag and restored on release. */
+  .ue-track.is-dragging {
+    transition: none;
+  }
   .ue-slide {
     flex: 0 0 100%;
     min-width: 0;
+  }
+  /* Native image dragging would fight the swipe on desktop. */
+  .ue-slide img {
+    -webkit-user-drag: none;
+    user-select: none;
   }
 
   /* No auto-advance for reduced-motion users: the fill never animates, so
@@ -209,6 +223,7 @@ const DURATION = 5000; // ms per slide — also the progress-bar fill duration
         const n = track ? track.children.length : 0;
         if (!track || n < 2) return; // single event → nothing to advance
 
+        const viewport = root.querySelector(".ue-viewport");
         let i = 0;
         const show = (next) => {
           i = ((next % n) + n) % n;
@@ -238,6 +253,79 @@ const DURATION = 5000; // ms per slide — also the progress-bar fill duration
         root.addEventListener("focusout", play);
 
         show(0);
+
+        /* ── swipe ──────────────────────────────────────────────────────────
+           Pointer Events cover touch, mouse and pen in one path. The gesture is
+           only claimed once it is clearly horizontal, so a vertical flick still
+           scrolls the page (`touch-action: pan-y` does the rest).
+
+           A drag that moves the track must not also open the event link, so a
+           real drag swallows the click that follows it. */
+        let startX = 0;
+        let startY = 0;
+        let delta = 0;
+        let axis = null; // null = undecided, "x" = ours, "y" = the page's
+        let dragged = false;
+
+        const width = () => viewport?.clientWidth || root.clientWidth || 1;
+
+        const onDown = (e) => {
+          if (e.pointerType === "mouse" && e.button !== 0) return;
+          startX = e.clientX;
+          startY = e.clientY;
+          delta = 0;
+          axis = null;
+          dragged = false;
+        };
+
+        const onMove = (e) => {
+          if (axis === "y" || startX === 0) return;
+          const dx = e.clientX - startX;
+          const dy = e.clientY - startY;
+
+          if (axis === null) {
+            if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+            axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+            if (axis === "y") return;
+            pause();
+            track.classList.add("is-dragging");
+            try { viewport.setPointerCapture(e.pointerId); } catch { /* not captureable */ }
+          }
+
+          delta = dx;
+          dragged = Math.abs(dx) > 8;
+          // Rubber-band at the ends so the edges feel bounded, not broken.
+          const atEdge = (i === 0 && dx > 0) || (i === n - 1 && dx < 0);
+          const shift = atEdge ? dx * 0.35 : dx;
+          track.style.transform =
+            "translateX(calc(-" + i * 100 + "% + " + shift + "px))";
+        };
+
+        const onUp = () => {
+          if (axis !== "x") { startX = 0; axis = null; return; }
+          track.classList.remove("is-dragging");
+          // A quarter of the viewport, or 60px, whichever is smaller: enough to
+          // be deliberate, small enough to work with a thumb on a narrow phone.
+          const threshold = Math.min(width() / 4, 60);
+          if (delta <= -threshold) show(i + 1);
+          else if (delta >= threshold) show(i - 1);
+          else show(i);
+          startX = 0;
+          axis = null;
+          play();
+          // Keep `dragged` true just long enough for the click handler below.
+          setTimeout(() => { dragged = false; }, 0);
+        };
+
+        if (viewport) {
+          viewport.addEventListener("pointerdown", onDown);
+          viewport.addEventListener("pointermove", onMove);
+          viewport.addEventListener("pointerup", onUp);
+          viewport.addEventListener("pointercancel", onUp);
+          viewport.addEventListener("click", (e) => {
+            if (dragged) { e.preventDefault(); e.stopPropagation(); }
+          }, true);
+        }
       });
     };
     if (!window.__dmgUpcomingCarousel) {
