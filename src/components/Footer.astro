@@ -1,6 +1,7 @@
 ---
 import Icon from "./Icon.astro";
 import AsciiFlower from "./AsciiFlower.astro";
+import SystemStatus from "./SystemStatus.astro";
 import { BRAND, FOOTER_NAV, LEGAL_NAV, SOCIALS, SUBBRANDS } from "@/lib/site";
 
 const year = new Date().getFullYear();
@@ -144,6 +145,7 @@ const social = [
       </nav>
       <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
         <p>© 2020–{year} {BRAND.name}.</p>
+        <SystemStatus />
         <p class="font-mono">{BRAND.tagline.toLowerCase()}</p>
       </div>
     </div>
