@@ -1,0 +1,122 @@
+---
+/**
+ * Live "all systems operational" pill, fed by Argus (status.devmultigroup.com).
+ *
+ * Fetched CLIENT-SIDE on purpose. Doing it during SSR would put the status page
+ * on the critical path of every render of the site it reports on — the exact
+ * inversion this widget must never cause. A slow or dead Argus would then slow
+ * or break devmultigroup.com itself.
+ *
+ * It also starts HIDDEN and only reveals once a good response arrives. If Argus
+ * is down, unreachable, or answers something unexpected, nothing renders at all:
+ * a status widget stuck on "checking…" or showing an error is worse than no
+ * widget, because it makes a healthy site look broken.
+ */
+interface Props {
+  /** `inline` sits in a footer row; `center` stands alone on the links pages. */
+  variant?: "inline" | "center";
+  class?: string;
+}
+const { variant = "inline", class: cls = "" } = Astro.props;
+
+const STATUS_URL = "https://status.devmultigroup.com";
+---
+
+<a
+  href={STATUS_URL}
+  target="_blank"
+  rel="noopener noreferrer"
+  class:list={["sysstat", `sysstat-${variant}`, cls]}
+  data-sysstat
+  data-status-url={STATUS_URL}
+  data-track="status_click"
+  hidden
+>
+  <span class="sysstat-dot" data-sysstat-dot></span>
+  <span data-sysstat-label></span>
+</a>
+
+<style>
+  .sysstat {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--color-ink-dim);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--color-line);
+    background: rgba(255, 255, 255, 0.02);
+    padding: 0.32rem 0.75rem;
+    transition: color 0.2s var(--ease-out-soft), border-color 0.2s var(--ease-out-soft),
+      background-color 0.2s var(--ease-out-soft);
+    white-space: nowrap;
+  }
+  .sysstat:hover {
+    color: var(--color-ink-text);
+    border-color: var(--color-line-strong);
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .sysstat-center {
+    display: flex;
+    width: fit-content;
+    margin-inline: auto;
+  }
+
+  .sysstat-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--tone, #66666d);
+    box-shadow: 0 0 0 3px var(--tone-soft, transparent);
+    flex: none;
+  }
+  /* Only pulse when something is actually wrong — a calm page is the default. */
+  .sysstat[data-state="degraded"] .sysstat-dot,
+  .sysstat[data-state="down"] .sysstat-dot {
+    animation: sysstat-pulse 2s var(--ease-out-soft) infinite;
+  }
+  @keyframes sysstat-pulse {
+    0%, 100% { box-shadow: 0 0 0 3px var(--tone-soft); }
+    50%      { box-shadow: 0 0 0 7px transparent; }
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    // Same vocabulary and colours as Argus itself, so the pill and the status
+    // page never disagree about what "degraded" looks like.
+    const TONE = {
+      up: ["Tüm sistemler çalışıyor", "#3fc48a", "rgba(63,196,138,.14)"],
+      degraded: ["Bazı sistemler yavaş", "#e2b33f", "rgba(226,179,63,.14)"],
+      down: ["Kesinti yaşanıyor", "#e5484d", "rgba(229,72,77,.14)"],
+      maintenance: ["Planlı bakım sürüyor", "#7aa2f7", "rgba(122,162,247,.14)"],
+    };
+
+    const paint = async (el) => {
+      if (el.dataset.sysstatBound) return;
+      el.dataset.sysstatBound = "1";
+      try {
+        const res = await fetch(`${el.dataset.statusUrl}/api/status.json`, {
+          signal: AbortSignal.timeout(6000),
+        });
+        if (!res.ok) return;
+        const state = (await res.json()).status;
+        const tone = TONE[state];
+        // An unknown/paused overall status is not worth a pill; stay hidden.
+        if (!tone) return;
+        const [label, color, soft] = tone;
+        el.querySelector("[data-sysstat-label]").textContent = label;
+        el.style.setProperty("--tone", color);
+        el.style.setProperty("--tone-soft", soft);
+        el.dataset.state = state;
+        el.hidden = false;
+      } catch {
+        /* Argus unreachable — leave the pill hidden. The site is not broken. */
+      }
+    };
+
+    const init = () => document.querySelectorAll("[data-sysstat]").forEach(paint);
+    init();
+    document.addEventListener("astro:page-load", init);
+  })();
+</script>
