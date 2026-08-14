@@ -1,33 +1,22 @@
 ---
 // MultiAcademy linktree — the /links sibling for the academy brand.
-// Latest MultiAcademy event on top (upcoming when there is one, otherwise the
-// most recent past one), then the admin-managed academy link list
-// (/admin/academy-links).
+// Shares the upcoming-events carousel with /links; the only difference is that
+// this page opens on the soonest MultiAcademy event. Below it, the
+// admin-managed academy link list (/admin/academy-links).
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import LinkButton from "@/components/LinkButton.astro";
+import UpcomingEventsCarousel from "@/components/UpcomingEventsCarousel.astro";
 import Icon from "@/components/Icon.astro";
 import { getEnv } from "@/lib/runtime";
 import { listAcademyLinks, listEvents } from "@/lib/content";
 import { BRAND, SOCIALS } from "@/lib/site";
-import { formatDayLabel, formatTime } from "@/lib/format";
-import { imageSrc } from "@/lib/ui";
 import type { LinkRow } from "@/lib/types";
 
 const env = getEnv(Astro.locals);
-const [links, upcoming, past] = await Promise.all([
+const [links, upcoming] = await Promise.all([
   listAcademyLinks(env),
-  listEvents(env, { community: "multiacademy", when: "upcoming", limit: 1 }),
-  listEvents(env, { community: "multiacademy", when: "past", limit: 1 }),
+  listEvents(env, { when: "upcoming", limit: 6 }),
 ]);
-
-// soonest upcoming academy event, else the most recent past one
-const nextEvent = upcoming[0] ?? past[0] ?? null;
-const isUpcoming = upcoming.length > 0;
-const evBadge = isUpcoming ? "Yaklaşan etkinlik" : "Son etkinlik";
-const evCover = nextEvent ? imageSrc(nextEvent.cover_image) : "";
-const evDay = nextEvent ? formatDayLabel(nextEvent.starts_at) : null;
-const evTime = nextEvent ? formatTime(nextEvent.starts_at) : "";
-const evWhere = nextEvent ? (nextEvent.is_online ? "Çevrimiçi" : nextEvent.city) : "";
 
 const ORDER = ["primary", "academy", "resources", "social", "links"];
 const LABELS: Record<string, string> = {
@@ -82,36 +71,7 @@ const social = [
         </div>
       </div>
 
-      <!-- latest academy event -->
-      {
-        nextEvent && (
-          <a
-            href={`/events/${nextEvent.slug}`}
-            class="card card-hover group block overflow-hidden text-left mt-8"
-            data-track="event_card_click"
-            data-track-props={JSON.stringify({ event_slug: nextEvent.slug, page: "academy-links" })}
-          >
-            {evCover ? (
-              <div class="relative aspect-[16/9] bg-ink-900 skeleton">
-                <img src={evCover} alt="" loading="eager" decoding="async" class="img-reveal absolute inset-0 w-full h-full object-cover" />
-                <div class="absolute inset-0 bg-gradient-to-t from-ink-950/85 via-ink-950/15 to-transparent" />
-                <span class="absolute top-2.5 left-2.5 z-[2] inline-flex items-center gap-1.5 rounded-full pl-2 pr-2.5 py-1 text-[0.7rem] font-semibold text-white" style="background:linear-gradient(135deg,#8b5cf6,#ec4899);box-shadow:0 6px 18px -5px rgba(236,72,153,.55)"><span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> {evBadge}</span>
-              </div>
-            ) : null}
-            <div class="p-4">
-              {!evCover && <span class="inline-flex items-center gap-1.5 rounded-full pl-2 pr-2.5 py-1 text-[0.7rem] font-semibold text-white mb-2.5" style="background:linear-gradient(135deg,#8b5cf6,#ec4899);box-shadow:0 6px 18px -5px rgba(236,72,153,.55)"><span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> {evBadge}</span>}
-              <h2 class="font-display font-semibold leading-snug">{nextEvent.title}</h2>
-              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-ink-dim">
-                <span class="inline-flex items-center gap-1"><Icon name="calendar" size={13} /> {evDay?.weekday} {evDay?.day} {evDay?.month}{evTime && ` · ${evTime}`}</span>
-                {evWhere && <span class="inline-flex items-center gap-1"><Icon name="map-pin" size={13} /> {evWhere}</span>}
-              </div>
-              <span class="inline-flex items-center gap-1 mt-3 text-sm text-ink-text">
-                Detaylar <Icon name="arrow-right" size={14} class="transition-transform group-hover:translate-x-0.5" />
-              </span>
-            </div>
-          </a>
-        )
-      }
+      <UpcomingEventsCarousel events={upcoming} primary="multiacademy" page="academy-links" />
 
       <!-- link groups -->
       <div class="mt-9 space-y-6">

@@ -1,0 +1,249 @@
+---
+// Upcoming-events carousel for the linktree pages (/links and /academy-links).
+// Both pages render the SAME set of upcoming events; the only difference is
+// which one leads: /links opens on the soonest MultiGroup event, /academy-links
+// on the soonest MultiAcademy one. The rest follow in their natural
+// soonest-first order.
+//
+// Renders nothing at all when there is no upcoming event, and drops the
+// progress bar when there is only one (nothing to advance through).
+import Icon from "./Icon.astro";
+import { imageSrc } from "@/lib/ui";
+import { formatDayLabel, formatTime } from "@/lib/format";
+import type { Community, EventRow } from "@/lib/types";
+
+interface Props {
+  events: EventRow[];
+  /** Whose soonest event opens the carousel. */
+  primary: Community;
+  /** Analytics context (`links` | `academy-links`). */
+  page: string;
+}
+const { events, primary, page } = Astro.props;
+
+const lead = events.find((e) => e.community === primary);
+const slides = lead ? [lead, ...events.filter((e) => e.id !== lead.id)] : events;
+const many = slides.length > 1;
+const DURATION = 5000; // ms per slide — also the progress-bar fill duration
+---
+
+{
+  slides.length > 0 && (
+    <section class="ue mt-8" data-ue style={`--ue-dur:${DURATION}ms`}>
+      <div class="flex items-baseline justify-between gap-3 mb-2">
+        <h2 class="font-display font-semibold text-sm">Yaklaşan etkinlikler</h2>
+        {many && (
+          <span class="text-[0.7rem] text-ink-faint font-mono tabular-nums" data-ue-count>
+            1/{slides.length}
+          </span>
+        )}
+      </div>
+
+      {many && (
+        <div class="ue-bars" role="tablist" aria-label="Yaklaşan etkinlikler">
+          {slides.map((e, i) => (
+            <button
+              type="button"
+              class="ue-bar"
+              data-ue-bar={i}
+              role="tab"
+              aria-selected={i === 0 ? "true" : "false"}
+              aria-label={`${i + 1}. etkinlik: ${e.title}`}
+            >
+              <span class="ue-bar-track">
+                <span class="ue-bar-fill" />
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div class="ue-viewport">
+        <div class="ue-track" data-ue-track>
+          {slides.map((e) => {
+            const cover = imageSrc(e.cover_image);
+            const day = formatDayLabel(e.starts_at);
+            const time = formatTime(e.starts_at);
+            const where = e.is_online ? "Çevrimiçi" : e.city;
+            // Built here rather than as adjacent `{a} {b}` expressions: Astro
+            // collapses the whitespace between them and the date renders as
+            // "Pzt07Eyl".
+            const when = [
+              [day?.weekday, day?.day, day?.month].filter(Boolean).join(" "),
+              time,
+            ]
+              .filter(Boolean)
+              .join(" · ");
+            return (
+              <a
+                href={`/events/${e.slug}`}
+                class="ue-slide card card-hover group block overflow-hidden text-left"
+                data-track="event_card_click"
+                data-track-props={JSON.stringify({ event_slug: e.slug, page })}
+              >
+                {cover && (
+                  <div class="relative aspect-[16/9] bg-ink-900 skeleton">
+                    <img
+                      src={cover}
+                      alt=""
+                      loading="eager"
+                      decoding="async"
+                      class="img-reveal absolute inset-0 w-full h-full object-cover"
+                    />
+                    <div class="absolute inset-0 bg-gradient-to-t from-ink-950/85 via-ink-950/15 to-transparent" />
+                  </div>
+                )}
+                <div class="p-4">
+                  <h3 class="font-display font-semibold leading-snug">{e.title}</h3>
+                  <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-ink-dim">
+                    <span class="inline-flex items-center gap-1">
+                      <Icon name="calendar" size={13} />
+                      {when}
+                    </span>
+                    {where && (
+                      <span class="inline-flex items-center gap-1">
+                        <Icon name="map-pin" size={13} /> {where}
+                      </span>
+                    )}
+                  </div>
+                  <span class="inline-flex items-center gap-1 mt-3 text-sm text-ink-text">
+                    Detaylar
+                    <Icon name="arrow-right" size={14} class="transition-transform group-hover:translate-x-0.5" />
+                  </span>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+<style>
+  /* ── progress bars ─────────────────────────────────────────────────────── */
+  .ue-bars {
+    display: flex;
+    gap: 0.3rem;
+    margin-bottom: 0.7rem;
+  }
+  .ue-bar {
+    flex: 1;
+    padding: 0.35rem 0; /* tap target around a 3px visual */
+    background: none;
+    border: 0;
+    cursor: pointer;
+    display: block;
+  }
+  .ue-bar-track {
+    display: block;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+  }
+  .ue-bar-fill {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--color-ink-text);
+  }
+  /* Slides already advanced past stay full. */
+  .ue-bar.is-done .ue-bar-fill {
+    width: 100%;
+  }
+  /* The active bar's fill IS the timer: when it finishes, the script advances. */
+  .ue-bar.is-active .ue-bar-fill {
+    animation: ue-fill var(--ue-dur, 5000ms) linear forwards;
+  }
+  /* Hover/focus pauses the animation, which pauses the carousel with it. */
+  .ue.is-paused .ue-bar-fill {
+    animation-play-state: paused;
+  }
+  @keyframes ue-fill {
+    from {
+      width: 0;
+    }
+    to {
+      width: 100%;
+    }
+  }
+
+  /* ── slider ────────────────────────────────────────────────────────────── */
+  .ue-viewport {
+    overflow: hidden;
+  }
+  .ue-track {
+    display: flex;
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+  }
+  .ue-slide {
+    flex: 0 0 100%;
+    min-width: 0;
+  }
+
+  /* No auto-advance for reduced-motion users: the fill never animates, so
+     `animationend` never fires. The bars stay clickable. */
+  @media (prefers-reduced-motion: reduce) {
+    .ue-bar.is-active .ue-bar-fill {
+      animation: none;
+      width: 100%;
+    }
+    .ue-track {
+      transition: none;
+    }
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    const init = () => {
+      document.querySelectorAll("[data-ue]").forEach((root) => {
+        if (root.dataset.ueBound) return;
+        root.dataset.ueBound = "1";
+        const track = root.querySelector("[data-ue-track]");
+        const bars = Array.from(root.querySelectorAll("[data-ue-bar]"));
+        const count = root.querySelector("[data-ue-count]");
+        const n = track ? track.children.length : 0;
+        if (!track || n < 2) return; // single event → nothing to advance
+
+        let i = 0;
+        const show = (next) => {
+          i = ((next % n) + n) % n;
+          track.style.transform = "translateX(-" + i * 100 + "%)";
+          bars.forEach((b, j) => {
+            b.classList.toggle("is-done", j < i);
+            b.classList.remove("is-active");
+            b.setAttribute("aria-selected", j === i ? "true" : "false");
+          });
+          const cur = bars[i];
+          if (cur) {
+            void cur.offsetWidth; // reflow so the fill animation restarts
+            cur.classList.add("is-active");
+          }
+          if (count) count.textContent = i + 1 + "/" + n;
+        };
+
+        bars.forEach((b, j) => b.addEventListener("click", () => show(j)));
+        root.addEventListener("animationend", (e) => {
+          if (e.animationName === "ue-fill") show(i + 1);
+        });
+        const pause = () => root.classList.add("is-paused");
+        const play = () => root.classList.remove("is-paused");
+        root.addEventListener("mouseenter", pause);
+        root.addEventListener("mouseleave", play);
+        root.addEventListener("focusin", pause);
+        root.addEventListener("focusout", play);
+
+        show(0);
+      });
+    };
+    if (!window.__dmgUpcomingCarousel) {
+      window.__dmgUpcomingCarousel = true;
+      document.addEventListener("astro:page-load", init);
+    }
+    init();
+  })();
+</script>

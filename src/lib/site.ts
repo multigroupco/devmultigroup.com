@@ -126,6 +126,9 @@ export const SUBBRANDS: {
   desc: string;
   href?: string;
   hrefLabel?: string;
+  /** Internal linktree page for this sub-brand, shown as a link icon next to
+   *  the socials (a hub of everything, not a social account). */
+  linktree?: { href: string; label: string };
   socials: { icon: string; href: string; label: string }[];
 }[] = [
   {
@@ -134,6 +137,7 @@ export const SUBBRANDS: {
     desc: "Öğrenme kolu — ücretsiz bootcamp'ler ve uygulamalı programlar.",
     href: "/academy",
     hrefLabel: "Akademi",
+    linktree: { href: "/academy-links", label: "MultiAcademy bağlantıları" },
     socials: [
       { icon: "instagram", href: SOCIALS.multiacademy.instagram, label: "MultiAcademy Instagram" },
       { icon: "linkedin", href: SOCIALS.multiacademy.linkedin, label: "MultiAcademy LinkedIn" },

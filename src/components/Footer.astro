@@ -92,6 +92,18 @@ const social = [
                   <p class="text-ink-faint text-xs leading-relaxed mt-1.5 max-w-xs">{sb.desc}</p>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0 pt-0.5">
+                  {sb.linktree && (
+                    <a
+                      href={sb.linktree.href}
+                      aria-label={sb.linktree.label}
+                      title={sb.linktree.label}
+                      data-track="nav_click"
+                      data-track-props={JSON.stringify({ location: "footer-subbrand", nav_label: sb.linktree.label, href: sb.linktree.href })}
+                      class="grid place-items-center w-8 h-8 text-ink-dim hover:text-ink-text transition-colors"
+                    >
+                      <Icon name="link" size={15} />
+                    </a>
+                  )}
                   {sb.socials.map((s) => (
                     <a
                       href={s.href}
