@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { getEnv } from "@/lib/runtime";
 import { uuid } from "@/lib/db";
 import { sha256Hex } from "@/lib/analytics-server";
+import { reportError } from "@/lib/sentry";
 
 export const prerender = false;
 
@@ -50,8 +51,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     )
       .bind(uuid(), sessionId, action, JSON.stringify(categories), source, accepted, uaHash)
       .run();
-  } catch {
-    /* swallow — never block the UI on an audit write */
+  } catch (err) {
+    // Never block the UI on an audit write — but a lost KVKK consent record is
+    // a compliance gap, so it must not stay invisible.
+    reportError(locals, err, { area: "api/consent-record", request, level: "warning" });
   }
 
   return json({ ok: true });

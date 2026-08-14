@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { getEnv } from "@/lib/runtime";
 import { captureServer } from "@/lib/analytics-server";
 import { EVENTS } from "@/lib/events";
+import { reportError } from "@/lib/sentry";
 
 export const prerender = false;
 
@@ -53,7 +54,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         .run();
       isNew = true;
     }
-  } catch {
+  } catch (err) {
+    reportError(locals, err, { area: "api/subscribe", request });
     return json({ ok: false, error: "Kaydedilemedi, lütfen tekrar dene." }, 502);
   }
 

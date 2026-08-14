@@ -6,12 +6,14 @@ import Icon from "@/components/Icon.astro";
 import { tryEnv } from "@/lib/runtime";
 import { getStats, getSettings } from "@/lib/content";
 import { resolveSite, GATHIN, BRAND } from "@/lib/site";
+import { reportError } from "@/lib/sentry";
 
 const env = tryEnv(Astro.locals);
 let stats = { events: 0, pastEvents: 0, posts: 0, recordings: 0 };
 let settings = {};
 if (env) {
-  try { [stats, settings] = await Promise.all([getStats(env), getSettings(env)]); } catch {}
+  try { [stats, settings] = await Promise.all([getStats(env), getSettings(env)]); }
+  catch (err) { reportError(Astro.locals, err, { area: "page/about", request: Astro.request }); }
 }
 const site = resolveSite(settings);
 

@@ -4,18 +4,29 @@ import { all } from "@/lib/db";
 import { imageSrc } from "@/lib/ui";
 import { BRAND } from "@/lib/site";
 
+// Every indexable public page belongs here. Anything missing is discoverable
+// only by crawling, which is exactly how /speakers, /companies, /kaynakca,
+// /store and the KVKK pages ended up sitting in "Crawled – currently not
+// indexed" in Search Console.
 const STATIC: { path: string; priority: string }[] = [
   { path: "/", priority: "1.0" },
   { path: "/events", priority: "0.8" },
   { path: "/academy", priority: "0.8" },
   { path: "/recordings", priority: "0.7" },
   { path: "/blog", priority: "0.7" },
+  { path: "/kaynakca", priority: "0.7" },
   { path: "/team", priority: "0.6" },
   { path: "/communities", priority: "0.6" },
   { path: "/partnerships", priority: "0.6" },
+  { path: "/companies", priority: "0.6" },
+  { path: "/speakers", priority: "0.6" },
   { path: "/about", priority: "0.6" },
+  { path: "/store", priority: "0.5" },
   { path: "/links", priority: "0.4" },
   { path: "/academy-links", priority: "0.4" },
+  { path: "/privacy", priority: "0.3" },
+  { path: "/privacy/cerez-politikasi", priority: "0.3" },
+  { path: "/privacy/bulten-onay", priority: "0.3" },
 ];
 
 const esc = (s: string) =>

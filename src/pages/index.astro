@@ -20,6 +20,7 @@ import {
 import { resolveSite, GATHIN, BRAND, SOCIALS } from "@/lib/site";
 import { imageSrc } from "@/lib/ui";
 import type { EventRow, RecordingRow, PostRow, CommunityRow, HeroSlideRow, Settings } from "@/lib/types";
+import { reportError } from "@/lib/sentry";
 
 const env = tryEnv(Astro.locals);
 let upcoming: EventRow[] = [];
@@ -38,7 +39,10 @@ if (env) {
     getSettings(env),
     listCommunities(env),
     listHeroSlides(env),
-  ]); } catch { /* pre-seed */ }
+  ]); } catch (err) {
+    // Pre-seed / DB outage: keep rendering, but don't let a blank homepage be silent.
+    reportError(Astro.locals, err, { area: "page/home", request: Astro.request });
+  }
 }
 
 // Hero photos are admin-managed (/admin/hero). The static list is only a

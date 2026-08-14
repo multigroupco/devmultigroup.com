@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { getEnv } from "@/lib/runtime";
 import { captureServer } from "@/lib/analytics-server";
 import { EVENTS } from "@/lib/events";
+import { reportError } from "@/lib/sentry";
 
 export const prerender = false;
 
@@ -91,8 +92,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
         html: emailHtml(label, name, email, org, message),
       }),
     });
-    if (!res.ok) return json({ ok: false, error: "Gönderilemedi, lütfen tekrar dene." }, 502);
-  } catch {
+    if (!res.ok) {
+      reportError(locals, new Error(`Resend responded ${res.status}`), { area: "api/contact", request });
+      return json({ ok: false, error: "Gönderilemedi, lütfen tekrar dene." }, 502);
+    }
+  } catch (err) {
+    reportError(locals, err, { area: "api/contact", request });
     return json({ ok: false, error: "Gönderilemedi, lütfen tekrar dene." }, 502);
   }
 

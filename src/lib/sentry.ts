@@ -15,6 +15,8 @@
  * never depends on D1 — the database may be the very thing that is failing.
  */
 
+import { isApexHost } from "./site";
+
 interface ParsedDsn {
   envelopeUrl: string;
   publicKey: string;
@@ -115,27 +117,114 @@ function buildEvent(env: Env, err: unknown, ctx: CaptureContext) {
   };
 }
 
+/* ── quota guard ───────────────────────────────────────────────────────────
+ * Sentry's free tier is a hard monthly error quota, and a single bad deploy can
+ * burn it in minutes (one broken page × every crawler hit = thousands of
+ * identical events). Two cheap guards over the CACHE KV namespace keep us well
+ * inside it while still reporting *every distinct* problem:
+ *
+ *   1. Fingerprint cooldown — the same error (type + message + route) is sent
+ *      at most once per DEDUPE_TTL. A storm collapses to one event.
+ *   2. Monthly budget — a counter per calendar month; past MONTHLY_BUDGET we
+ *      stop sending entirely until the month rolls over.
+ *
+ * Both fail OPEN (a KV outage must not silence error reporting) — Sentry's own
+ * spike protection is the backstop for that window. */
+const MONTHLY_BUDGET = 2500; // server share; the browser SDK spends from the same 5k/mo free quota
+const DEDUPE_TTL = 900; // seconds — one report per distinct error per 15 min
+const BUDGET_TTL = 40 * 24 * 3600; // counter outlives its month, then expires
+
+/** Stable, short fingerprint for "the same error in the same place". */
+async function fingerprint(err: unknown, ctx: CaptureContext): Promise<string> {
+  const e = err instanceof Error ? err : new Error(String(err));
+  const raw = `${e.name}|${e.message}|${ctx.transaction ?? ""}|${ctx.tags?.area ?? ""}`;
+  const digest = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(raw));
+  return Array.from(new Uint8Array(digest).slice(0, 8), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+const monthKey = () => `sentry:budget:${new Date().toISOString().slice(0, 7)}`;
+
+/** True when this event should be sent (and books it against the budget). */
+async function admit(env: Env, err: unknown, ctx: CaptureContext): Promise<boolean> {
+  const kv = env.CACHE;
+  if (!kv) return true; // no KV bound (bare test) → don't block reporting
+  try {
+    const fp = `sentry:seen:${await fingerprint(err, ctx)}`;
+    const [seen, spentRaw] = await Promise.all([kv.get(fp), kv.get(monthKey())]);
+    if (seen) return false; // already reported this exact error recently
+    const spent = parseInt(spentRaw ?? "0", 10) || 0;
+    if (spent >= MONTHLY_BUDGET) return false; // budget exhausted for this month
+    await Promise.all([
+      kv.put(fp, "1", { expirationTtl: DEDUPE_TTL }),
+      kv.put(monthKey(), String(spent + 1), { expirationTtl: BUDGET_TTL }),
+    ]);
+    return true;
+  } catch {
+    return true; // KV trouble → fail open
+  }
+}
+
+/** How much of this month's server budget is left (for /admin diagnostics). */
+export async function sentryBudget(env: Env): Promise<{ spent: number; budget: number }> {
+  const spent = parseInt((await env.CACHE?.get(monthKey())) ?? "0", 10) || 0;
+  return { spent, budget: MONTHLY_BUDGET };
+}
+
 /**
  * Send an exception to Sentry. Fire-and-forget: never throws, returns the
  * in-flight promise so callers can hand it to `ctx.waitUntil(...)`. No-ops
- * (resolves immediately) when no DSN is configured.
+ * (resolves immediately) when no DSN is configured, when the same error was
+ * just reported, or when this month's budget is spent.
  */
-export function captureServerException(env: Env, err: unknown, ctx: CaptureContext = {}): Promise<void> {
+export async function captureServerException(env: Env, err: unknown, ctx: CaptureContext = {}): Promise<void> {
   const dsn = env.SENTRY_DSN;
-  if (!dsn) return Promise.resolve();
+  if (!dsn) return;
   const parsed = parseDsn(dsn);
-  if (!parsed) return Promise.resolve();
+  if (!parsed) return;
+  if (!(await admit(env, err, ctx))) return;
 
   const { eventId, payload } = buildEvent(env, err, ctx);
   const header = JSON.stringify({ event_id: eventId, sent_at: new Date().toISOString(), dsn });
   const itemHeader = JSON.stringify({ type: "event" });
   const body = `${header}\n${itemHeader}\n${JSON.stringify(payload)}`;
 
-  return fetch(parsed.envelopeUrl, {
+  await fetch(parsed.envelopeUrl, {
     method: "POST",
     headers: { "Content-Type": "application/x-sentry-envelope" },
     body,
-  })
-    .then(() => undefined)
-    .catch(() => undefined);
+  }).catch(() => undefined);
+}
+
+/**
+ * One-liner for call sites that already hold `Astro.locals`: resolves the env,
+ * applies the same dev/apex-only policy as the middleware, and hands the send
+ * to `waitUntil` so it never delays the response. Use this inside `catch`
+ * blocks that swallow an error to keep serving the user — the user still gets
+ * the graceful path, we still learn it happened.
+ *
+ * Pass `request` whenever you have one: it carries the URL/UA into the event
+ * AND is what the apex-only check reads (no request → reported regardless).
+ */
+export function reportError(
+  locals: App.Locals,
+  err: unknown,
+  ctx: CaptureContext & { area?: string } = {},
+): void {
+  try {
+    if (import.meta.env.DEV) return;
+    const env = locals?.runtime?.env as Env | undefined;
+    if (!env?.SENTRY_DSN) return;
+    // Staging (workers.dev) and CF previews share the DSN — keep their noise out
+    // of the quota, exactly like the analytics + middleware gates do.
+    if (ctx.request && !isApexHost(new URL(ctx.request.url).host)) return;
+    const { area, ...rest } = ctx;
+    const p = captureServerException(env, err, {
+      ...rest,
+      tags: { ...(rest.tags ?? {}), ...(area ? { area } : {}) },
+    });
+    const wait = locals?.runtime?.ctx?.waitUntil?.bind(locals.runtime.ctx);
+    if (wait) wait(p);
+  } catch {
+    /* reporting must never break the request */
+  }
 }

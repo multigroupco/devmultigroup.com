@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { getEnv } from "@/lib/runtime";
 import { completeLogin } from "@/lib/oidc";
+import { reportError } from "@/lib/sentry";
 
 // OIDC callback: validate state, exchange the code for tokens, verify the ID
 // token, and persist the identity (incl. `role`) in this app's own session.
@@ -28,9 +29,17 @@ export const GET: APIRoute = async ({ request, redirect, session, locals }) => {
     return redirect(dest, 302);
   } catch (err) {
     const msg = describeOidcError(err);
-    // Surface the precise cause in Worker logs (Sentry never sees this — the
-    // handler returns a Response rather than throwing).
+    // Surface the precise cause in Worker logs AND in Sentry. This handler
+    // returns a Response instead of throwing, so the middleware's capture never
+    // sees it — yet a broken OIDC exchange means nobody can reach /admin, which
+    // is exactly the kind of failure we must not learn about from a user.
     console.error("[auth/callback] OIDC exchange failed:", msg, err);
+    reportError(locals, err, {
+      area: "auth/callback",
+      request,
+      level: "fatal",
+      extra: { reason: msg },
+    });
     return new Response(`Giriş doğrulanamadı: ${msg}`, {
       status: 400,
       headers: { "content-type": "text/plain; charset=utf-8" },

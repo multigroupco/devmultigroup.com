@@ -143,7 +143,42 @@ const active = enabled && (measurementId || posthogKey || sentryLoader);
           release: A.sentryRelease || undefined,
           tracesSampleRate: 0,
           replaysSessionSampleRate: 0,
-          replaysOnErrorSampleRate: 0
+          replaysOnErrorSampleRate: 0,
+          // The browser spends from the SAME monthly error quota as the Worker,
+          // and browser noise is mostly not ours: extensions, injected scripts,
+          // dead network requests on flaky mobile. Everything below is either
+          // unactionable or not our code — dropping it is what keeps the free
+          // tier intact while real app errors still come through.
+          ignoreErrors: [
+            "ResizeObserver loop limit exceeded",
+            "ResizeObserver loop completed with undelivered notifications",
+            "Non-Error promise rejection captured",
+            "Failed to fetch",
+            "NetworkError when attempting to fetch resource",
+            "Load failed",
+            "AbortError",
+            "The operation was aborted",
+            "cancelled",
+            "top.GLOBALS",
+            "instantSearchSDKJSBridgeClearHighlight"
+          ],
+          denyUrls: [
+            /extensions\//i,
+            /^chrome:\/\//i,
+            /^chrome-extension:\/\//i,
+            /^moz-extension:\/\//i,
+            /^safari-(web-)?extension:\/\//i,
+            /googletagmanager\.com/i,
+            /google-analytics\.com/i,
+            /i\.posthog\.com/i,
+            /js\.sentry-cdn\.com/i
+          ],
+          beforeSend: function (event) {
+            // Anonymous by default (KVKK): no IP, no cookies, no user identity.
+            if (event.user) delete event.user;
+            if (event.request) { delete event.request.cookies; delete event.request.headers; }
+            return event;
+          }
         });
       } catch (e) {}
     };

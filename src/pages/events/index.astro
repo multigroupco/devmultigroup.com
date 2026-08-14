@@ -32,6 +32,10 @@ const qstr = (o: { page?: number; year?: number }) => {
 };
 const pageHref = (p: number) => qstr({ page: p, year });
 const yearHref = (y?: number) => `${qstr({ year: y })}#gecmis`;
+// Paginated / year-filtered views are SELF-canonical. Pointing them all at
+// /events made Google treat pages 2..N as duplicates of page 1, so the ~90 older
+// events that are only linked from those pages were crawled but never indexed.
+const canonicalPath = qstr({ page, year });
 
 // hero: feature the soonest upcoming event
 const featured = upcoming[0] ?? null;
@@ -46,9 +50,9 @@ const restUpcoming = featured ? upcoming.slice(1) : upcoming;
 ---
 
 <BaseLayout
-  title="Etkinlikler"
-  description="Developer MultiGroup'tan buluşmalar, konferanslar, atölyeler ve bootcamp'ler — geçmiş ve yaklaşan."
-  canonicalPath="/events"
+  title={`Etkinlikler${year ? ` · ${year}` : ""}${page > 1 ? ` · Sayfa ${page}` : ""}`}
+  description={`Developer MultiGroup'tan buluşmalar, konferanslar, atölyeler ve bootcamp'ler — geçmiş ve yaklaşan.${year ? ` ${year} yılı arşivi.` : ""}${page > 1 ? ` Sayfa ${page}/${lastPage}.` : ""}`}
+  canonicalPath={canonicalPath}
 >
   {
     featured ? (
