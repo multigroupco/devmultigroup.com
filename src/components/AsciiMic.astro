@@ -7,8 +7,11 @@
 // yoke, a stem and a base. That keeps it asset-free — nothing to add to R2, and
 // the shape stays crisp at any sampling density.
 //
-// Sways rather than spinning a full 360° so it never turns edge-on, pauses when
-// off-screen, and renders a single static frame for prefers-reduced-motion.
+// The mark itself is STATIC — a single frame at a fixed 3/4 view, drawn once.
+// The only motion is on hover: a ripple that travels out from the pointer and
+// pushes each character it passes up the density ramp, so the interaction reads
+// in the medium the mark is made of. Nothing animates until you point at it, and
+// prefers-reduced-motion skips the ripple entirely.
 ---
 
 <div class="mic-wrap" data-mic-wrap aria-hidden="true">
@@ -51,12 +54,14 @@
     const FL = 3.4; // perspective focal length
     const DEPTH = 0.26; // front-to-back thickness of the extruded volume
     const DZ = 0.075; // z fill spacing → one solid volume, no layer banding
-    const AMP_Y = 0.62; // ±~35° sway
-    const AMP_X = 0.12;
-    const BASE_X = 0.22; // fixed slight tilt
-    const SPY = 0.009;
-    const SPX = 0.013;
-    const EASE = 0.05;
+    const VIEW_Y = -0.34; // the one fixed 3/4 view the mark is drawn at
+    const VIEW_X = 0.2;
+    // hover ripple
+    const SIG = 5.2; // gaussian falloff radius, in character cells
+    const BOOST = 0.85; // how far up the ramp the crest pushes a character
+    const WAVE = 0.55; // ring frequency
+    const SPEED = 0.13; // ring travel speed
+    const DECAY = 0.06; // how fast the ripple fades once the pointer leaves
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     /** Microphone silhouette test in normalized coords (x,y ∈ [-1,1], y up). */
@@ -109,18 +114,17 @@
       return out;
     })();
 
-    function render(inst) {
-      const pre = inst.pre;
+    /** Draw the one static frame and cache its per-cell shade for the ripple. */
+    function build(inst) {
       const size = inst.w.clientWidth || 260;
       const fontPx = size / ROWS;
-      pre.style.fontSize = fontPx + "px";
-      pre.style.lineHeight = fontPx + "px";
+      inst.pre.style.fontSize = fontPx + "px";
+      inst.pre.style.lineHeight = fontPx + "px";
 
-      const buf = new Array(ROWS);
-      for (let r = 0; r < ROWS; r++) buf[r] = new Array(COLS).fill(" ");
+      const shade = new Float32Array(COLS * ROWS).fill(-1); // -1 → empty cell
       const zb = new Float32Array(COLS * ROWS).fill(-Infinity);
-      const cy_ = Math.cos(inst.rotY), sy_ = Math.sin(inst.rotY);
-      const cx_ = Math.cos(inst.rotX), sx_ = Math.sin(inst.rotX);
+      const cy_ = Math.cos(VIEW_Y), sy_ = Math.sin(VIEW_Y);
+      const cx_ = Math.cos(VIEW_X), sx_ = Math.sin(VIEW_X);
       const cX = COLS / 2, cY = ROWS / 2;
       const spread = (ROWS / 2) * 0.84;
       for (let i = 0; i < pts.length; i++) {
@@ -136,13 +140,42 @@
         const idx = row * COLS + col;
         if (tz > zb[idx]) {
           zb[idx] = tz;
-          const shade = Math.max(0, Math.min(1, (tz + 1) / 2));
-          buf[row][col] = RAMP[1 + Math.floor(shade * (RAMP.length - 2))];
+          shade[idx] = Math.max(0, Math.min(1, (tz + 1) / 2));
         }
       }
-      let s = "";
-      for (let r = 0; r < ROWS; r++) s += buf[r].join("") + (r < ROWS - 1 ? "\n" : "");
-      pre.textContent = s;
+      inst.shade = shade;
+      paint(inst);
+    }
+
+    /** Rebuild the text from the cached shades plus the current ripple. Only
+     *  cells that are already part of the mark change, so the silhouette holds;
+     *  the ripple moves characters along the density ramp, never adds new ones. */
+    function paint(inst) {
+      const shade = inst.shade;
+      if (!shade) return;
+      const rippling = inst.amp > 0.003;
+      let out = "";
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const v = shade[r * COLS + c];
+          if (v < 0) {
+            out += " ";
+            continue;
+          }
+          let sh = v;
+          if (rippling) {
+            const dx = (c - inst.px) * CHAR_ASPECT; // circular in visual space
+            const dy = r - inst.py;
+            const d = Math.hypot(dx, dy);
+            const env = Math.exp(-(d * d) / (2 * SIG * SIG)); // fades with distance
+            sh += inst.amp * BOOST * env * Math.cos(d * WAVE - inst.t); // travelling ring
+          }
+          sh = sh < 0 ? 0 : sh > 1 ? 1 : sh;
+          out += RAMP[1 + Math.floor(sh * (RAMP.length - 2))];
+        }
+        if (r < ROWS - 1) out += "\n";
+      }
+      inst.pre.textContent = out;
     }
 
     function tick(inst) {
@@ -150,33 +183,51 @@
         inst.rafId = null;
         return;
       }
-      inst.phaseY += SPY;
-      inst.phaseX += SPX;
-      inst.rotY += (AMP_Y * Math.sin(inst.phaseY) - inst.rotY) * EASE;
-      inst.rotX += (BASE_X + AMP_X * Math.sin(inst.phaseX) - inst.rotX) * EASE;
-      render(inst);
-      inst.rafId = inst.visible && !reduce ? requestAnimationFrame(() => tick(inst)) : null;
+      inst.t += SPEED;
+      if (!inst.hover) inst.amp -= DECAY; // pointer gone → settle back to static
+      if (!inst.hover && inst.amp <= 0.003) {
+        inst.amp = 0;
+        paint(inst); // final frame: the plain static mark
+        inst.rafId = null;
+        return;
+      }
+      paint(inst);
+      inst.rafId = requestAnimationFrame(() => tick(inst));
     }
 
     function initOne(w) {
       const pre = w.querySelector("[data-ascii-mic]");
       if (!pre || pre.dataset.bound) return;
       pre.dataset.bound = "1";
-      const inst = { w, pre, rotX: BASE_X, rotY: 0, phaseX: 0, phaseY: 0, visible: false, rafId: null };
-      render(inst);
-      if ("IntersectionObserver" in window) {
-        const io = new IntersectionObserver((es) => {
-          es.forEach((e) => {
-            inst.visible = e.isIntersecting;
-            if (inst.visible && !reduce && !inst.rafId) inst.rafId = requestAnimationFrame(() => tick(inst));
-          });
-        }, { threshold: 0.05 });
-        io.observe(w);
-      } else {
-        inst.visible = true;
-        if (!reduce) inst.rafId = requestAnimationFrame(() => tick(inst));
-      }
-      addEventListener("resize", () => render(inst), { passive: true });
+      const inst = { w, pre, shade: null, amp: 0, px: 0, py: 0, t: 0, hover: false, rafId: null };
+      build(inst);
+      addEventListener("resize", () => build(inst), { passive: true });
+      if (reduce) return; // reduced motion: the static mark, nothing else
+
+      const at = (e) => {
+        const b = w.getBoundingClientRect();
+        inst.px = ((e.clientX - b.left) / b.width) * COLS;
+        inst.py = ((e.clientY - b.top) / b.height) * ROWS;
+      };
+      const wake = () => {
+        if (!inst.rafId) inst.rafId = requestAnimationFrame(() => tick(inst));
+      };
+      w.addEventListener("pointerenter", (e) => {
+        at(e);
+        inst.hover = true;
+        inst.amp = 1;
+        wake();
+      });
+      w.addEventListener("pointermove", (e) => {
+        at(e);
+        if (inst.hover) {
+          inst.amp = 1;
+          wake();
+        }
+      });
+      w.addEventListener("pointerleave", () => {
+        inst.hover = false;
+      });
     }
 
     const init = () => document.querySelectorAll("[data-mic-wrap]").forEach(initOne);
