@@ -1,0 +1,187 @@
+---
+// Rotating 3D ASCII microphone — the podcast counterpart to <AsciiFlower />.
+//
+// Same idea and same visual language as the flower (point cloud → extruded
+// volume → depth-shaded ASCII in a <pre>), but the silhouette is defined
+// MATHEMATICALLY rather than sampled from a PNG: a capsule head, the U-shaped
+// yoke, a stem and a base. That keeps it asset-free — nothing to add to R2, and
+// the shape stays crisp at any sampling density.
+//
+// Sways rather than spinning a full 360° so it never turns edge-on, pauses when
+// off-screen, and renders a single static frame for prefers-reduced-motion.
+---
+
+<div class="mic-wrap" data-mic-wrap aria-hidden="true">
+  <pre class="mic" data-ascii-mic></pre>
+</div>
+
+<style>
+  .mic-wrap {
+    width: 100%;
+    max-width: 300px;
+    aspect-ratio: 1 / 1;
+  }
+  .mic {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    color: var(--color-ink-text, #ededee);
+    white-space: pre;
+    line-height: 1;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    text-shadow: 0 0 14px rgba(255, 255, 255, 0.08);
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    if (window.__asciiMic) {
+      window.__asciiMicInit && window.__asciiMicInit();
+      return;
+    }
+    window.__asciiMic = true;
+
+    const ROWS = 44;
+    const COLS = 74; // mono chars are ~0.55 as wide as tall
+    const CHAR_ASPECT = 0.55;
+    const RAMP = " .:-=+*oc#%@";
+    const FL = 3.4; // perspective focal length
+    const DEPTH = 0.26; // front-to-back thickness of the extruded volume
+    const DZ = 0.075; // z fill spacing → one solid volume, no layer banding
+    const AMP_Y = 0.62; // ±~35° sway
+    const AMP_X = 0.12;
+    const BASE_X = 0.22; // fixed slight tilt
+    const SPY = 0.009;
+    const SPX = 0.013;
+    const EASE = 0.05;
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    /** Microphone silhouette test in normalized coords (x,y ∈ [-1,1], y up). */
+    function inMic(x, y) {
+      // head: capsule from (0,0.06) to (0,0.66), radius 0.30
+      const cy = Math.max(0.06, Math.min(0.66, y));
+      if (Math.hypot(x, y - cy) <= 0.3) return true;
+      // yoke: the U-shaped bracket hugging the lower half of the head
+      const r = Math.hypot(x, y - 0.3);
+      if (r >= 0.44 && r <= 0.52 && y <= 0.34) return true;
+      // stem
+      if (Math.abs(x) <= 0.075 && y >= -0.72 && y <= -0.12) return true;
+      // base: a low rounded slab
+      if (Math.abs(x) <= 0.4 && y >= -0.86 && y <= -0.72) {
+        const ex = Math.max(0, Math.abs(x) - 0.32);
+        return Math.hypot(ex, Math.max(0, -0.79 - y) * 2) <= 0.09;
+      }
+      return false;
+    }
+
+    // Geometry is identical for every instance → build the point cloud once.
+    const pts = (() => {
+      const N = 96; // silhouette sampling resolution
+      const raw = [];
+      for (let iy = 0; iy < N; iy++) {
+        for (let ix = 0; ix < N; ix++) {
+          const nx = (ix - N / 2) / (N / 2);
+          const ny = -(iy - N / 2) / (N / 2);
+          if (inMic(nx, ny)) raw.push([nx, ny]);
+        }
+      }
+      if (!raw.length) return [];
+      let maxR = 1e-4;
+      for (const p of raw) {
+        const r = Math.hypot(p[0], p[1]);
+        if (r > maxR) maxR = r;
+      }
+      const out = [];
+      const step = raw.length > 900 ? Math.ceil(raw.length / 900) : 1;
+      for (let i = 0; i < raw.length; i += step) {
+        const [nx, ny] = raw[i];
+        const rr = Math.hypot(nx, ny) / maxR;
+        const dz = DEPTH * Math.sqrt(Math.max(0, 1 - rr * rr * 0.55));
+        if (dz < DZ) {
+          out.push([nx, ny, 0]);
+        } else {
+          for (let z = -dz; z <= dz + 1e-6; z += DZ) out.push([nx, ny, z]);
+        }
+      }
+      return out;
+    })();
+
+    function render(inst) {
+      const pre = inst.pre;
+      const size = inst.w.clientWidth || 260;
+      const fontPx = size / ROWS;
+      pre.style.fontSize = fontPx + "px";
+      pre.style.lineHeight = fontPx + "px";
+
+      const buf = new Array(ROWS);
+      for (let r = 0; r < ROWS; r++) buf[r] = new Array(COLS).fill(" ");
+      const zb = new Float32Array(COLS * ROWS).fill(-Infinity);
+      const cy_ = Math.cos(inst.rotY), sy_ = Math.sin(inst.rotY);
+      const cx_ = Math.cos(inst.rotX), sx_ = Math.sin(inst.rotX);
+      const cX = COLS / 2, cY = ROWS / 2;
+      const spread = (ROWS / 2) * 0.84;
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i];
+        const rx = p[0] * cy_ + p[2] * sy_;
+        const rz = -p[0] * sy_ + p[2] * cy_;
+        const ty = p[1] * cx_ - rz * sx_;
+        const tz = p[1] * sx_ + rz * cx_;
+        const persp = FL / (FL - tz);
+        const col = Math.round(cX + (rx * persp * spread) / CHAR_ASPECT);
+        const row = Math.round(cY - ty * persp * spread);
+        if (col < 0 || col >= COLS || row < 0 || row >= ROWS) continue;
+        const idx = row * COLS + col;
+        if (tz > zb[idx]) {
+          zb[idx] = tz;
+          const shade = Math.max(0, Math.min(1, (tz + 1) / 2));
+          buf[row][col] = RAMP[1 + Math.floor(shade * (RAMP.length - 2))];
+        }
+      }
+      let s = "";
+      for (let r = 0; r < ROWS; r++) s += buf[r].join("") + (r < ROWS - 1 ? "\n" : "");
+      pre.textContent = s;
+    }
+
+    function tick(inst) {
+      if (!inst.pre.isConnected) {
+        inst.rafId = null;
+        return;
+      }
+      inst.phaseY += SPY;
+      inst.phaseX += SPX;
+      inst.rotY += (AMP_Y * Math.sin(inst.phaseY) - inst.rotY) * EASE;
+      inst.rotX += (BASE_X + AMP_X * Math.sin(inst.phaseX) - inst.rotX) * EASE;
+      render(inst);
+      inst.rafId = inst.visible && !reduce ? requestAnimationFrame(() => tick(inst)) : null;
+    }
+
+    function initOne(w) {
+      const pre = w.querySelector("[data-ascii-mic]");
+      if (!pre || pre.dataset.bound) return;
+      pre.dataset.bound = "1";
+      const inst = { w, pre, rotX: BASE_X, rotY: 0, phaseX: 0, phaseY: 0, visible: false, rafId: null };
+      render(inst);
+      if ("IntersectionObserver" in window) {
+        const io = new IntersectionObserver((es) => {
+          es.forEach((e) => {
+            inst.visible = e.isIntersecting;
+            if (inst.visible && !reduce && !inst.rafId) inst.rafId = requestAnimationFrame(() => tick(inst));
+          });
+        }, { threshold: 0.05 });
+        io.observe(w);
+      } else {
+        inst.visible = true;
+        if (!reduce) inst.rafId = requestAnimationFrame(() => tick(inst));
+      }
+      addEventListener("resize", () => render(inst), { passive: true });
+    }
+
+    const init = () => document.querySelectorAll("[data-mic-wrap]").forEach(initOne);
+    window.__asciiMicInit = init;
+    document.addEventListener("astro:page-load", init);
+    init();
+  })();
+</script>

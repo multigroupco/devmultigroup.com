@@ -36,6 +36,7 @@ export const NAV: NavItem[] = [
     href: "/blog",
     children: [
       { label: "Blog", href: "/blog" },
+      { label: "Podcast'ler", href: "/podcasts" },
       { label: "Kayıtlar", href: "/recordings" },
       { label: "Kaynakça", href: "/kaynakca" },
     ],

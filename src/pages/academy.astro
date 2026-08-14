@@ -126,7 +126,7 @@ const academyLd = {
   {
     featured && (
       <section class="container-x pb-4">
-        <div class="card card-glow overflow-hidden grid md:grid-cols-[1.05fr_1fr]">
+        <div class="card overflow-hidden grid md:grid-cols-[1.05fr_1fr]">
           <div class="relative min-h-[13rem] md:min-h-full bg-ink-900 skeleton">
             {fcover ? (
               <img src={fcover} alt="" loading="eager" decoding="async" class="img-reveal absolute inset-0 w-full h-full object-cover" />
@@ -173,8 +173,8 @@ const academyLd = {
     <SectionHeader title="Programlar" description="MultiAcademy'de öğrenebileceğin alanlar — her biri sıfırdan üretime, uygulamalı." />
     <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
       {programs.map((p) => (
-        <div class="card card-glow p-6 flex flex-col">
-          <div class="tile-glow w-11 h-11 rounded-xl border border-line grid place-items-center">
+        <div class="card p-6 flex flex-col">
+          <div class="w-11 h-11 rounded-xl border border-line bg-white/[0.04] grid place-items-center">
             <Icon name={p.icon} size={22} />
           </div>
           <h3 class="font-display text-lg font-semibold mt-4">{p.title}</h3>
