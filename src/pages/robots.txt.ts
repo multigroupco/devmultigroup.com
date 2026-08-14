@@ -25,10 +25,24 @@ const AI_AGENTS = [
   "CCBot",
 ];
 
+// Content Signals (contentsignals.org) — a machine-readable statement of how the
+// content may be used, independent of who may crawl it. Our stance: answer
+// engines may index us and quote us with a link back, but the corpus is not
+// training material.
+//
+// This line used to come from Cloudflare's *managed* robots.txt, which also
+// injected `Disallow: /` for GPTBot/ClaudeBot/CCBot/Google-Extended — the exact
+// crawlers this file welcomes below. That contradiction (and an edge-level
+// "Block AI bots" rule that 403'd them outright) meant no AI engine could read
+// the site at all. Managed robots.txt is now off; the signal we actually want
+// lives here, under our control, in one authoritative file.
+const CONTENT_SIGNAL = "search=yes, ai-input=yes, ai-train=no, use=reference";
+
 export const GET: APIRoute = ({ site }) => {
   const origin = (site?.origin ?? BRAND.url).replace(/\/$/, "");
   const body = [
     "User-agent: *",
+    `Content-Signal: ${CONTENT_SIGNAL}`,
     "Allow: /",
     "Disallow: /admin",
     "Disallow: /api/",
