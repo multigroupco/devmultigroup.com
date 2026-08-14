@@ -195,6 +195,133 @@ export async function captureServerException(env: Env, err: unknown, ctx: Captur
   }).catch(() => undefined);
 }
 
+/* ── structured logs (Sentry Logs, via OTLP) ───────────────────────────────
+ * Errors answer "what broke"; logs answer "what happened just before it". The
+ * free plan is generous here (5 GB/month, versus 5k errors), so this is the one
+ * place we can afford to be liberal — but we still only log deliberate,
+ * low-volume, audit-shaped events (who edited what, who signed in). Debug noise
+ * belongs in Cloudflare Workers Logs, which already collects every `console.*`.
+ *
+ * Sent as OpenTelemetry JSON to Sentry's direct OTLP endpoint (open beta), which
+ * keeps this module dependency-free like the event sender above:
+ *   https://o<orgId>.ingest.<region>.sentry.io/api/<projectId>/integration/otlp/v1/logs
+ * Both parts are derivable from the DSN, so there is nothing new to configure. */
+const SEVERITY: Record<string, number> = { debug: 5, info: 9, warn: 13, error: 17 };
+
+/** Build the OTLP logs URL + auth key from the DSN (`…@o<org>.ingest.<r>.sentry.io/<project>`). */
+function otlpLogsTarget(dsn: string): { url: string; key: string } | null {
+  const parsed = parseDsn(dsn);
+  if (!parsed) return null;
+  return {
+    url: `https://${parsed.host}/api/${parsed.projectId}/integration/otlp/v1/logs`,
+    key: parsed.publicKey,
+  };
+}
+
+const attr = (k: string, v: string | number | boolean) => ({
+  key: k,
+  value:
+    typeof v === "number"
+      ? { intValue: String(Math.round(v)) }
+      : typeof v === "boolean"
+        ? { boolValue: v }
+        : { stringValue: v },
+});
+
+/**
+ * Record one structured log line. Fire-and-forget; never throws. Keep the
+ * message stable and put the varying parts in `attributes` so the log is
+ * searchable rather than a soup of unique strings.
+ */
+export function captureServerLog(
+  env: Env,
+  level: "debug" | "info" | "warn" | "error",
+  message: string,
+  attributes: Record<string, string | number | boolean> = {},
+): Promise<void> {
+  try {
+    if (import.meta.env.DEV || !env?.SENTRY_DSN) return Promise.resolve();
+    const target = otlpLogsTarget(env.SENTRY_DSN);
+    if (!target) return Promise.resolve();
+    const body = {
+      resourceLogs: [
+        {
+          resource: {
+            attributes: [
+              attr("service.name", "devmultigroup-web"),
+              attr("deployment.environment", env.SENTRY_ENVIRONMENT || "production"),
+            ],
+          },
+          scopeLogs: [
+            {
+              scope: { name: "worker" },
+              logRecords: [
+                {
+                  timeUnixNano: String(Date.now() * 1e6),
+                  body: { stringValue: message },
+                  severityText: level.toUpperCase(),
+                  severityNumber: SEVERITY[level] ?? 9,
+                  attributes: Object.entries(attributes).map(([k, v]) => attr(k, v)),
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    return fetch(target.url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-sentry-auth": `sentry sentry_key=${target.key}`,
+      },
+      body: JSON.stringify(body),
+    })
+      .then(() => undefined)
+      .catch(() => undefined);
+  } catch {
+    return Promise.resolve();
+  }
+}
+
+/** `captureServerLog` for call sites holding `Astro.locals` — hands the send to waitUntil. */
+export function logEvent(
+  locals: App.Locals,
+  level: "debug" | "info" | "warn" | "error",
+  message: string,
+  attributes: Record<string, string | number | boolean> = {},
+): void {
+  try {
+    const env = locals?.runtime?.env as Env | undefined;
+    if (!env) return;
+    const p = captureServerLog(env, level, message, attributes);
+    const wait = locals?.runtime?.ctx?.waitUntil?.bind(locals.runtime.ctx);
+    if (wait) wait(p);
+  } catch {
+    /* logging must never break the request */
+  }
+}
+
+/**
+ * Fire-and-forget report for library code that holds an `env` but no request or
+ * `waitUntil` (search indexing, embedding, query fallbacks). Best-effort by
+ * design: the caller is already on a degraded-but-working path, so the report
+ * must never add latency to it and must never throw.
+ */
+export function reportBackground(env: Env, err: unknown, ctx: CaptureContext & { area?: string } = {}): void {
+  try {
+    if (import.meta.env.DEV || !env?.SENTRY_DSN) return;
+    const { area, ...rest } = ctx;
+    void captureServerException(env, err, {
+      level: "warning",
+      ...rest,
+      tags: { ...(rest.tags ?? {}), ...(area ? { area } : {}) },
+    });
+  } catch {
+    /* reporting must never break the caller */
+  }
+}
+
 /**
  * One-liner for call sites that already hold `Astro.locals`: resolves the env,
  * applies the same dev/apex-only policy as the middleware, and hands the send

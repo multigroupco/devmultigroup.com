@@ -174,6 +174,22 @@ const active = enabled && (measurementId || posthogKey || sentryLoader);
             /js\.sentry-cdn\.com/i
           ],
           beforeSend: function (event) {
+            // --- per-browser rate limit -------------------------------------
+            // Sentry's own client-key rate limiting is a Business-plan feature,
+            // so on the free plan the browser is the one uncapped path into the
+            // 5k/month error quota. One looping component could drain it in
+            // minutes. Mirror the Worker's budget here: at most CAP events per
+            // rolling hour per browser, counted in localStorage.
+            try {
+              var CAP = 10, HOUR = 3600000, k = "__dmg_sentry_rl";
+              var now = Date.now();
+              var st = JSON.parse(localStorage.getItem(k) || "null") || { t: now, n: 0 };
+              if (now - st.t > HOUR) st = { t: now, n: 0 };
+              if (st.n >= CAP) return null; // quota guard: drop silently
+              st.n++;
+              localStorage.setItem(k, JSON.stringify(st));
+            } catch (e) { /* private mode / storage full → let it through */ }
+
             // Anonymous by default (KVKK): no IP, no cookies, no user identity.
             if (event.user) delete event.user;
             if (event.request) { delete event.request.cookies; delete event.request.headers; }

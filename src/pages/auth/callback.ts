@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { getEnv } from "@/lib/runtime";
 import { completeLogin } from "@/lib/oidc";
-import { reportError } from "@/lib/sentry";
+import { reportError, logEvent } from "@/lib/sentry";
 
 // OIDC callback: validate state, exchange the code for tokens, verify the ID
 // token, and persist the identity (incl. `role`) in this app's own session.
@@ -22,6 +22,11 @@ export const GET: APIRoute = async ({ request, redirect, session, locals }) => {
       at: Date.now(),
     });
     await session?.delete("oidc_tx");
+    // Admin sign-ins are rare and worth a permanent record.
+    logEvent(locals, "info", "auth.signin", {
+      email: identity.email ?? "unknown",
+      role: identity.role ?? "none",
+    });
     const dest =
       tx.redirectTo?.startsWith("/") && !tx.redirectTo.startsWith("//")
         ? tx.redirectTo

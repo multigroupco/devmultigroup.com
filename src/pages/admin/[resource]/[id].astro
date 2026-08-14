@@ -4,6 +4,7 @@ import Icon from "@/components/Icon.astro";
 import Field from "@/components/admin/Field.astro";
 import { getEnv } from "@/lib/runtime";
 import { getResource, getRow, saveRow, deleteRow } from "@/lib/admin";
+import { logEvent } from "@/lib/sentry";
 
 const env = getEnv(Astro.locals);
 const { resource = "", id = "" } = Astro.params;
@@ -14,11 +15,20 @@ const isNew = id === "new";
 if (Astro.request.method === "POST") {
   const form = await Astro.request.formData();
   const action = form.get("_action");
+  // Audit trail: who changed what, when. Content lives in D1 with no history of
+  // its own, so this is the only record that a row was edited or removed.
+  const actor = Astro.locals.adminEmail ?? "unknown";
   if (action === "delete" && !isNew) {
     await deleteRow(env, res, id);
+    logEvent(Astro.locals, "warn", "admin.delete", { resource: res.key, row_id: id, actor });
     return Astro.redirect(`/admin/${res.key}`);
   }
-  await saveRow(env, res, form);
+  const savedId = await saveRow(env, res, form);
+  logEvent(Astro.locals, "info", isNew ? "admin.create" : "admin.update", {
+    resource: res.key,
+    row_id: savedId,
+    actor,
+  });
   return Astro.redirect(`/admin/${res.key}`);
 }
 

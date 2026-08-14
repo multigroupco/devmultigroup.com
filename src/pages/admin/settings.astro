@@ -5,12 +5,14 @@ import Field from "@/components/admin/Field.astro";
 import { getEnv } from "@/lib/runtime";
 import { getSettings } from "@/lib/content";
 import { SETTINGS_FIELDS, saveSettings } from "@/lib/admin";
+import { logEvent } from "@/lib/sentry";
 
 const env = getEnv(Astro.locals);
 
 if (Astro.request.method === "POST") {
   const form = await Astro.request.formData();
   await saveSettings(env, form);
+  logEvent(Astro.locals, "info", "admin.settings_save", { actor: Astro.locals.adminEmail ?? "unknown" });
   return Astro.redirect("/admin/settings?saved=1");
 }
 

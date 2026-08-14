@@ -266,6 +266,45 @@ errors only). Final legal texts are published as DRAFT pending lawyer review; se
   keys (`SENTRY_DSN`, `POSTHOG_KEY/HOST`) in `wrangler.jsonc` vars (public ingest
   ids). Seed settings with `npm run analytics:settings:{local,remote}`.
 
+### Staying inside both free tiers
+
+Sentry and PostHog are on free plans whose limits are almost mirror images, so
+each product owns the half the other is stingy about. **Sentry = system health**
+(5k errors, 5 GB logs, 1 uptime + 1 cron monitor). **PostHog = product side**
+(1M events, 5k session replays, 1M flag requests, 1500 survey responses, 100k
+exceptions). Traffic is ~50 pageviews/month, so nothing is close to a limit —
+the only real risk is a misconfiguration, and each one has a guard:
+
+- **Error storms.** `captureServerException` gates every send on two KV counters:
+  a 15-minute per-fingerprint cooldown and a hard monthly budget
+  (`MONTHLY_BUDGET`, 2500). Both fail open — a KV outage must not silence
+  reporting.
+- **Browser errors.** Sentry's own client-key rate limiting is a **Business-plan
+  feature**, so on free it silently does nothing (the API accepts the value and
+  drops it). The equivalent lives in `Analytics.astro`'s `beforeSend`: at most 10
+  events per rolling hour per browser, counted in localStorage.
+- **Session replay.** On at 100% sampling, but recording is bound to the
+  `session-replay` feature flag in PostHog — flip that flag off and recording
+  stops instantly, no deploy. Inputs are masked, `/admin` is on the URL blocklist,
+  sessions under 3s are dropped, retention 30 days.
+- **Deliberately off:** Sentry tracing (would mean wrapping the pinned adapter's
+  generated worker — see the pin warning above) and Sentry session replay (50/mo
+  versus PostHog's 5000).
+
+Reporting helpers in [`src/lib/sentry.ts`](./src/lib/sentry.ts), by call site:
+
+| Helper | Use from | Notes |
+| ------ | -------- | ----- |
+| `reportError(locals, err, {area, request})` | pages / API routes that catch and keep serving | apex-only, `waitUntil` |
+| `reportBackground(env, err, {area})` | library code with an `env` but no request | best-effort, `warning` level |
+| `logEvent(locals, level, msg, attrs)` | audit-shaped moments (admin writes, sign-in) | Sentry Logs via OTLP |
+| `captureServerException` / `captureServerLog` | anywhere holding a raw `Env` | the primitives the above wrap |
+
+**Any `catch` that swallows an error to keep the page working must report.** That
+was the bug class behind a silent OIDC failure, silent 502s on the contact and
+newsletter forms, and a blank homepage during a D1 outage. Debug-level noise
+belongs in Cloudflare Workers Logs (`observability` is on), not Sentry.
+
 ## Design system
 
 The AMOLED monochrome theme lives entirely in

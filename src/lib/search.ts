@@ -14,6 +14,7 @@
  */
 
 import { all } from "@/lib/db";
+import { reportBackground } from "./sentry";
 
 const EMBED_MODEL = "@cf/baai/bge-m3";
 
@@ -193,6 +194,7 @@ async function embed(env: Env, text: string): Promise<number[] | null> {
     return Array.isArray(vec) ? vec : null;
   } catch (err) {
     console.error("[search] embed failed", err);
+    reportBackground(env, err, { area: "search/embed", transaction: "search.embed" });
     return null;
   }
 }
@@ -215,6 +217,7 @@ async function embedMany(env: Env, texts: string[]): Promise<(number[] | null)[]
     return texts.map((_, i) => (Array.isArray(data[i]) ? data[i] : null));
   } catch (err) {
     console.error("[search] embedMany failed", err);
+    reportBackground(env, err, { area: "search/embedMany", transaction: "search.embedMany" });
     return texts.map(() => null);
   }
 }
@@ -254,6 +257,7 @@ export async function indexRow(
     ]);
   } catch (err) {
     console.error("[search] indexRow failed", type, id, err);
+    reportBackground(env, err, { area: "search/indexRow", transaction: "search.indexRow", extra: { type, id } });
   }
 }
 
@@ -268,6 +272,7 @@ export async function unindexRow(
     await env.VECTORIZE.deleteByIds([vid(type as SearchType, id)]);
   } catch (err) {
     console.error("[search] unindexRow failed", type, id, err);
+    reportBackground(env, err, { area: "search/unindexRow", transaction: "search.unindexRow", extra: { type, id } });
   }
 }
 
@@ -327,6 +332,9 @@ export async function search(
       }
     } catch (err) {
       console.error("[search] semantic query failed, using LIKE fallback", err);
+      // Search silently degrades to a keyword scan — the user still gets results,
+      // so this is the only signal that semantic search is broken.
+      reportBackground(env, err, { area: "search/semantic", transaction: "search.semantic" });
     }
   }
 
@@ -357,6 +365,7 @@ async function likeFallback(
       for (const r of rows) out.push(toResult(t, r, String(r.id), 0));
     } catch (err) {
       console.error("[search] LIKE fallback failed for", t, err);
+      reportBackground(env, err, { area: "search/likeFallback", transaction: "search.likeFallback", extra: { type: t } });
     }
   }
   return out.slice(0, limit);
