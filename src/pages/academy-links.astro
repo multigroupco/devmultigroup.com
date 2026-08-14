@@ -3,6 +3,7 @@
 // Shares the upcoming-events carousel with /links; the only difference is that
 // this page opens on the soonest MultiAcademy event. Below it, the
 // admin-managed academy link list (/admin/academy-links).
+import SystemStatus from "@/components/SystemStatus.astro";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import LinkButton from "@/components/LinkButton.astro";
 import UpcomingEventsCarousel from "@/components/UpcomingEventsCarousel.astro";
@@ -88,7 +89,9 @@ const social = [
         }
       </div>
 
-      <p class="text-center text-xs text-ink-faint mt-10">
+      <SystemStatus variant="center" class="mt-10" />
+
+      <p class="text-center text-xs text-ink-faint mt-4">
         <a href="/" class="hover:text-ink-text transition-colors">{BRAND.domain}</a>
       </p>
     </main>
