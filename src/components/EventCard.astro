@@ -67,25 +67,29 @@ const cover = imageSrc(event.cover_image);
     </div>
 
     {
-      /* mt-auto, not mt-4: the card is a flex column, so the CTA must be pushed
-         to the bottom. Following the content left it at a different height on
-         every card, depending on whether that event had a summary or a venue. */
+      /* The CTA sits in its own wrapper for two reasons. mt-auto pins it to the
+         bottom of the flex column, so every card's button lines up regardless of
+         whether that event has a summary or a venue. And the breathing room has
+         to be the WRAPPER's padding: the button's own `!py-2` is !important and
+         silently ate a pt-4 put on the anchor itself. */
       upcoming && (
-        <a
-          href={reg}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="relative z-10 btn btn-ghost !py-2 !px-3 text-xs mt-auto pt-4 self-start"
-          data-track="event_register_click"
-          data-track-props={JSON.stringify({
-            event_slug: event.slug,
-            event_title: event.title,
-            event_community: event.community,
-            location: "card",
-          })}
-        >
-          Kayıt ol <Icon name="arrow-up-right" size={13} />
-        </a>
+        <div class="mt-auto pt-4">
+          <a
+            href={reg}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="relative z-10 btn btn-ghost !py-2 !px-3 text-xs"
+            data-track="event_register_click"
+            data-track-props={JSON.stringify({
+              event_slug: event.slug,
+              event_title: event.title,
+              event_community: event.community,
+              location: "card",
+            })}
+          >
+            Kayıt ol <Icon name="arrow-up-right" size={13} />
+          </a>
+        </div>
       )
     }
   </div>
