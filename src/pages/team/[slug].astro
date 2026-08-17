@@ -10,7 +10,7 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Icon from "@/components/Icon.astro";
 import { getEnv } from "@/lib/runtime";
-import { getTeamMember, listTeam } from "@/lib/content";
+import { getTeamMember } from "@/lib/content";
 import { renderMarkdown } from "@/lib/markdown";
 import { imageSrc } from "@/lib/ui";
 import { formatDate } from "@/lib/format";
@@ -48,13 +48,6 @@ const initials = member
   ? member.name.split(/\s+/).filter(Boolean).map((s) => s[0]).slice(0, 2).join("").toUpperCase()
   : "";
 
-// teammates from the same squad, for the footer rail
-const teammates = member
-  ? (await listTeam(env))
-      .filter((m) => m.id !== member.id && m.team && m.team === member.team && m.slug)
-      .slice(0, 4)
-  : [];
-
 const absAvatar = avatar ? (avatar.startsWith("http") ? avatar : BRAND.url + avatar) : "";
 const ld = member
   ? {
@@ -90,16 +83,19 @@ const ld = member
           <Icon name="arrow-right" size={14} class="rotate-180" /> Ekip
         </a>
 
-        <div class="mt-10 grid md:grid-cols-[13rem_1fr] gap-8 md:gap-12 items-start">
-          <div class:list={["relative aspect-square rounded-3xl overflow-hidden bg-ink-900 ring-1 ring-line", avatar && "skeleton"]}>
-            {avatar ? (
-              <img src={avatar} alt={member.name} loading="eager" decoding="async"
-                class="img-reveal absolute inset-0 w-full h-full object-cover" />
-            ) : (
-              <div class="w-full h-full grid place-items-center">
-                <span class="font-display text-6xl text-ink-faint">{initials}</span>
-              </div>
-            )}
+        <div class="mt-10 grid lg:grid-cols-[minmax(0,22rem)_1fr] gap-10 lg:gap-16 items-start">
+          {/* Portrait rides along with the body copy instead of scrolling away. */}
+          <div class="tm-portrait">
+            <div class:list={["relative aspect-square rounded-3xl overflow-hidden bg-ink-900 ring-1 ring-line", avatar && "skeleton"]}>
+              {avatar ? (
+                <img src={avatar} alt={member.name} loading="eager" decoding="async"
+                  class="img-reveal absolute inset-0 w-full h-full object-cover" />
+              ) : (
+                <div class="w-full h-full grid place-items-center">
+                  <span class="font-display text-7xl text-ink-faint">{initials}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           <div class="min-w-0">
@@ -140,46 +136,11 @@ const ld = member
                 )}
               </div>
             )}
+            {longBio && <div class="prose-dmg max-w-2xl mt-9" set:html={longBio} />}
           </div>
         </div>
       </section>
 
-      {longBio && (
-        <section class="container-x py-6">
-          <div class="prose-dmg max-w-2xl" set:html={longBio} />
-        </section>
-      )}
-
-      {teammates.length > 0 && (
-        <section class="container-x py-12">
-          <h2 class="text-sm text-ink-faint uppercase tracking-[0.18em] mb-6">
-            {member.team}
-          </h2>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {teammates.map((t) => {
-              const a = imageSrc(t.avatar_url);
-              return (
-                <a href={`/team/${t.slug}`} class="group block">
-                  <div class:list={["relative aspect-square rounded-2xl overflow-hidden bg-ink-900 ring-1 ring-line", a && "skeleton"]}>
-                    {a ? (
-                      <img src={a} alt={t.name} loading="lazy" decoding="async"
-                        class="img-reveal absolute inset-0 w-full h-full object-cover transition duration-500 group-hover:scale-[1.04]" />
-                    ) : (
-                      <div class="w-full h-full grid place-items-center">
-                        <span class="font-display text-2xl text-ink-faint">
-                          {t.name.split(/\s+/).filter(Boolean).map((x) => x[0]).slice(0, 2).join("").toUpperCase()}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <p class="font-medium text-sm mt-3 truncate group-hover:text-grad transition-colors">{t.name}</p>
-                  {t.role && <p class="text-ink-faint text-xs truncate mt-0.5">{t.role}</p>}
-                </a>
-              );
-            })}
-          </div>
-        </section>
-      )}
 
       <section class="container-x pb-20 pt-4">
         <div class="border-t border-line pt-10 flex flex-wrap items-center justify-between gap-5">
@@ -192,7 +153,18 @@ const ld = member
           </a>
         </div>
       </section>
-    </BaseLayout>
+      <style>
+    /* Sticky from lg up only — below that the portrait is simply the first
+       block in a single column and pinning it would cover the copy. */
+    @media (min-width: 1024px) {
+      .tm-portrait {
+        position: sticky;
+        /* clears the sticky navbar */
+        top: 6.5rem;
+      }
+    }
+  </style>
+</BaseLayout>
   ) : (
     <BaseLayout title="Üye bulunamadı" noindex canonicalPath="/team">
       <section class="container-x py-24 text-center">
