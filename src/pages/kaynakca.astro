@@ -1,12 +1,15 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Icon from "@/components/Icon.astro";
+import { githubStats } from "@/lib/github";
 import { SOCIALS } from "@/lib/site";
 import { getEnv } from "@/lib/runtime";
 import { listResources } from "@/lib/content";
 import type { ResourceRow } from "@/lib/types";
 
 const env = getEnv(Astro.locals);
+// null when GitHub is unreachable or rate-limiting; the panel copes.
+const gh = await githubStats(env);
 const resources = await listResources(env);
 
 const GROUP_META: Record<string, { label: string; note: string }> = {
@@ -36,9 +39,9 @@ const total = resources.length;
 >
   <section class="container-x py-16 md:py-24">
     <!-- hero -->
+    <div class="grid lg:grid-cols-[1fr_auto] gap-10 lg:gap-16 items-start">
     <div class="max-w-2xl">
-      <span class="chip">Açık Kaynak</span>
-      <h1 class="text-4xl md:text-5xl font-semibold mt-4">Kaynakça</h1>
+      <h1 class="text-4xl md:text-5xl font-semibold">Kaynakça</h1>
       <p class="text-ink-dim mt-4 leading-relaxed">
         MultiGroup'un açık eğitim derlemeleri, bootcamp kaynakçaları ve awesome
         list'leri. Hepsi GitHub'da, herkese açık. Öğrenmeye buradan başla.
@@ -55,6 +58,46 @@ const total = resources.length;
         multigroupco'nun tüm repoları
         <Icon name="arrow-up-right" size={15} class="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
       </a>
+    </div>
+
+    {/* Live org numbers + the ask. Stats render only when GitHub answered; the
+        call-to-action is always there, so a rate-limited hour degrades the card
+        instead of emptying it. */}
+    <aside class="kk-panel">
+      {gh && (
+        <>
+          <dl class="kk-stats">
+            <div><dt>{gh.stars.toLocaleString("tr-TR")}</dt><dd>yıldız</dd></div>
+            <div><dt>{gh.repos}</dt><dd>repo</dd></div>
+            <div><dt>{gh.forks}</dt><dd>fork</dd></div>
+          </dl>
+          {gh.top && (
+            <a class="kk-top" href={gh.top.url} target="_blank" rel="noopener noreferrer"
+              data-track="resource_click"
+              data-track-props={JSON.stringify({ repo: gh.top.name, location: "kaynakca-panel" })}>
+              <span class="kk-top-label">En çok yıldız alan</span>
+              <span class="kk-top-name">{gh.top.name}</span>
+              <span class="kk-top-n">★ {gh.top.stars}</span>
+            </a>
+          )}
+        </>
+      )}
+
+      <p class="kk-ask">
+        Bu listeler topluluğun; eksik gördüğün bir kaynak varsa eklemek de senin elinde.
+      </p>
+      <div class="kk-acts">
+        <a class="btn btn-primary !py-2 !px-3.5 text-sm" href={`${SOCIALS.multigroup.github}`}
+          target="_blank" rel="noopener noreferrer"
+          data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "kaynakca_contribute", page: "kaynakca" })}>
+          <Icon name="github" size={15} /> Katkıda bulun
+        </a>
+        <a class="btn btn-ghost !py-2 !px-3.5 text-sm" href="/contact?type=support"
+          data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "kaynakca_contact", page: "kaynakca" })}>
+          Kaynak öner
+        </a>
+      </div>
+    </aside>
     </div>
 
     <!-- groups -->
@@ -112,4 +155,73 @@ const total = resources.length;
       <a href={SOCIALS.multigroup.github} target="_blank" rel="noopener noreferrer" class="text-ink-dim hover:text-ink-text underline underline-offset-2 transition-colors">GitHub</a>'dan ulaşabilirsin.
     </p>
   </section>
+  <style>
+    .kk-panel {
+      width: 100%;
+      max-width: 22rem;
+      border: 1px solid var(--color-line);
+      border-radius: 1.1rem;
+      padding: 1.35rem 1.4rem 1.5rem;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent);
+    }
+    .kk-stats {
+      display: flex;
+      gap: 1.6rem;
+    }
+    .kk-stats dt {
+      font-family: var(--font-display);
+      font-size: 1.7rem;
+      font-weight: 600;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      color: var(--color-ink-text);
+    }
+    .kk-stats dd {
+      margin-top: 0.35rem;
+      font-family: var(--font-mono);
+      font-size: 0.64rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--color-ink-faint);
+    }
+    .kk-top {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: baseline;
+      gap: 0.2rem 0.75rem;
+      margin-top: 1.15rem;
+      padding-top: 1.05rem;
+      border-top: 1px solid var(--color-line);
+    }
+    .kk-top-label {
+      grid-column: 1 / -1;
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--color-ink-faint);
+    }
+    .kk-top-name {
+      font-size: 0.88rem;
+      color: var(--color-ink-dim);
+      overflow-wrap: anywhere;
+      transition: color 0.15s var(--ease-out-soft);
+    }
+    .kk-top:hover .kk-top-name { color: var(--color-ink-text); }
+    .kk-top-n {
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      color: var(--color-ink-dim);
+      white-space: nowrap;
+    }
+    .kk-ask {
+      margin-top: 1.15rem;
+      padding-top: 1.05rem;
+      border-top: 1px solid var(--color-line);
+      font-size: 0.86rem;
+      line-height: 1.6;
+      color: var(--color-ink-dim);
+    }
+    .kk-acts { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
+  </style>
 </BaseLayout>

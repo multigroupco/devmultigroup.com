@@ -51,11 +51,13 @@
     const COLS = 74; // mono chars are ~0.55 as wide as tall
     const CHAR_ASPECT = 0.55;
     const RAMP = " .:-=+*oc#%@";
-    const FL = 3.4; // perspective focal length
-    const DEPTH = 0.26; // front-to-back thickness of the extruded volume
+    // Drawn face-on and in PARALLEL projection: no rotation, no perspective
+    // divide. The extruded depth is kept, but only to shade the mark — thicker
+    // through the middle reads denser on the ramp — never to turn it.
+    const DEPTH = 0.26; // front-to-back thickness, used for shading only
     const DZ = 0.075; // z fill spacing → one solid volume, no layer banding
-    const VIEW_Y = -0.34; // the one fixed 3/4 view the mark is drawn at
-    const VIEW_X = 0.2;
+    const VIEW_Y = 0;
+    const VIEW_X = 0;
     // hover ripple
     const SIG = 5.2; // gaussian falloff radius, in character cells
     const BOOST = 0.85; // how far up the ramp the crest pushes a character
@@ -84,7 +86,7 @@
 
     // Geometry is identical for every instance → build the point cloud once.
     const pts = (() => {
-      const N = 96; // silhouette sampling resolution
+      const N = 140; // silhouette sampling resolution
       const raw = [];
       for (let iy = 0; iy < N; iy++) {
         for (let ix = 0; ix < N; ix++) {
@@ -100,7 +102,7 @@
         if (r > maxR) maxR = r;
       }
       const out = [];
-      const step = raw.length > 900 ? Math.ceil(raw.length / 900) : 1;
+      const step = raw.length > 2600 ? Math.ceil(raw.length / 2600) : 1;
       for (let i = 0; i < raw.length; i += step) {
         const [nx, ny] = raw[i];
         const rr = Math.hypot(nx, ny) / maxR;
@@ -133,14 +135,14 @@
         const rz = -p[0] * sy_ + p[2] * cy_;
         const ty = p[1] * cx_ - rz * sx_;
         const tz = p[1] * sx_ + rz * cx_;
-        const persp = FL / (FL - tz);
-        const col = Math.round(cX + (rx * persp * spread) / CHAR_ASPECT);
-        const row = Math.round(cY - ty * persp * spread);
+        // orthographic: depth must not scale the silhouette
+        const col = Math.round(cX + (rx * spread) / CHAR_ASPECT);
+        const row = Math.round(cY - ty * spread);
         if (col < 0 || col >= COLS || row < 0 || row >= ROWS) continue;
         const idx = row * COLS + col;
         if (tz > zb[idx]) {
           zb[idx] = tz;
-          shade[idx] = Math.max(0, Math.min(1, (tz + 1) / 2));
+          shade[idx] = Math.max(0, Math.min(1, 0.18 + (tz / DEPTH) * 0.62));
         }
       }
       inst.shade = shade;

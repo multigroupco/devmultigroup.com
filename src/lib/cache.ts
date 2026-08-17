@@ -87,5 +87,6 @@ export const NS = {
   companies: "companies",
   partners: "partners",
   speakers: "speakers",
+  github: "github",
   search: "search",
 } as const;
