@@ -439,12 +439,15 @@ Console, and Access finalisation.
   (issue #15237). The current pins are load-bearing.
 - **`platformProxy` runs with `remoteBindings: false`** (`astro.config.mjs`). Wrangler
   4.x otherwise opens a *remote* proxy session for the bindings with no local
-  simulation (`AI`, `VECTORIZE`); on this account that fails with "Could not create
-  remote preview session" (the OAuth token has an `ai` scope but no `vectorize` one)
-  and takes the entire dev server down. Local-only is also what `wrangler.jsonc`
-  already documents — VECTORIZE is absent in dev and search falls back to a D1 LIKE
-  scan. Re-running `wrangler login` to pick up a `vectorize` scope is the real fix;
-  flipping this back without doing that will break `astro dev`.
+  simulation (`AI`, `VECTORIZE`), and on this account that session cannot be created:
+  it calls `GET /accounts/<id>/workers/subdomain/edge-preview`, which fails with
+  "Could not create remote preview session on your account" and takes the entire dev
+  server down before a route renders. This is an **account-level edge-preview
+  subdomain problem, not a missing OAuth scope** — re-running `wrangler login` was
+  tried and does not fix it (2026-08-17). Local-only is also what `wrangler.jsonc`
+  already documents: VECTORIZE is absent in dev and search falls back to a D1 LIKE
+  scan. Flipping this back before that account issue is resolved will break
+  `astro dev`; production and `npm run deploy` are unaffected either way.
 - **The Gathin import is create-only on purpose.** It will never update a row it has
   already imported, so a rescheduled or renamed event keeps its stale value **and says
   nothing**. That trade was made deliberately (see

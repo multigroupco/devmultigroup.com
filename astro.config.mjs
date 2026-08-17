@@ -12,12 +12,17 @@ export default defineConfig({
   adapter: cloudflare({
     // `remoteBindings: false` keeps `astro dev` fully local. Wrangler 4.x
     // otherwise opens a REMOTE proxy session for the bindings that have no local
-    // simulation (AI, VECTORIZE) — and that fails on this account with "Could not
-    // create remote preview session" because the OAuth token carries an `ai`
-    // scope but no `vectorize` one, which takes the whole dev server down with it.
+    // simulation (AI, VECTORIZE), and on this account that session cannot be
+    // created: it calls
+    //   GET /accounts/<id>/workers/subdomain/edge-preview
+    // which fails with "Could not create remote preview session on your account",
+    // taking the whole dev server down before a single route renders. That is an
+    // account-level edge-preview subdomain problem, NOT a missing OAuth scope —
+    // re-running `wrangler login` does not fix it (verified 2026-08-17).
     // Staying local is also the behaviour wrangler.jsonc already documents:
     // VECTORIZE is simply absent in dev and search degrades to a D1 LIKE scan
-    // (see src/lib/search.ts). Dev-only — production is unaffected.
+    // (see src/lib/search.ts). Dev-only — production is unaffected, and the
+    // deploy path never touches this.
     platformProxy: { enabled: true, remoteBindings: false },
     imageService: "compile",
   }),
