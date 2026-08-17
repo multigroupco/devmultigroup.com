@@ -17,21 +17,6 @@ const [upcoming, past, recs] = await Promise.all([
   listRecordings(env, "bootcamp"),
 ]);
 
-const programs = [
-  { title: "Modern iOS", text: "SwiftUI, mimari ve App Store'a yayınlama.", icon: "smartphone", tag: "SwiftUI" },
-  { title: "Android & Compose", text: "XML'den modern Android'e Jetpack Compose.", icon: "layers", tag: "Kotlin" },
-  { title: "GenAI Temelleri", text: "Google Gemini ile LLM'ler, prompt yazımı ve ajanlar.", icon: "cpu", tag: "Gemini" },
-  { title: "Web Temelleri", text: "Tarayıcıdan üretim seviyesi uygulamalara.", icon: "code", tag: "Fullstack" },
-];
-
-// value chips shown in the hero — honest, no invented numbers
-const VALUE = [
-  { icon: "check", label: "%100 ücretsiz" },
-  { icon: "users", label: "Mentör eşliğinde" },
-  { icon: "layers", label: "Proje odaklı" },
-  { icon: "sparkles", label: "Toplulukla birlikte" },
-];
-
 // "Neden MultiAcademy" value points
 const WHY = [
   { icon: "check", title: "Katılım ücretsiz", text: "Tüm bootcamp'ler ücretsiz. Gereken tek şey merak ve emek." },
@@ -51,34 +36,19 @@ const ftime = featured ? formatTime(featured.starts_at) : "";
 const fwhere = featured ? (featured.is_online ? "Çevrimiçi" : featured.city) : "";
 const freg = featured ? featured.registration_url || GATHIN.multiacademy : "";
 
+// The page's own identity. (It used to emit a Course ItemList for the four
+// programme cards; those are gone, and structured data must not describe
+// content the page no longer shows.)
 const academyLd = {
   "@context": "https://schema.org",
-  "@type": "ItemList",
-  name: "MultiAcademy bootcamp programları",
-  itemListElement: programs.map((p, i) => ({
-    "@type": "ListItem",
-    position: i + 1,
-    item: {
-      "@type": "Course",
-      name: p.title,
-      description: p.text,
-      provider: {
-        "@type": "EducationalOrganization",
-        name: "MultiAcademy",
-        url: "https://academy.devmultigroup.com",
-      },
-      isAccessibleForFree: true,
-      inLanguage: "tr",
-      offers: {
-        "@type": "Offer",
-        price: "0",
-        priceCurrency: "TRY",
-        category: "Free",
-        availability: "https://schema.org/InStock",
-      },
-    },
-  })),
+  "@type": "EducationalOrganization",
+  name: "MultiAcademy",
+  description:
+    "Developer MultiGroup'un öğrenme kolu. Ücretsiz, mentör eşliğinde ve proje odaklı yazılım bootcamp'leri.",
+  url: `${BRAND.url}/academy`,
+  parentOrganization: { "@type": "Organization", name: BRAND.name, url: BRAND.url },
 };
+
 ---
 
 <BaseLayout
@@ -102,11 +72,6 @@ const academyLd = {
         Modern iOS'tan GenAI'a, mentör eşliğinde ve gerçek projelerle ilerleyen yoğun programlar.
         Merakını üretime hazır beceriye dönüştür; katılım tamamen ücretsiz.
       </p>
-      <ul class="mt-7 flex flex-wrap items-center justify-center gap-2.5">
-        {VALUE.map((v) => (
-          <li class="chip inline-flex items-center gap-1.5"><Icon name={v.icon} size={14} /> {v.label}</li>
-        ))}
-      </ul>
       <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
         <a href="#akademi-etkinlikler" class="btn btn-primary" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "academy_events_scroll", page: "academy" })}>
           <Icon name="calendar" size={17} /> Akademi etkinlikleri
@@ -163,23 +128,6 @@ const academyLd = {
       </section>
     )
   }
-
-  {/* ── programs / tracks — what you actually learn (the core sell) ── */}
-  <section class="container-x py-8">
-    <SectionHeader title="Programlar" description="MultiAcademy'de öğrenebileceğin alanlar. Her biri sıfırdan üretime, uygulamalı." />
-    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-      {programs.map((p) => (
-        <div class="card p-6 flex flex-col">
-          <div class="w-11 h-11 rounded-xl border border-line bg-white/[0.04] grid place-items-center">
-            <Icon name={p.icon} size={22} />
-          </div>
-          <h3 class="font-display text-lg font-semibold mt-4">{p.title}</h3>
-          <p class="text-ink-dim text-sm mt-2 leading-relaxed flex-1">{p.text}</p>
-          <p class="font-mono text-[0.68rem] uppercase tracking-[0.14em] text-ink-faint mt-4">{p.tag}</p>
-        </div>
-      ))}
-    </div>
-  </section>
 
   {/* ── why MultiAcademy ── */}
   <section class="container-x py-8">

@@ -2,7 +2,7 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Icon from "@/components/Icon.astro";
 import { tryEnv } from "@/lib/runtime";
-import { listCompanies, companySpeakerCounts } from "@/lib/content";
+import { listCompanies, companySpeakerCounts, companyFirstSeen } from "@/lib/content";
 import { imageSrc } from "@/lib/ui";
 import { BRAND } from "@/lib/site";
 import type { CompanyRow } from "@/lib/types";
@@ -10,9 +10,14 @@ import type { CompanyRow } from "@/lib/types";
 const env = tryEnv(Astro.locals);
 let companies: CompanyRow[] = [];
 let counts: Record<string, number> = {};
+let firstSeen: Record<string, number> = {};
 if (env) {
   try {
-    [companies, counts] = await Promise.all([listCompanies(env), companySpeakerCounts(env)]);
+    [companies, counts, firstSeen] = await Promise.all([
+      listCompanies(env),
+      companySpeakerCounts(env),
+      companyFirstSeen(env),
+    ]);
   } catch {
     /* pre-seed */
   }
@@ -37,6 +42,36 @@ const wall = [...companies].sort(
 );
 
 const totalSpeakers = Object.values(counts).reduce((a, b) => a + b, 0);
+
+/* ── growth line: companies on our stage, cumulative by first appearance ──────
+   `companyFirstSeen` gives each company's earliest talk. Bucketing by year and
+   running a total produces the curve behind the headline. Companies with no
+   dateable talk are simply absent — the caption says so rather than padding a
+   year to make the last point match the 148 in the heading. */
+const byYear = new Map<number, number>();
+for (const ts of Object.values(firstSeen)) {
+  if (!ts) continue;
+  const y = new Date(ts * 1000).getUTCFullYear();
+  byYear.set(y, (byYear.get(y) ?? 0) + 1);
+}
+const years = [...byYear.keys()].sort((a, b) => a - b);
+let running = 0;
+const series = years.map((y) => ({ year: y, value: (running += byYear.get(y) ?? 0) }));
+
+// SVG geometry (viewBox units; the element scales with its container)
+const CW = 300;
+const CH = 132;
+const PAD = { t: 14, r: 10, b: 22, l: 10 };
+const maxV = series.length ? series[series.length - 1].value : 1;
+const px = (i: number) =>
+  series.length < 2 ? CW / 2 : PAD.l + (i * (CW - PAD.l - PAD.r)) / (series.length - 1);
+const py = (v: number) => PAD.t + (1 - v / maxV) * (CH - PAD.t - PAD.b);
+const pts = series.map((d, i) => ({ ...d, x: px(i), y: py(d.value) }));
+const line = pts.map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+const area = pts.length
+  ? `${line} L${pts[pts.length - 1].x.toFixed(1)} ${CH - PAD.b} L${pts[0].x.toFixed(1)} ${CH - PAD.b} Z`
+  : "";
+const last = pts[pts.length - 1];
 
 const companiesLd = companies.length
   ? {
@@ -66,10 +101,36 @@ const companiesLd = companies.length
       <h1 class="text-4xl md:text-6xl font-semibold leading-[1.02] max-w-3xl">
         Altı yılda <span class="text-grad">{companies.length} şirket</span> bu sahneyi paylaştı.
       </h1>
-      <div class="flex gap-8 shrink-0">
-        <div><div class="font-display text-3xl md:text-4xl font-semibold tabular-nums">{companies.length}</div><div class="text-ink-faint text-[0.7rem] mt-1 font-mono uppercase tracking-wider">şirket</div></div>
-        <div><div class="font-display text-3xl md:text-4xl font-semibold tabular-nums">{sectors.length}</div><div class="text-ink-faint text-[0.7rem] mt-1 font-mono uppercase tracking-wider">sektör</div></div>
-        <div><div class="font-display text-3xl md:text-4xl font-semibold tabular-nums">{totalSpeakers}</div><div class="text-ink-faint text-[0.7rem] mt-1 font-mono uppercase tracking-wider">konuşmacı</div></div>
+      <div class="shrink-0 lg:w-[22rem]">
+        <div class="flex gap-8">
+          <div><div class="font-display text-3xl md:text-4xl font-semibold tabular-nums">{companies.length}</div><div class="text-ink-faint text-[0.7rem] mt-1 font-mono uppercase tracking-wider">şirket</div></div>
+          <div><div class="font-display text-3xl md:text-4xl font-semibold tabular-nums">{sectors.length}</div><div class="text-ink-faint text-[0.7rem] mt-1 font-mono uppercase tracking-wider">sektör</div></div>
+          <div><div class="font-display text-3xl md:text-4xl font-semibold tabular-nums">{totalSpeakers}</div><div class="text-ink-faint text-[0.7rem] mt-1 font-mono uppercase tracking-wider">konuşmacı</div></div>
+        </div>
+
+        {pts.length > 1 && (
+          <figure class="co-chart mt-7">
+            <svg viewBox={`0 0 ${CW} ${CH}`} role="img"
+              aria-label={`Yıllara göre sahnemizde yer alan şirket sayısı: ${series.map((d) => `${d.year} ${d.value}`).join(", ")}`}>
+              <defs>
+                <linearGradient id="co-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#fff" stop-opacity="0.16" />
+                  <stop offset="100%" stop-color="#fff" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+              <path class="co-area" d={area} fill="url(#co-fill)" />
+              <path class="co-line" d={line} />
+              {pts.map((p) => <circle class="co-dot" cx={p.x} cy={p.y} r="2.4" />)}
+              <circle class="co-dot-last" cx={last.x} cy={last.y} r="3.6" />
+              {pts.map((p) => (
+                <text class="co-x" x={p.x} y={CH - 7} text-anchor="middle">{`'${String(p.year).slice(2)}`}</text>
+              ))}
+            </svg>
+            <figcaption class="co-cap">
+              Sahnemize çıkan şirketler, ilk göründükleri yıla göre birikimli.
+            </figcaption>
+          </figure>
+        )}
       </div>
     </div>
     <p class="text-ink-dim mt-6 max-w-2xl leading-relaxed">
@@ -139,6 +200,48 @@ const companiesLd = companies.length
   </section>
 
   <style>
+    /* ── growth line ─────────────────────────────────────────────────────── */
+    .co-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+    .co-line {
+      fill: none;
+      stroke: #fff;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      /* drawn in on first view; pathLength normalises the dash maths so the
+         length of the real path never matters */
+      pathLength: 1;
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    .co-area { opacity: 0; }
+    .co-dot { fill: var(--color-ink-950); stroke: rgba(255, 255, 255, 0.55); stroke-width: 1.2; opacity: 0; }
+    .co-dot-last { fill: #fff; opacity: 0; }
+    .co-x {
+      font-family: var(--font-mono);
+      font-size: 8px;
+      fill: var(--color-ink-faint);
+      letter-spacing: 0.04em;
+    }
+    .co-chart.is-in .co-line { animation: co-draw 1.5s var(--ease-out-soft) forwards; }
+    .co-chart.is-in .co-area { animation: co-fade 0.9s ease 0.7s forwards; }
+    .co-chart.is-in .co-dot { animation: co-fade 0.5s ease 0.9s forwards; }
+    .co-chart.is-in .co-dot-last { animation: co-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1.25s forwards; }
+    @keyframes co-draw { to { stroke-dashoffset: 0; } }
+    @keyframes co-fade { to { opacity: 1; } }
+    @keyframes co-pop { from { opacity: 0; r: 1; } to { opacity: 1; r: 3.6; } }
+    .co-cap {
+      margin-top: 0.55rem;
+      font-size: 0.68rem;
+      line-height: 1.5;
+      color: var(--color-ink-faint);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .co-line { stroke-dashoffset: 0; }
+      .co-area, .co-dot, .co-dot-last { opacity: 1; }
+      .co-chart.is-in * { animation: none; }
+    }
+
     .co-cell { display: contents; }
     .mark.is-hidden { display: none; }
     .co-select {
@@ -202,8 +305,25 @@ const companiesLd = companies.length
         if (clearAll) clearAll.addEventListener("click", () => { state.sector = ""; state.q = ""; search.value = ""; if (sectorSel) sectorSel.value = ""; apply(); });
         apply();
       };
-      if (!window.__dmgCoWall) { window.__dmgCoWall = true; document.addEventListener("astro:page-load", init); }
+      const chart = () => {
+        const el = document.querySelector(".co-chart");
+        if (!el || el.dataset.seen) return;
+        const io = new IntersectionObserver((es) => {
+          es.forEach((e) => {
+            if (!e.isIntersecting) return;
+            e.target.dataset.seen = "1";
+            e.target.classList.add("is-in");
+            io.unobserve(e.target);
+          });
+        }, { threshold: 0.35 });
+        io.observe(el);
+      };
+      if (!window.__dmgCoWall) {
+        window.__dmgCoWall = true;
+        document.addEventListener("astro:page-load", () => { init(); chart(); });
+      }
       init();
+      chart();
     })();
   </script>
 </BaseLayout>
