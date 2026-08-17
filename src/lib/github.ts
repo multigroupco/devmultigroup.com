@@ -41,7 +41,15 @@ async function load(env: Env): Promise<GithubStats | null> {
         headers: HEADERS,
       }),
     ]);
-    if (!orgRes.ok || !repoRes.ok) return null;
+    if (!orgRes.ok || !repoRes.ok) {
+      // Silent nulls hid the real cause on the first deploy. Unauthenticated
+      // GitHub is 60/hour PER IP and Cloudflare's egress IPs are shared, so a
+      // 403 here is the expected failure and worth seeing in Sentry.
+      reportBackground(env, new Error(`GitHub ${orgRes.status}/${repoRes.status}`), {
+        area: "github/stats",
+      });
+      return null;
+    }
 
     const org = (await orgRes.json()) as { public_repos?: number; followers?: number };
     const repos = (await repoRes.json()) as {
@@ -74,20 +82,44 @@ async function load(env: Env): Promise<GithubStats | null> {
   }
 }
 
-/** Cached org stats, or null when GitHub is unreachable / rate-limiting. */
+/**
+ * Cached org stats.
+ *
+ * Two layers, because a shared-IP rate limit is the normal case rather than the
+ * exception: the 6-hour `cached()` entry is the fast path, and every success is
+ * ALSO mirrored to a KV key with no expiry. When GitHub refuses, the last good
+ * numbers are served instead of an empty card. They only go stale, never blank.
+ */
+const LAST = "github:last";
+
 export async function githubStats(env: Env | null): Promise<GithubStats | null> {
   if (!env) return null;
   try {
-    return await cached(
+    const fresh = await cached(
       env,
       NS.github,
       "org",
-      () => load(env),
+      async () => {
+        const v = await load(env);
+        if (v && env.CACHE) {
+          // fire-and-forget; a failed mirror must not fail the render
+          try {
+            await env.CACHE.put(LAST, JSON.stringify(v));
+          } catch {
+            /* ignore */
+          }
+        }
+        return v;
+      },
       TTL,
-      // Never cache a failure: a rate-limited minute would otherwise blank the
-      // card for the next six hours.
+      // Never cache a failure, or one rate-limited minute blanks the card for
+      // the next six hours.
       (v) => v !== null,
     );
+    if (fresh) return fresh;
+
+    const stale = await env.CACHE?.get(LAST);
+    return stale ? (JSON.parse(stale) as GithubStats) : null;
   } catch {
     return null;
   }

@@ -245,33 +245,34 @@ const speakersLd = speakers.length
     }
     .sp-spot {
       position: absolute;
-      /* Pulled up and in so the bright part of the beam lands on the metrics.
-         It used to span the full hero and get guillotined at the section edge,
-         right above the speaker marquee. */
-      top: -62%;
-      right: -12%;
-      width: 88%;
-      height: 168%;
+      /* Kept to the RIGHT half and away from the section's top edge: the beam
+         used to run the full diagonal, crossing the headline on the left and
+         reaching the navbar above. */
+      top: 8%;
+      right: -6%;
+      width: 62%;
+      height: 104%;
       z-index: -1;
       pointer-events: none;
       opacity: 0;
       animation: sp-spot-in 2.2s var(--ease-out-soft) 0.15s forwards;
-      /* Dissolve well before the section boundary. With the light already gone
-         by then, the container's clip has nothing left to cut — continuity
-         without letting the glow spill onto the cards below. */
-      -webkit-mask-image: linear-gradient(
-        to bottom,
+      /* One radial mask centred on the metrics does all three jobs at once —
+         brightest on the numbers, gone before the left column, gone before the
+         top edge. A pair of linear masks would need mask-composite and still
+         leave hard corners. */
+      -webkit-mask-image: radial-gradient(
+        54% 46% at 74% 46%,
         #000 0%,
-        #000 48%,
-        rgba(0, 0, 0, 0.55) 72%,
-        transparent 92%
+        rgba(0, 0, 0, 0.68) 30%,
+        rgba(0, 0, 0, 0.18) 58%,
+        transparent 86%
       );
-      mask-image: linear-gradient(
-        to bottom,
+      mask-image: radial-gradient(
+        54% 46% at 74% 46%,
         #000 0%,
-        #000 48%,
-        rgba(0, 0, 0, 0.55) 72%,
-        transparent 92%
+        rgba(0, 0, 0, 0.68) 30%,
+        rgba(0, 0, 0, 0.18) 58%,
+        transparent 86%
       );
     }
     @keyframes sp-spot-in {
