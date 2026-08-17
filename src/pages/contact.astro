@@ -1,0 +1,364 @@
+---
+// /contact — a real, linkable contact surface (#6).
+//
+// The ContactModal stays exactly where it is: a sponsor CTA on the partnerships
+// pitch shouldn't navigate away from the pitch. This page exists for the other
+// half — an indexable URL, schema.org/ContactPage, the addresses in plain sight,
+// and org info. Deliberately NO SSS/FAQ section.
+//
+// The form posts to the same /api/contact the modal uses, so there is one
+// server path, one validation, one Resend call.
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Icon from "@/components/Icon.astro";
+import { BRAND, SOCIALS } from "@/lib/site";
+
+// Deep link: /contact?type=sponsor preselects the subject.
+const requested = (Astro.url.searchParams.get("type") || "").toLowerCase();
+const TYPES = ["support", "sponsor", "partner"] as const;
+const initialType = (TYPES as readonly string[]).includes(requested) ? requested : "support";
+
+const CHANNELS = [
+  {
+    type: "support",
+    title: "Genel & destek",
+    text: "Soru, öneri, katılım talebi — nereye yazacağını bilmiyorsan burası.",
+    email: "support@devmultigroup.com",
+  },
+  {
+    type: "sponsor",
+    title: "Sponsorluk",
+    text: "Markanı topluluğa taşımak, bir programa destek olmak için.",
+    email: "sponsor@devmultigroup.com",
+  },
+  {
+    type: "partner",
+    title: "İş birliği & topluluk",
+    text: "Topluluğunu ağa katmak, ortak etkinlik kurmak isteyenler için.",
+    email: "partner@devmultigroup.com",
+  },
+];
+
+const SOCIAL_LINKS = [
+  { icon: "instagram", label: "Instagram", href: SOCIALS.multigroup.instagram },
+  { icon: "linkedin", label: "LinkedIn", href: SOCIALS.multigroup.linkedin },
+  { icon: "twitter", label: "X", href: SOCIALS.multigroup.twitter },
+  { icon: "youtube", label: "YouTube", href: SOCIALS.multigroup.youtube },
+  { icon: "github", label: "GitHub", href: SOCIALS.multigroup.github },
+];
+
+const contactLd = {
+  "@context": "https://schema.org",
+  "@type": "ContactPage",
+  name: "İletişim · Developer MultiGroup",
+  url: `${BRAND.url}/contact`,
+  mainEntity: {
+    "@type": "Organization",
+    name: BRAND.name,
+    url: BRAND.url,
+    email: BRAND.email,
+    contactPoint: CHANNELS.map((c) => ({
+      "@type": "ContactPoint",
+      contactType: c.title,
+      email: c.email,
+      availableLanguage: ["tr", "en"],
+    })),
+  },
+};
+---
+
+<BaseLayout
+  title="İletişim"
+  description="Developer MultiGroup ile iletişime geç — destek, sponsorluk ve iş birliği için doğrudan adresler ve iletişim formu."
+  canonicalPath="/contact"
+  jsonLd={contactLd}
+  breadcrumbs={[{ name: "İletişim", item: `${BRAND.url}/contact` }]}
+>
+  <section class="container-x pt-16 pb-8">
+    <p class="text-sm text-ink-faint uppercase tracking-[0.18em] mb-5">İletişim</p>
+    <h1 class="text-4xl md:text-6xl font-semibold leading-[1.03] max-w-3xl text-balance">
+      Bize <span class="text-grad">yazın.</span> Gerçekten okuyoruz.
+    </h1>
+    <p class="text-ink-dim text-lg mt-6 max-w-2xl leading-relaxed">
+      Topluluğu yürüten herkes gönüllü — yine de gelen her mesaja dönüyoruz.
+      Genelde <strong class="text-ink-text">2–3 iş günü</strong> içinde.
+    </p>
+  </section>
+
+  <!-- ── channels ───────────────────────────────────────────────────────── -->
+  <section class="container-x py-6">
+    <div class="grid md:grid-cols-3 border-t border-line">
+      {
+        CHANNELS.map((c) => (
+          <div class="py-7 md:px-7 md:first:pl-0 border-b border-line md:border-b-0 md:border-l md:border-line md:first:border-l-0">
+            <h2 class="font-medium">{c.title}</h2>
+            <p class="text-ink-dim text-sm mt-2 leading-relaxed">{c.text}</p>
+            <a
+              href={`mailto:${c.email}`}
+              class="inline-flex items-center gap-1.5 text-sm mt-4 font-mono text-ink-dim hover:text-ink-text transition-colors break-all"
+              data-track="cta_click"
+              data-track-props={JSON.stringify({ cta_id: "contact_mailto", channel: c.type, page: "contact" })}
+            >
+              <Icon name="mail" size={14} class="shrink-0" /> {c.email}
+            </a>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- ── form + org info ────────────────────────────────────────────────── -->
+  <section class="container-x py-10">
+    <div class="grid lg:grid-cols-[1.15fr_0.85fr] gap-10 lg:gap-16">
+      <!-- the form -->
+      <div>
+        <h2 class="font-display text-2xl md:text-3xl font-semibold">Form</h2>
+        <p class="text-ink-dim mt-2.5 leading-relaxed">
+          Konuyu seç, birkaç satır yaz. Doğru kişiye biz iletiriz.
+        </p>
+
+        <form id="cp-form" class="mt-8 space-y-5" novalidate>
+          <input type="hidden" name="type" id="cp-type" value={initialType} />
+          {/* honeypot — bots fill it, the API accepts silently and sends nothing */}
+          <input type="text" name="company_website" class="cp-hp" tabindex="-1" autocomplete="off" aria-hidden="true" />
+
+          <fieldset>
+            <legend class="cp-label mb-2.5">Konu</legend>
+            <div class="flex flex-wrap gap-2">
+              {
+                CHANNELS.map((c) => (
+                  <label class="cp-choice">
+                    <input type="radio" name="subject" value={c.type} checked={c.type === initialType} />
+                    <span>{c.title}</span>
+                  </label>
+                ))
+              }
+            </div>
+          </fieldset>
+
+          <div class="grid sm:grid-cols-2 gap-5">
+            <div>
+              <label class="cp-label" for="cp-name">Ad Soyad</label>
+              <input id="cp-name" name="name" maxlength="200" required class="cp-input" placeholder="Adın" />
+            </div>
+            <div>
+              <label class="cp-label" for="cp-email">E-posta</label>
+              <input id="cp-email" name="email" type="email" maxlength="200" required class="cp-input" placeholder="ornek@eposta.com" />
+            </div>
+          </div>
+
+          <div>
+            <label class="cp-label" for="cp-org">Şirket / Topluluk <span class="text-ink-faint font-normal">(opsiyonel)</span></label>
+            <input id="cp-org" name="org" maxlength="200" class="cp-input" placeholder="Kurum adı" />
+          </div>
+
+          <div>
+            <label class="cp-label" for="cp-msg">Mesaj</label>
+            <textarea id="cp-msg" name="message" maxlength="5000" rows="6" required class="cp-input" placeholder="Ne yapmak istediğini anlat…"></textarea>
+          </div>
+
+          <button type="submit" id="cp-submit" class="btn btn-primary w-full sm:w-auto justify-center">
+            <Icon name="mail" size={16} /> <span id="cp-submit-label">Gönder</span>
+          </button>
+          <p id="cp-status" class="cp-status" role="status" aria-live="polite"></p>
+
+          <p class="text-ink-faint text-xs leading-relaxed">
+            Gönderdiğin bilgiler yalnızca talebine dönmek için kullanılır.
+            Ayrıntılar: <a href="/privacy" class="underline hover:text-ink-text">Aydınlatma Metni</a>.
+          </p>
+        </form>
+
+        <div id="cp-success" class="cp-success" hidden>
+          <div class="cp-check"><Icon name="check" size={26} /></div>
+          <h3 class="font-display text-xl font-semibold mt-4">Mesajın bize ulaştı</h3>
+          <p class="text-ink-dim mt-2">En kısa sürede döneceğiz — genelde 2–3 iş günü.</p>
+          <a href="/" class="btn btn-ghost mt-6">Ana sayfaya dön</a>
+        </div>
+      </div>
+
+      <!-- org info -->
+      <aside class="lg:border-l lg:border-line lg:pl-12 space-y-9">
+        <div>
+          <h2 class="text-sm text-ink-faint uppercase tracking-[0.18em]">Kurum bilgisi</h2>
+          <dl class="mt-5 space-y-4 text-sm">
+            <div>
+              <dt class="text-ink-faint">Adı</dt>
+              <dd class="mt-1">{BRAND.name}</dd>
+            </div>
+            <div>
+              <dt class="text-ink-faint">Yapı</dt>
+              <dd class="mt-1 leading-relaxed">
+                Gönüllü yazılım topluluğu — ticari bir kuruluş değil. Etkinliklerin
+                tamamı ücretsiz, gelir amacı gütmez.
+              </dd>
+            </div>
+            <div>
+              <dt class="text-ink-faint">Kollar</dt>
+              <dd class="mt-1 leading-relaxed">
+                <a href="/academy" class="underline hover:text-ink-text">MultiAcademy</a> (öğrenme) ·
+                <a href="/store" class="underline hover:text-ink-text">MultiStore</a> (ürün) · MultiCulture (kültür)
+              </dd>
+            </div>
+            <div>
+              <dt class="text-ink-faint">Merkez</dt>
+              <dd class="mt-1">İstanbul, Türkiye</dd>
+            </div>
+            <div>
+              <dt class="text-ink-faint">Genel e-posta</dt>
+              <dd class="mt-1">
+                <a href={`mailto:${BRAND.email}`} class="font-mono hover:text-ink-text transition-colors break-all">{BRAND.email}</a>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-ink-faint">Web</dt>
+              <dd class="mt-1"><span class="font-mono">{BRAND.domain}</span></dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="border-t border-line pt-8">
+          <h2 class="text-sm text-ink-faint uppercase tracking-[0.18em]">Sosyal</h2>
+          <ul class="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+            {
+              SOCIAL_LINKS.map((s) => (
+                <li>
+                  <a
+                    href={s.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-2 text-ink-dim hover:text-ink-text transition-colors"
+                    data-track="social_click"
+                    data-track-props={JSON.stringify({ platform: s.label.toLowerCase(), location: "contact" })}
+                  >
+                    <Icon name={s.icon} size={15} /> {s.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+
+        <div class="border-t border-line pt-8">
+          <h2 class="text-sm text-ink-faint uppercase tracking-[0.18em]">Başka bir şey mi arıyorsun?</h2>
+          <ul class="mt-5 space-y-2.5 text-sm">
+            <li><a href="/partnerships" class="inline-flex items-center gap-1.5 text-ink-dim hover:text-ink-text transition-colors"><Icon name="arrow-right" size={14} /> İş birliği yapmak istiyorum</a></li>
+            <li><a href="/team" class="inline-flex items-center gap-1.5 text-ink-dim hover:text-ink-text transition-colors"><Icon name="arrow-right" size={14} /> Ekipte kim var?</a></li>
+            <li><a href="/events" class="inline-flex items-center gap-1.5 text-ink-dim hover:text-ink-text transition-colors"><Icon name="arrow-right" size={14} /> Yaklaşan etkinlikler</a></li>
+            <li><a href="/links" class="inline-flex items-center gap-1.5 text-ink-dim hover:text-ink-text transition-colors"><Icon name="arrow-right" size={14} /> Tüm bağlantılar</a></li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <style>
+    .cp-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+    .cp-label {
+      display: block; font-size: 0.8rem; font-weight: 500;
+      color: var(--color-ink-dim); margin-bottom: 0.45rem;
+    }
+    .cp-input {
+      width: 100%; padding: 0.7rem 0.9rem; font-size: 0.9rem;
+      color: var(--color-ink-text);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--color-line);
+      border-radius: 0.75rem;
+      transition: border-color 0.15s var(--ease-out-soft);
+    }
+    .cp-input::placeholder { color: var(--color-ink-faint); }
+    .cp-input:focus { outline: none; border-color: rgba(255, 255, 255, 0.25); }
+    .cp-input[aria-invalid="true"] { border-color: rgba(255, 120, 120, 0.55); }
+
+    .cp-choice { position: relative; cursor: pointer; }
+    .cp-choice input { position: absolute; opacity: 0; pointer-events: none; }
+    .cp-choice span {
+      display: inline-flex; align-items: center;
+      padding: 0.42rem 0.85rem; border-radius: 999px;
+      font-size: 0.8rem; color: var(--color-ink-dim);
+      border: 1px solid var(--color-line);
+      background: rgba(255, 255, 255, 0.02);
+      transition: all 0.15s var(--ease-out-soft);
+    }
+    .cp-choice:hover span { color: var(--color-ink-text); border-color: rgba(255, 255, 255, 0.2); }
+    .cp-choice input:checked + span { color: #000; background: #fff; border-color: #fff; }
+    .cp-choice input:focus-visible + span { outline: 2px solid rgba(255, 255, 255, 0.5); outline-offset: 2px; }
+
+    .cp-status { font-size: 0.82rem; min-height: 1.2em; }
+    .cp-status.is-error { color: #ff9d9d; }
+
+    .cp-success { text-align: center; padding: 3rem 1rem; }
+    .cp-check {
+      display: grid; place-items: center; width: 3.25rem; height: 3.25rem;
+      margin: 0 auto; border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08); border: 1px solid var(--color-line);
+    }
+  </style>
+
+  <script is:inline>
+    (() => {
+      const init = () => {
+        const form = document.getElementById("cp-form");
+        if (!form || form.dataset.bound) return;
+        form.dataset.bound = "1";
+
+        const typeInput = document.getElementById("cp-type");
+        const status = document.getElementById("cp-status");
+        const btn = document.getElementById("cp-submit");
+        const label = document.getElementById("cp-submit-label");
+        const success = document.getElementById("cp-success");
+
+        form.querySelectorAll('input[name="subject"]').forEach((r) => {
+          r.addEventListener("change", () => {
+            if (r.checked) typeInput.value = r.value;
+          });
+        });
+
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          status.textContent = "";
+          status.className = "cp-status";
+
+          const data = Object.fromEntries(new FormData(form).entries());
+          delete data.subject; // the radio only drives the hidden `type`
+          const missing = ["name", "email", "message"].find((k) => !String(data[k] || "").trim());
+          if (missing) {
+            status.textContent = "Lütfen ad, e-posta ve mesaj alanlarını doldur.";
+            status.className = "cp-status is-error";
+            const el = form.querySelector('[name="' + missing + '"]');
+            if (el) { el.setAttribute("aria-invalid", "true"); el.focus(); }
+            return;
+          }
+          form.querySelectorAll("[aria-invalid]").forEach((el) => el.removeAttribute("aria-invalid"));
+
+          btn.disabled = true;
+          label.textContent = "Gönderiliyor…";
+          try {
+            const r = await fetch("/api/contact", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify(data),
+            });
+            const out = await r.json().catch(() => ({}));
+            if (r.ok && out.ok) {
+              form.hidden = true;
+              success.hidden = false;
+              try {
+                window.track && window.track("generate_lead", { form_type: data.type, surface: "contact_page" });
+              } catch (err) {}
+              return;
+            }
+            status.textContent = out.error || "Gönderilemedi, lütfen tekrar dene.";
+            status.className = "cp-status is-error";
+          } catch (err) {
+            status.textContent = "Bağlantı kurulamadı, lütfen tekrar dene.";
+            status.className = "cp-status is-error";
+          } finally {
+            btn.disabled = false;
+            label.textContent = "Gönder";
+          }
+        });
+      };
+      document.addEventListener("astro:page-load", init);
+      init();
+    })();
+  </script>
+</BaseLayout>

@@ -1,0 +1,205 @@
+---
+// /team/<slug> — one volunteer's public page (#9).
+//
+// PUBLIC. Editing stays in /admin/team behind the existing Warden guard — there
+// is no self-service tier and no `member` role (see the 2026-08-17 grill).
+//
+// Most rows are still sparse (bio/avatar/socials were never filled in), so every
+// block below is conditional and the page must read as finished with only a name,
+// a role and a team.
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Icon from "@/components/Icon.astro";
+import { getEnv } from "@/lib/runtime";
+import { getTeamMember, listTeam } from "@/lib/content";
+import { renderMarkdown } from "@/lib/markdown";
+import { imageSrc } from "@/lib/ui";
+import { formatDate } from "@/lib/format";
+import { csv } from "@/lib/db";
+import { BRAND, JOIN_FORM } from "@/lib/site";
+import type { TeamSocials } from "@/lib/types";
+
+const env = getEnv(Astro.locals);
+const { slug } = Astro.params;
+const member = slug ? await getTeamMember(env, slug) : null;
+if (!member) Astro.response.status = 404;
+
+let socials: TeamSocials = {};
+if (member) {
+  try {
+    socials = JSON.parse(member.socials || "{}");
+  } catch {
+    /* malformed json → no social row */
+  }
+}
+
+const SOCIAL_ORDER: { key: keyof TeamSocials; icon: string; label: string }[] = [
+  { key: "linkedin", icon: "linkedin", label: "LinkedIn" },
+  { key: "github", icon: "github", label: "GitHub" },
+  { key: "twitter", icon: "twitter", label: "X" },
+  { key: "instagram", icon: "instagram", label: "Instagram" },
+  { key: "website", icon: "globe", label: "Web sitesi" },
+];
+const links = SOCIAL_ORDER.filter((s) => socials[s.key]);
+
+const avatar = member ? imageSrc(member.avatar_url) : "";
+const longBio = member ? renderMarkdown(member.long_bio) : "";
+const focus = member ? csv(member.focus) : [];
+const initials = member
+  ? member.name.split(/\s+/).filter(Boolean).map((s) => s[0]).slice(0, 2).join("").toUpperCase()
+  : "";
+
+// teammates from the same squad, for the footer rail
+const teammates = member
+  ? (await listTeam(env))
+      .filter((m) => m.id !== member.id && m.team && m.team === member.team && m.slug)
+      .slice(0, 4)
+  : [];
+
+const absAvatar = avatar ? (avatar.startsWith("http") ? avatar : BRAND.url + avatar) : "";
+const ld = member
+  ? {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      name: member.name,
+      ...(member.role ? { jobTitle: member.role } : {}),
+      ...(member.bio ? { description: member.bio } : {}),
+      ...(absAvatar ? { image: absAvatar } : {}),
+      url: `${BRAND.url}/team/${member.slug}`,
+      memberOf: { "@type": "Organization", name: BRAND.name, url: BRAND.url },
+      ...(links.length ? { sameAs: links.map((s) => socials[s.key]) } : {}),
+    }
+  : undefined;
+---
+
+{
+  member ? (
+    <BaseLayout
+      title={`${member.name}${member.role ? ` · ${member.role}` : ""}`}
+      description={member.bio || `${member.name} — Developer MultiGroup ${member.team || "ekibi"}.`}
+      canonicalPath={`/team/${member.slug}`}
+      type="profile"
+      image={absAvatar || undefined}
+      jsonLd={ld}
+      breadcrumbs={[
+        { name: "Ekip", item: `${BRAND.url}/team` },
+        { name: member.name, item: `${BRAND.url}/team/${member.slug}` },
+      ]}
+    >
+      <section class="container-x pt-14 pb-10">
+        <a href="/team" class="inline-flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink-text transition-colors">
+          <Icon name="arrow-right" size={14} class="rotate-180" /> Ekip
+        </a>
+
+        <div class="mt-10 grid md:grid-cols-[13rem_1fr] gap-8 md:gap-12 items-start">
+          <div class:list={["relative aspect-square rounded-3xl overflow-hidden bg-ink-900 ring-1 ring-line", avatar && "skeleton"]}>
+            {avatar ? (
+              <img src={avatar} alt={member.name} loading="eager" decoding="async"
+                class="img-reveal absolute inset-0 w-full h-full object-cover" />
+            ) : (
+              <div class="w-full h-full grid place-items-center">
+                <span class="font-display text-6xl text-ink-faint">{initials}</span>
+              </div>
+            )}
+          </div>
+
+          <div class="min-w-0">
+            <h1 class="text-4xl md:text-5xl font-semibold leading-[1.05]">{member.name}</h1>
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-2 mt-4">
+              {member.role && <span class="chip">{member.role}</span>}
+              {member.team && <span class="text-ink-dim text-sm">{member.team}</span>}
+            </div>
+
+            {member.bio && (
+              <p class="text-ink-dim text-lg mt-6 max-w-2xl leading-relaxed">{member.bio}</p>
+            )}
+
+            {focus.length > 0 && (
+              <ul class="flex flex-wrap gap-2 mt-6">
+                {focus.map((f) => <li class="chip">{f}</li>)}
+              </ul>
+            )}
+
+            {(links.length > 0 || member.joined_at) && (
+              <div class="flex flex-wrap items-center gap-x-5 gap-y-3 mt-8">
+                {links.map((s) => (
+                  <a
+                    href={socials[s.key]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-2 text-sm text-ink-dim hover:text-ink-text transition-colors"
+                    data-track="social_click"
+                    data-track-props={JSON.stringify({ platform: s.key, location: "team_profile", member: member.slug })}
+                  >
+                    <Icon name={s.icon} size={17} /> {s.label}
+                  </a>
+                ))}
+                {member.joined_at && (
+                  <span class="text-ink-faint text-xs font-mono uppercase tracking-wider">
+                    {formatDate(member.joined_at)}'den beri
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {longBio && (
+        <section class="container-x py-6">
+          <div class="prose-dmg max-w-2xl" set:html={longBio} />
+        </section>
+      )}
+
+      {teammates.length > 0 && (
+        <section class="container-x py-12">
+          <h2 class="text-sm text-ink-faint uppercase tracking-[0.18em] mb-6">
+            {member.team}
+          </h2>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {teammates.map((t) => {
+              const a = imageSrc(t.avatar_url);
+              return (
+                <a href={`/team/${t.slug}`} class="group block">
+                  <div class:list={["relative aspect-square rounded-2xl overflow-hidden bg-ink-900 ring-1 ring-line", a && "skeleton"]}>
+                    {a ? (
+                      <img src={a} alt={t.name} loading="lazy" decoding="async"
+                        class="img-reveal absolute inset-0 w-full h-full object-cover transition duration-500 group-hover:scale-[1.04]" />
+                    ) : (
+                      <div class="w-full h-full grid place-items-center">
+                        <span class="font-display text-2xl text-ink-faint">
+                          {t.name.split(/\s+/).filter(Boolean).map((x) => x[0]).slice(0, 2).join("").toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <p class="font-medium text-sm mt-3 truncate group-hover:text-grad transition-colors">{t.name}</p>
+                  {t.role && <p class="text-ink-faint text-xs truncate mt-0.5">{t.role}</p>}
+                </a>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      <section class="container-x pb-20 pt-4">
+        <div class="border-t border-line pt-10 flex flex-wrap items-center justify-between gap-5">
+          <p class="text-ink-dim max-w-md leading-relaxed">
+            Bu ekip tamamen gönüllülerden oluşuyor. Sen de aramıza katılabilirsin.
+          </p>
+          <a href={JOIN_FORM} target="_blank" rel="noopener noreferrer" class="btn btn-primary shrink-0"
+            data-track="join_click" data-track-props={JSON.stringify({ location: "team_profile" })}>
+            <Icon name="users" size={17} /> Aramıza katıl
+          </a>
+        </div>
+      </section>
+    </BaseLayout>
+  ) : (
+    <BaseLayout title="Üye bulunamadı" noindex canonicalPath="/team">
+      <section class="container-x py-24 text-center">
+        <h1 class="font-display text-3xl font-semibold">Bu profili bulamadık</h1>
+        <p class="text-ink-dim mt-3">Bağlantı eskimiş olabilir.</p>
+        <a href="/team" class="btn btn-primary mt-8">Tüm ekip</a>
+      </section>
+    </BaseLayout>
+  )
+}

@@ -1,187 +1,469 @@
 ---
+// /partnerships — the collaborations INDEX.
+//
+// Rewritten for #5. Two things changed on purpose:
+//   1. Content is DB-driven (`partners`), not hardcoded. Adding a collab is an
+//      /admin form, not a deploy.
+//   2. The register is sell-oriented and the stacked `.card p-6 md:p-8` boxes are
+//      gone. Collaborations read as editorial rows separated by hairlines — the
+//      page's job is winning the next partner, not cataloguing the last three.
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Icon from "@/components/Icon.astro";
-import SectionHeader from "@/components/SectionHeader.astro";
-import CompanyStrip from "@/components/CompanyStrip.astro";
-import { COMPANIES, BRAND } from "@/lib/site";
+import { tryEnv } from "@/lib/runtime";
+import { listPartners, getSettings } from "@/lib/content";
+import { imageSrc } from "@/lib/ui";
+import { BRAND, COMPANIES, resolveSite } from "@/lib/site";
+import type { PartnerRow, PartnerMetric } from "@/lib/types";
 
-const companiesLd = {
+const env = tryEnv(Astro.locals);
+let partners: PartnerRow[] = [];
+let site = resolveSite({});
+if (env) {
+  try {
+    const [rows, settings] = await Promise.all([listPartners(env), getSettings(env)]);
+    partners = rows;
+    site = resolveSite(settings);
+  } catch {
+    /* pre-seed / DB down — the page still renders its pitch */
+  }
+}
+
+// ── hero orbit: the ACTUAL collaborations, on one rotating ring ───────────────
+// Fed from `partners`, not the logo-strip company list — this page is about who
+// we actively build with, so a company whose employee once spoke at an event
+// does not belong here. Same family as the homepage academy orbit, different
+// species: logos are wide, so they ride as pills rather than icon circles, and
+// each pill links into its partner page.
+const BOX = 384; // px, the orbit's square canvas (wide enough that the pills
+//                  stay inside it — see .pr-pill width)
+const marks = partners
+  .filter((p) => p.logo_url)
+  .map((p) => ({ name: p.name, logo: imageSrc(p.logo_url), href: `/partnerships/${p.slug}` }));
+// Pre-seed / DB-down fallback: the same three, straight off the static list.
+const FALLBACK = new Set(["Google", "Wite", "Lodos.io"]);
+const seedMarks = COMPANIES.filter((c) => FALLBACK.has(c.name)).map((c) => ({
+  ...c,
+  href: "",
+}));
+const ringItems = (marks.length ? marks : seedMarks).slice(0, 6);
+// Three logos on a 150px radius left a hole in the middle; tighten the ring when
+// there are few of them so it reads as a cluster, not a scatter.
+const RADIUS = ringItems.length <= 3 ? 126 : ringItems.length <= 4 ? 138 : 150;
+const ring = ringItems.map((m, i) => {
+  const a = (2 * Math.PI * i) / ringItems.length - Math.PI / 2;
+  return {
+    ...m,
+    x: Math.round(BOX / 2 + RADIUS * Math.cos(a)),
+    y: Math.round(BOX / 2 + RADIUS * Math.sin(a)),
+  };
+});
+// the dashed guide circle has to sit on the same radius as the pills
+const ringInset = Math.round(BOX / 2 - RADIUS);
+
+const metricsOf = (p: PartnerRow): PartnerMetric[] => {
+  try {
+    const parsed = JSON.parse(p.metrics_json || "[]");
+    return Array.isArray(parsed) ? parsed.slice(0, 4) : [];
+  } catch {
+    return [];
+  }
+};
+
+// What we actually offer a partner. Deliberately concrete — vague "visibility"
+// promises are what every other sponsorship page says.
+const OFFER = [
+  {
+    icon: "users",
+    title: "Gerçek geliştiriciler",
+    text: "15.000+ kişilik bir toplulukta, işe alım ilanı değil; birlikte iş üretme.",
+  },
+  {
+    icon: "layers",
+    title: "Program tasarımı",
+    text: "Tek etkinlik değil — çok oturumlu, uçtan uca kurgulanmış seriler.",
+  },
+  {
+    icon: "user-check",
+    title: "Yetenek köprüsü",
+    text: "Programı bitiren katılımcıları doğrudan ekibinizle tanıştırıyoruz.",
+  },
+  {
+    icon: "sparkles",
+    title: "Üretim, sunum değil",
+    text: "Katılımcı elinde çalışan bir şeyle çıkıyor. Ölçtüğümüz tek şey bu.",
+  },
+];
+
+const partnersLd = {
   "@context": "https://schema.org",
   "@type": "ItemList",
   name: "Developer MultiGroup iş birlikleri",
-  numberOfItems: COMPANIES.length,
-  itemListElement: COMPANIES.map((c, i) => ({
+  numberOfItems: partners.length,
+  itemListElement: partners.map((p, i) => ({
     "@type": "ListItem",
     position: i + 1,
-    item: { "@type": "Organization", name: c.name },
+    item: {
+      "@type": "Organization",
+      name: p.name,
+      url: `${BRAND.url}/partnerships/${p.slug}`,
+      ...(p.website ? { sameAs: [p.website] } : {}),
+    },
   })),
 };
-
-const wite = [
-  { img: "/media/partners/wite-1.jpg", title: "Architecture & Design Patterns", oturum: "Oturum 1", href: "https://gathin.com/events/architecture-design-patterns-583" },
-  { img: "/media/partners/wite-2.jpg", title: "Kotlin Deep Dive", oturum: "Oturum 2", href: "https://gathin.com/events/kotlin-deep-dive-%E2%80%94-aadc-2-997" },
-  { img: "/media/partners/wite-3.jpg", title: "Jetpack Compose & Accessibility", oturum: "Oturum 3", href: "https://gathin.com/events/jetpack-compose-accessibility-community-networking-100" },
-];
-const lodos = [
-  { img: "/media/partners/lodos-gathin.jpg", name: "ToGather", url: "https://gathin.com", label: "gathin.com", desc: "Etkinlik platformu" },
-  { img: "/media/partners/lodos-socialhive.jpg", name: "SocialHive", url: "https://socialhive.lodos.io", label: "socialhive.lodos.io", desc: "Topluluk & iletişim platformu" },
-  { img: "/media/partners/lodos-achieve.jpg", name: "Achieve", url: "https://achieve.lodos.io", label: "achieve.lodos.io", desc: "Sertifikasyon platformu" },
-];
-const bwaiHref = "https://gathin.com/events/build-with-ai-program-2026-649";
 ---
 
 <BaseLayout
   title="İş Birlikleri"
-  description="Developer MultiGroup'un birlikte ürettiği markalar — Google, Wite, Lodos, Trendyol, Hepsiburada, Akbank ve daha fazlası. Ortak workshop ve programlar."
+  description="Developer MultiGroup ile birlikte üreten markalar — ortak workshop serileri, sertifika programları ve platform iş birlikleri. Sponsor ve partner olmak için."
   canonicalPath="/partnerships"
-  jsonLd={companiesLd}
+  jsonLd={partnersLd}
   breadcrumbs={[{ name: "İş Birlikleri", item: `${BRAND.url}/partnerships` }]}
 >
-  <section class="container-x pt-14 pb-8">
-    <div class="grid lg:grid-cols-[1.25fr_0.75fr] gap-10 lg:gap-12 items-center">
+  <!-- ── hero: a pitch, not a catalogue ─────────────────────────────────── -->
+  <section class="container-x pt-16 pb-10 md:pt-20">
+    <div class="grid lg:grid-cols-[1.15fr_auto] gap-12 lg:gap-16 items-center">
       <div>
-        <p class="text-sm text-ink-faint uppercase tracking-[0.18em] mb-4">Partner · İş Birlikleri</p>
-        <h1 class="text-4xl md:text-5xl font-semibold leading-[1.05]">
-          Yol boyunca <span class="text-grad">birlikte ürettiğimiz</span> markalar.
+        <p class="text-sm text-ink-faint uppercase tracking-[0.18em] mb-5">Partner · İş Birlikleri</p>
+        <h1 class="text-4xl md:text-6xl font-semibold leading-[1.02] max-w-3xl text-balance">
+          Logonuzu değil, <span class="text-grad">işinizi</span> topluluğa taşıyın.
         </h1>
-        <p class="text-ink-dim text-lg mt-5 max-w-xl leading-relaxed">
-          Workshop'lardan platform geliştirmeye, sertifika programlarından öğrenci köprülerine —
-          sektörün önde gelen markalarıyla gerçek işler üretiyoruz.
+        <p class="text-ink-dim text-lg md:text-xl mt-6 max-w-2xl leading-relaxed">
+          Bizimle çalışan markalar bir etkinliğe sponsor olmuyor — bir program tasarlıyor.
+          Workshop serilerinden sertifika programlarına, platform geliştirmeden öğrenci
+          köprülerine kadar birlikte gerçek işler üretiyoruz.
         </p>
-      </div>
-      <div class="lg:pl-10 lg:border-l border-line">
-        <div class="flex flex-wrap gap-x-9 gap-y-4">
-          <div>
-            <div class="font-display text-3xl font-semibold text-grad tabular-nums">25+</div>
-            <div class="text-ink-faint text-xs mt-1 font-mono uppercase tracking-wide">iş birliği</div>
-          </div>
-          <div>
-            <div class="font-display text-3xl font-semibold text-grad tabular-nums">4</div>
-            <div class="text-ink-faint text-xs mt-1 font-mono uppercase tracking-wide">etkinlik</div>
-          </div>
-          <div>
-            <div class="font-display text-3xl font-semibold text-grad tabular-nums">750+</div>
-            <div class="text-ink-faint text-xs mt-1 font-mono uppercase tracking-wide">katılımcı</div>
-          </div>
-        </div>
-        <div class="card p-4 mt-6 flex items-center justify-between gap-4">
-          <div class="min-w-0">
-            <p class="font-medium text-sm">Sponsor olmak ister misiniz?</p>
-            <p class="text-ink-faint text-xs mt-0.5">Markanızı topluluğa taşıyın.</p>
-          </div>
-          <button type="button" data-contact="sponsor" class="btn btn-primary shrink-0 !py-2 !px-3.5 text-sm">
-            <Icon name="mail" size={15} /> Sponsor ol
+
+        <div class="mt-9 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            data-contact="sponsor"
+            class="btn btn-primary"
+            data-track="cta_click"
+            data-track-props={JSON.stringify({ cta_id: "partnerships_hero_sponsor", page: "partnerships" })}
+          >
+            <Icon name="mail" size={17} /> Birlikte çalışalım
           </button>
+          <a href="#is-birlikleri" class="btn btn-ghost">
+            Yaptığımız işler <Icon name="chevron-down" size={15} />
+          </a>
         </div>
       </div>
+
+      <!-- the collaborations, orbiting (replaces the two full-width
+           CompanyStrip marquees this page used to carry) -->
+      {
+        ring.length > 0 && (
+          <div class="pr-orbit-wrap justify-self-center lg:justify-self-end">
+            <div class="pr-orbit" style={`width:${BOX}px;height:${BOX}px`}>
+              <div class="pr-glow" aria-hidden="true"></div>
+              <div class="pr-ring" style={`inset:${ringInset}px`} aria-hidden="true"></div>
+
+              <div class="pr-hub">
+                <img src="/logo-small-white.png" alt={BRAND.short} width="34" height="34" />
+              </div>
+
+              <div class="pr-spin">
+                {ring.map((m) => {
+                  const pill = (
+                    <span class="pr-counter">
+                      <span class="pr-pill">
+                        <img src={m.logo} alt={m.name} loading="lazy" decoding="async" />
+                      </span>
+                    </span>
+                  );
+                  return (
+                    <span class="pr-slot" style={`left:${m.x}px;top:${m.y}px`}>
+                      {m.href ? (
+                        /* clickable because hovering the orbit pauses every ring */
+                        <a href={m.href} aria-label={`${m.name} iş birliği`}
+                          data-track="partner_card_click"
+                          data-track-props={JSON.stringify({ partner: m.name, page: "partnerships", surface: "orbit" })}>
+                          {pill}
+                        </a>
+                      ) : (
+                        pill
+                      )}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )
+      }
     </div>
+
+    <!-- stat rail: hairline-separated, evenly distributed, no boxes -->
+    <dl class="mt-14 grid grid-cols-2 md:grid-cols-4 gap-y-9 border-t border-line pt-9">
+      {[
+        { n: partners.length ? String(partners.length) : "3", l: "aktif iş birliği" },
+        { n: site.companies, l: "marka" },
+        { n: site.partnerReach, l: "katılımcıya ulaştık" },
+        { n: site.members, l: "topluluk üyesi" },
+      ].map((s) => (
+        <div class="text-center px-2 md:border-l md:border-line md:first:border-l-0">
+          <dt class="font-display text-3xl md:text-4xl font-semibold tabular-nums text-grad">{s.n}</dt>
+          <dd class="text-ink-faint text-[0.7rem] mt-1.5 font-mono uppercase tracking-wider">{s.l}</dd>
+        </div>
+      ))}
+    </dl>
   </section>
 
-  <!-- signature: drifting logo wall -->
-  <section class="py-6 space-y-7">
-    <CompanyStrip />
-    <CompanyStrip reverse />
-  </section>
+  <!-- ── the collaborations, as editorial rows ──────────────────────────── -->
+  <section id="is-birlikleri" class="container-x py-10 scroll-mt-24">
+    <h2 class="text-sm text-ink-faint uppercase tracking-[0.18em] mb-2">Yaptığımız işler</h2>
 
-  <section class="container-x py-8 space-y-5">
-    <SectionHeader title="Öne çıkan iş birlikleri" />
-
-    <!-- Wite -->
-    <div class="card p-6 md:p-8">
-      <div class="flex flex-wrap items-center gap-3">
-        <img src="/media/companies/wite.png" alt="Wite" height="24" class="h-6 w-auto" />
-        <span class="chip">Android</span>
-      </div>
-      <h3 class="font-display text-xl md:text-2xl font-semibold mt-4">Android Workshop Serisi</h3>
-      <p class="text-ink-dim mt-2 max-w-2xl leading-relaxed">
-        Wite ile 3 oturumluk, uygulamalı bir ileri seviye Android programı yürütüyoruz —
-        program sonunda uygun öğrencileri Wite'a yönlendiriyoruz.
-      </p>
-      <div class="grid sm:grid-cols-3 gap-3 mt-6">
-        {
-          wite.map((w) => (
-            <a href={w.href} target="_blank" rel="noopener noreferrer" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: `wite-${w.oturum.toLowerCase().replace(/\s+/g, "-")}`, page: "partnerships", href: w.href })} class="group relative block rounded-xl overflow-hidden ring-1 ring-line card-hover skeleton">
-              <img src={w.img} alt={`${w.title} — ${w.oturum}`} loading="lazy" decoding="async" class="img-reveal w-full aspect-video object-cover group-hover:scale-[1.03]" />
-              <div class="absolute inset-0 grid place-items-center bg-black/0 group-hover:bg-black/45 transition-colors">
-                <span class="flex items-center gap-1.5 text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition">
-                  Etkinliğe git <Icon name="arrow-up-right" size={15} />
+    {
+      partners.length === 0 ? (
+        <p class="text-ink-dim py-10">
+          İş birlikleri yakında burada. Bu arada
+          <button type="button" data-contact="sponsor" class="underline hover:text-ink-text">bize yazabilirsiniz</button>.
+        </p>
+      ) : (
+        <div class="divide-y divide-line border-t border-line">
+          {partners.map((p, i) => {
+            const hero = imageSrc(p.hero_image);
+            const logo = imageSrc(p.logo_url);
+            const metrics = metricsOf(p);
+            return (
+              <a
+                href={`/partnerships/${p.slug}`}
+                class="pr-row group grid md:grid-cols-[3.5rem_1fr_auto] gap-x-8 gap-y-5 py-10 md:py-12 items-start"
+                data-track="partner_card_click"
+                data-track-props={JSON.stringify({ partner: p.slug, page: "partnerships" })}
+              >
+                <span class="hidden md:block font-mono text-sm text-ink-faint tabular-nums pt-2">
+                  {String(i + 1).padStart(2, "0")}
                 </span>
-              </div>
-              <span class="absolute top-2.5 right-2.5 grid place-items-center w-7 h-7 rounded-full bg-black/55 backdrop-blur-sm border border-white/15 text-white">
-                <Icon name="arrow-up-right" size={13} />
-              </span>
-            </a>
-          ))
-        }
-      </div>
-    </div>
 
-    <!-- Lodos -->
-    <div class="card p-6 md:p-8">
-      <img src="/media/companies/lodos.png" alt="Lodos.io" height="24" class="h-6 w-auto" />
-      <h3 class="font-display text-xl md:text-2xl font-semibold mt-4">Platform Geliştirme</h3>
-      <p class="text-ink-dim mt-2 max-w-2xl leading-relaxed">
-        Lodos ile üç platformu birlikte inşa ediyoruz: <strong class="text-ink-text">ToGather</strong> (etkinlik),
-        <strong class="text-ink-text">SocialHive</strong> (topluluk & iletişim) ve
-        <strong class="text-ink-text">Achieve</strong> (sertifikasyon). Topluluk tarafını biz kuruyoruz —
-        insanları bir araya getiren ve toplulukları daha iyi araçlarla büyüten kısmı.
-      </p>
-      <div class="grid sm:grid-cols-3 gap-4 mt-6">
-        {
-          lodos.map((l) => (
-            <a href={l.url} target="_blank" rel="noopener noreferrer" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: `lodos-${l.name.toLowerCase()}`, page: "partnerships", href: l.url })} class="group rounded-xl overflow-hidden ring-1 ring-line card-hover block">
-              <span class="block skeleton"><img src={l.img} alt={l.name} loading="lazy" decoding="async" class="img-reveal w-full aspect-video object-cover" /></span>
-              <div class="flex items-center justify-between gap-2 p-4">
                 <div class="min-w-0">
-                  <p class="font-medium text-sm">{l.name}</p>
-                  <p class="text-ink-faint text-xs mt-0.5 truncate">{l.desc} · {l.label}</p>
-                </div>
-                <Icon name="arrow-up-right" size={16} class="text-ink-faint group-hover:text-ink-text transition-colors shrink-0" />
-              </div>
-            </a>
-          ))
-        }
-      </div>
-    </div>
+                  <div class="flex items-center gap-3 flex-wrap">
+                    {logo ? (
+                      <img src={logo} alt={p.name} height="26" loading="lazy" decoding="async"
+                        class="h-6 md:h-7 w-auto max-w-[150px] object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
+                    ) : (
+                      <span class="font-display text-lg font-semibold">{p.name}</span>
+                    )}
+                    {p.category && <span class="chip">{p.category}</span>}
+                  </div>
 
-    <!-- Google -->
-    <div class="card p-6 md:p-8">
-      <div class="flex flex-wrap items-start justify-between gap-6">
-        <div>
-          <img src="/media/companies/google.png" alt="Google" height="24" class="h-6 w-auto" />
-          <h3 class="font-display text-xl md:text-2xl font-semibold mt-4">Build with AI</h3>
-          <p class="text-ink-dim mt-2 max-w-xl leading-relaxed">
-            Google for Developers ile Build with AI sertifika programını yürüttük.
-          </p>
+                  <h3 class="font-display text-2xl md:text-4xl font-semibold mt-4 leading-[1.1] group-hover:text-grad transition-colors">
+                    {p.kicker || p.name}
+                  </h3>
+                  {p.lede && (
+                    <p class="text-ink-dim mt-3 max-w-2xl leading-relaxed">{p.lede}</p>
+                  )}
+
+                  {metrics.length > 0 && (
+                    <div class="flex flex-wrap gap-x-8 gap-y-3 mt-6">
+                      {metrics.map((m) => (
+                        <div>
+                          <div class="font-display text-xl md:text-2xl font-semibold tabular-nums">{m.value}</div>
+                          <div class="text-ink-faint text-[0.66rem] mt-0.5 font-mono uppercase tracking-wider">{m.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <span class="inline-flex items-center gap-1.5 text-sm mt-6 text-ink-dim group-hover:text-ink-text transition-colors">
+                    İş birliğini oku
+                    <Icon name="arrow-right" size={15} class="group-hover:translate-x-1 transition-transform" />
+                  </span>
+                </div>
+
+                {hero && (
+                  /* aspect-video, not 16/10 — the covers ARE 16:9, and the 4%
+                     mismatch was cropping them just enough to look wrong. */
+                  <div class="w-full md:w-64 lg:w-80 aspect-video rounded-2xl overflow-hidden ring-1 ring-line skeleton order-first md:order-none">
+                    <img src={hero} alt="" loading="lazy" decoding="async"
+                      class="img-reveal w-full h-full object-cover transition duration-500 group-hover:scale-[1.04]" />
+                  </div>
+                )}
+              </a>
+            );
+          })}
         </div>
-        <div class="flex gap-x-8 gap-y-3 shrink-0">
-          <div>
-            <div class="font-display text-3xl font-semibold text-grad tabular-nums">1.5k</div>
-            <div class="text-ink-faint text-xs mt-1 font-mono uppercase tracking-wide">katılımcı</div>
+      )
+    }
+  </section>
+
+  <!-- ── what a partner actually gets ───────────────────────────────────── -->
+  <section class="container-x py-12">
+    <h2 class="font-display text-2xl md:text-3xl font-semibold max-w-2xl leading-tight">
+      Bir iş birliği bizde neye benziyor?
+    </h2>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 mt-10 border-t border-line">
+      {
+        OFFER.map((o) => (
+          <div class="py-8 lg:px-6 lg:first:pl-0 border-b border-line lg:border-b-0 lg:border-l lg:border-line lg:first:border-l-0">
+            <Icon name={o.icon} size={20} class="text-ink-dim" />
+            <h3 class="font-medium mt-4">{o.title}</h3>
+            <p class="text-ink-dim text-sm mt-2 leading-relaxed">{o.text}</p>
           </div>
-          <div>
-            <div class="font-display text-3xl font-semibold text-grad tabular-nums">30+</div>
-            <div class="text-ink-faint text-xs mt-1 font-mono uppercase tracking-wide">partner etkinliği</div>
-          </div>
-          <div>
-            <div class="font-display text-3xl font-semibold text-grad tabular-nums">10+</div>
-            <div class="text-ink-faint text-xs mt-1 font-mono uppercase tracking-wide">oturum</div>
-          </div>
-        </div>
-      </div>
-      <div class="grid sm:grid-cols-3 gap-3 mt-6">
-        <a href={bwaiHref} target="_blank" rel="noopener noreferrer" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "build-with-ai", page: "partnerships", href: bwaiHref })} class="group relative block rounded-xl overflow-hidden ring-1 ring-line card-hover">
-          <img src="/media/partners/google-bwai.jpg" alt="Build with AI 2026" loading="lazy" class="w-full aspect-video object-cover transition duration-500 group-hover:scale-[1.03]" />
-          <div class="absolute inset-0 grid place-items-center bg-black/0 group-hover:bg-black/45 transition-colors">
-            <span class="flex items-center gap-1.5 text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition">
-              Etkinliğe git <Icon name="arrow-up-right" size={15} />
-            </span>
-          </div>
-          <span class="absolute top-2.5 right-2.5 grid place-items-center w-7 h-7 rounded-full bg-black/55 backdrop-blur-sm border border-white/15 text-white">
-            <Icon name="arrow-up-right" size={13} />
-          </span>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- ── closing pitch ──────────────────────────────────────────────────── -->
+  <section class="container-x pb-20 pt-4">
+    {/* card-glow: the same violet/cyan gradient the homepage join CTA uses */}
+    <div class="card card-glow relative overflow-hidden px-7 py-12 md:px-14 md:py-16 text-center">
+      <div class="absolute inset-0 -z-10 opacity-50" aria-hidden="true"
+        style="background:radial-gradient(60% 80% at 50% 0%, rgba(255,255,255,.08), transparent 70%)"></div>
+      <h2 class="font-display text-3xl md:text-5xl font-semibold leading-[1.08] max-w-3xl mx-auto text-balance">
+        Sıradaki iş birliği sizinki olsun.
+      </h2>
+      <p class="text-ink-dim mt-5 max-w-xl mx-auto leading-relaxed">
+        Ne yapmak istediğinizi yazın — formatı birlikte kuralım. Bütçe konuşmasından
+        önce her zaman bir fikir konuşması yaparız.
+      </p>
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <button
+          type="button"
+          data-contact="sponsor"
+          class="btn btn-primary"
+          data-track="cta_click"
+          data-track-props={JSON.stringify({ cta_id: "partnerships_footer_sponsor", page: "partnerships" })}
+        >
+          <Icon name="mail" size={17} /> Sponsor / partner ol
+        </button>
+        <a href="/contact" class="btn btn-ghost">
+          İletişim sayfası <Icon name="arrow-up-right" size={15} />
         </a>
       </div>
     </div>
   </section>
+
+  <style>
+    /* ── hero orbit ────────────────────────────────────────────────────────
+       Two rings turning in opposite directions. Each logo sits in a slot that
+       the ring rotates, then counter-rotates inside it so the wordmark stays
+       upright — logos read as pills rather than the homepage's icon circles. */
+    .pr-orbit-wrap {
+      /* the canvas is a fixed 384px; shrink it on small screens without
+         re-computing every slot position */
+      --pr-scale: 0.74;
+      width: calc(384px * var(--pr-scale));
+      height: calc(384px * var(--pr-scale));
+    }
+    .pr-orbit {
+      position: relative;
+      transform: scale(var(--pr-scale));
+      transform-origin: top left;
+      flex: none;
+    }
+    @media (min-width: 640px) {
+      .pr-orbit-wrap { --pr-scale: 0.92; }
+    }
+    @media (min-width: 1024px) {
+      .pr-orbit-wrap { --pr-scale: 1; }
+    }
+
+    .pr-glow {
+      position: absolute;
+      inset: -14%;
+      border-radius: 999px;
+      background: radial-gradient(
+        circle,
+        rgba(255, 255, 255, 0.07),
+        rgba(255, 255, 255, 0.02) 46%,
+        transparent 72%
+      );
+    }
+    /* one dashed guide circle, sitting exactly on the pills' radius (the inset
+       is computed alongside RADIUS so the two can't drift apart) */
+    .pr-ring {
+      position: absolute;
+      border-radius: 999px;
+      border: 1px dashed var(--color-line);
+    }
+    .pr-hub {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+    }
+    .pr-hub img {
+      width: 34px;
+      height: 34px;
+      opacity: 0.85;
+    }
+
+    /* the ring turns; each pill counter-turns at the same rate so wordmarks
+       stay upright instead of cartwheeling */
+    .pr-spin {
+      position: absolute;
+      inset: 0;
+      will-change: transform;
+      animation: pr-turn 54s linear infinite;
+    }
+    .pr-counter {
+      display: block;
+      animation: pr-turn 54s linear infinite reverse;
+    }
+    @keyframes pr-turn {
+      to { transform: rotate(360deg); }
+    }
+
+    .pr-slot {
+      position: absolute;
+      display: block;
+      transform: translate(-50%, -50%);
+    }
+    .pr-pill {
+      display: grid;
+      place-items: center;
+      width: 6.5rem;
+      height: 2.75rem;
+      padding: 0 0.7rem;
+      border-radius: 0.85rem;
+      border: 1px solid var(--color-line);
+      background: rgba(10, 10, 12, 0.92);
+      backdrop-filter: blur(4px);
+    }
+    .pr-pill img {
+      max-width: 100%;
+      max-height: 1.35rem;
+      width: auto;
+      object-fit: contain;
+      opacity: 0.62;
+      transition: opacity 0.25s var(--ease-out-soft);
+    }
+    .pr-orbit:hover .pr-pill img { opacity: 1; }
+    .pr-slot a:hover .pr-pill {
+      border-color: rgba(255, 255, 255, 0.28);
+      background: rgba(18, 18, 22, 0.96);
+    }
+    .pr-slot a:focus-visible .pr-pill {
+      outline: 2px solid rgba(255, 255, 255, 0.55);
+      outline-offset: 3px;
+    }
+    /* pause on hover so a moving pill is actually clickable */
+    .pr-orbit:hover .pr-spin,
+    .pr-orbit:hover .pr-counter,
+    .pr-orbit:focus-within .pr-spin,
+    .pr-orbit:focus-within .pr-counter {
+      animation-play-state: paused;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .pr-spin,
+      .pr-counter {
+        animation: none;
+      }
+    }
+
+    .pr-row {
+      transition: opacity 0.25s var(--ease-out-soft);
+    }
+    /* dim the siblings so the hovered row reads as the focus — the replacement
+       for the card border that used to do this job */
+    @media (hover: hover) {
+      .pr-row:hover ~ .pr-row,
+      .divide-y:hover > .pr-row:not(:hover) {
+        opacity: 0.55;
+      }
+    }
+  </style>
 </BaseLayout>

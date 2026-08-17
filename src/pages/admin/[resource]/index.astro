@@ -4,11 +4,44 @@ import Icon from "@/components/Icon.astro";
 import { getEnv } from "@/lib/runtime";
 import { getResource, listRows } from "@/lib/admin";
 import { formatDate } from "@/lib/format";
+import { syncGathin } from "@/lib/gathin";
+import { logEvent } from "@/lib/sentry";
 
 const env = getEnv(Astro.locals);
 const { resource = "" } = Astro.params;
 const res = getResource(resource);
 if (!res) return Astro.redirect("/admin");
+
+// ── Gathin import (#7) ──────────────────────────────────────────────────────
+// POST, never GET: prefetch.prefetchAll + viewport strategy would otherwise fire
+// this unattended (CLAUDE.md's own gotcha). Create-only — see src/lib/gathin.ts.
+let syncMsg = "";
+let syncErr = "";
+if (Astro.request.method === "POST" && resource === "events") {
+  const form = await Astro.request.formData();
+  if (form.get("action") === "sync-gathin") {
+    try {
+      const reports = await syncGathin(env);
+      const created = reports.reduce((n, r) => n + r.created, 0);
+      const skipped = reports.reduce((n, r) => n + r.skipped, 0);
+      const failed = reports.filter((r) => r.error);
+      syncMsg =
+        created > 0
+          ? `${created} yeni etkinlik taslak olarak eklendi (${skipped} zaten vardı).`
+          : `Yeni etkinlik yok — ${skipped} kayıt zaten mevcut.`;
+      if (failed.length) {
+        syncErr = failed.map((r) => `${r.community}: ${r.error}`).join(" · ");
+      }
+      logEvent(Astro.locals, "info", "gathin sync run", {
+        created,
+        skipped,
+        admin: Astro.locals.adminEmail ?? "",
+      });
+    } catch (err) {
+      syncErr = err instanceof Error ? err.message : "İçe aktarma başarısız.";
+    }
+  }
+}
 
 const rows = await listRows(env, res);
 
@@ -29,10 +62,32 @@ function display(col: string, val: unknown): string {
     <div>
       <h1 class="text-3xl font-semibold">{res.label}</h1>
     </div>
-    <a href={`/admin/${res.key}/new`} class="btn btn-primary !py-2.5">
-      <Icon name="sparkles" size={16} /> New {res.singular.toLowerCase()}
-    </a>
+    <div class="flex items-center gap-2.5 shrink-0">
+      {
+        res.key === "events" && (
+          <form method="POST" data-astro-prefetch="false">
+            <input type="hidden" name="action" value="sync-gathin" />
+            <button type="submit" class="btn btn-ghost !py-2.5" title="Gathin RSS akışından yeni etkinlikleri taslak olarak çeker. Var olan kayıtlara dokunmaz.">
+              <Icon name="download" size={16} /> Gathin'den çek
+            </button>
+          </form>
+        )
+      }
+      <a href={`/admin/${res.key}/new`} class="btn btn-primary !py-2.5">
+        <Icon name="sparkles" size={16} /> New {res.singular.toLowerCase()}
+      </a>
+    </div>
   </header>
+
+  {
+    (syncMsg || syncErr) && (
+      <div class:list={["card px-4 py-3 mb-5 text-sm", syncErr ? "text-amber" : "text-ink-dim"]}>
+        {syncMsg && <p>{syncMsg}</p>}
+        {syncErr && <p class="mt-1 text-ink-faint">{syncErr}</p>}
+        {syncMsg && <p class="mt-1.5 text-ink-faint text-xs">Taslaklar yayına alınmadan önce mekân, şehir ve kategori bilgisini eklemen gerekiyor — akış bunları vermiyor.</p>}
+      </div>
+    )
+  }
 
   {
     rows.length === 0 ? (

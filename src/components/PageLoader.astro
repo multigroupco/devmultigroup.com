@@ -16,8 +16,13 @@
     z-index: 9999;
     display: grid;
     place-items: center;
-    background: rgba(0, 0, 0, 0.82);
-    backdrop-filter: blur(6px);
+    /* NO backdrop-filter here. The backdrop is <SiteBackground>, which is
+       transition:persist'd and holds three animating filter:blur(100px) blobs
+       plus a mix-blend-mode grain layer. Blurring *that* forced a full-screen
+       re-rasterisation every frame the loader was up — the background flashing
+       and staggering during navigation. On a near-black surface the blur bought
+       nothing anyway, so an almost-opaque fill replaces it. */
+    background: rgba(0, 0, 0, 0.94);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -81,27 +86,36 @@
       const start = () => {
         clearTimeout(hideT);
         clearTimeout(showT);
-        // brief delay so instant / prefetched navigations don't flash the screen
+        // Delay before showing anything. With prefetch.prefetchAll + viewport
+        // strategy most navigations resolve well inside this window, so the
+        // overlay never paints at all; 130ms was low enough that already-fast
+        // navigations still flashed it.
         showT = setTimeout(() => {
           loader.classList.add("is-active");
+          // Park the background blob animation while the overlay is up — one
+          // less thing compositing behind a full-screen fixed layer.
+          document.documentElement.classList.add("is-navigating");
           set(12);
           clearInterval(trickle);
           trickle = setInterval(() => set(prog + (90 - prog) * 0.12), 220);
-        }, 130);
+        }, 280);
       };
 
       const done = () => {
         clearTimeout(showT);
         clearInterval(trickle);
+        document.documentElement.classList.remove("is-navigating");
         if (!loader.classList.contains("is-active")) {
           set(0);
           return;
         }
         set(100);
+        // Was 200ms + 320ms, which held a full-screen overlay on screen long
+        // after the page had arrived. Get out of the way promptly instead.
         hideT = setTimeout(() => {
           loader.classList.remove("is-active");
           setTimeout(() => set(0), 320);
-        }, 200);
+        }, 90);
       };
 
       document.addEventListener("astro:before-preparation", start);

@@ -41,6 +41,12 @@
     opacity: 0.45;
     will-change: transform;
   }
+  /* Hold the blobs still while the page-transition overlay is up (PageLoader
+     sets .is-navigating). Three animating blur(100px) layers under a
+     full-screen fixed overlay is what made the background stagger. */
+  :global(html.is-navigating) .blob {
+    animation-play-state: paused;
+  }
   .blob-a {
     width: 46rem;
     height: 46rem;

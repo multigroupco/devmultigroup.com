@@ -117,14 +117,17 @@ const speakersLd = speakers.length
           <div class="sp-track flex gap-3 w-max animate-marquee py-1 px-1">
             {[...featured, ...featured].map((s, i) => {
               const c = co(s);
+              // flex column + a two-line title well + mt-auto footer: titles are
+              // line-clamp-2, so they render as 1 OR 2 lines, which used to push
+              // the company row to a different height on every card.
               return (
-                <div class="shrink-0 w-60 card p-4" aria-hidden={i >= featured.length ? "true" : undefined}>
-                  <div class="relative w-14 h-14 rounded-full overflow-hidden bg-white/[0.05] border border-line mb-3 skeleton">
+                <div class="shrink-0 w-60 card p-4 flex flex-col" aria-hidden={i >= featured.length ? "true" : undefined}>
+                  <div class="relative w-14 h-14 rounded-full overflow-hidden bg-white/[0.05] border border-line mb-3 skeleton shrink-0">
                     <img src={imageSrc(s.avatar_url)} alt={s.name} loading="lazy" decoding="async" class="img-reveal absolute inset-0 w-full h-full object-cover" />
                   </div>
                   <h3 class="font-medium leading-snug truncate">{s.name}</h3>
-                  <p class="text-ink-dim text-xs mt-1 leading-snug line-clamp-2">{s.title}</p>
-                  <div class="mt-2.5 flex items-center gap-2 h-4">
+                  <p class="text-ink-dim text-xs mt-1 leading-snug line-clamp-2 min-h-[2.1rem]">{s.title}</p>
+                  <div class="mt-auto pt-2.5 flex items-center gap-2 h-4 box-content">
                     {c?.logo_url ? <img src={imageSrc(c.logo_url)} alt={c.name} class="h-3.5 w-auto max-w-[80px] object-contain opacity-70" loading="lazy" /> : <span class="text-ink-faint text-xs truncate">{s.company}</span>}
                   </div>
                 </div>

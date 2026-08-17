@@ -85,6 +85,7 @@ export const NS = {
   home: "home",
   communities: "communities",
   companies: "companies",
+  partners: "partners",
   speakers: "speakers",
   search: "search",
 } as const;

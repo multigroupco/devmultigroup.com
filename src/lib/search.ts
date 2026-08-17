@@ -26,6 +26,7 @@ export type SearchType =
   | "team"
   | "communities"
   | "companies"
+  | "partners"
   | "speakers";
 
 export interface SearchResult {
@@ -143,6 +144,17 @@ export const TYPES: Record<SearchType, TypeConfig> = {
     published: isActive,
     table: "companies",
     cols: ["name", "sector", "description"],
+    where: "is_active=1",
+  },
+  partners: {
+    label: "İş Birlikleri",
+    title: (r) => r.name,
+    text: (r) => `${r.name}\n${r.kicker ?? ""}\n${r.lede ?? ""}`,
+    snippet: (r) => clip(r.lede || r.kicker, 300),
+    url: (r) => `/partnerships/${r.slug}`,
+    published: isActive,
+    table: "partners",
+    cols: ["name", "kicker", "lede"],
     where: "is_active=1",
   },
   speakers: {

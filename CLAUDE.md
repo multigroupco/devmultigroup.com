@@ -52,7 +52,8 @@ SQLite (D1). Timestamps are **unix epoch seconds (UTC)**; booleans are `0/1`. Ta
 | `hero_slides`   | the photo bands flowing behind the homepage hero (admin-managed)        |
 | `recordings`    | YouTube playlists (talks / bootcamp series)                              |
 | `gallery_items` | photos — `image_url` (external or `/media/<key>`) or `image_key` (R2)    |
-| `team_members`  | organizers/volunteers; `socials` is a JSON string                        |
+| `team_members`  | organizers/volunteers; `socials` is a JSON string, `slug` → `/team/<slug>` |
+| `partners`      | **active collaborations** (`/partnerships`) — long-form, metrics/gallery JSON |
 | `social_posts`  | curated social embeds (no third-party API)                              |
 
 Row shapes mirror this schema in [`src/lib/types.ts`](./src/lib/types.ts).
@@ -63,6 +64,7 @@ The **only** thing public pages should call for content. Every export wraps a D1
 in `cached(...)` (see below): `getSettings`/`getSetting`, `listEvents`, `getEvent`,
 `featuredEvent` (the banner event = featured + soonest upcoming, with a fallback),
 `listPosts`, `getPost`, `listLinks`, `listRecordings`, `listGallery`, `listTeam`,
+`getTeamMember`, `listPartners`, `getPartner`,
 `listSocial`, and `getStats` (aggregate landing counts). Pages **never** write raw SQL.
 Events use a 6-hour "grace" window (`GRACE`) so they read as upcoming until 6h after
 start.
@@ -113,6 +115,15 @@ One registry, `RESOURCES`, drives list views, edit forms, and generic persistenc
 - `/admin/academy-links` → `academy_links`, the MultiAcademy linktree at `/academy-links`
   (`/links` stays MultiGroup). Same shape as `links`, so it reuses `LinkButton`, and
   `/go/<id>` looks in both tables when counting a click.
+- `/admin/partners` → `partners`, driving both the `/partnerships` index and every
+  `/partnerships/<slug>` page through **one** template. Adding a collaboration is a
+  form, not a deploy — the accepted cost is that every partner page shares one
+  silhouette.
+
+**Three ecosystem concepts, three tables — do not conflate them:**
+`communities` = partner communities/chapters · `companies` = employers our speakers
+came from · `partners` = **active collaborations**. Migration `0006`'s header called
+out the ambiguity; `0009` resolved it by giving the third one a table.
 
 ### Images & media (R2) — [`src/pages/media/[...key].ts`](./src/pages/media/[...key].ts)
 
@@ -171,6 +182,7 @@ Keys mirror the old paths — `logos/<f>.png`, `main/main-N.jpg`, `partners/<f>.
 | `/site.webmanifest`            | `site.webmanifest.ts`                      | PWA manifest (name, icons, theme color `#0d0d0e`).                                                         |
 | `/media/<key>`                 | `media/[...key].ts`                        | Streams an R2 `MEDIA` object with immutable long-cache headers; 404 if absent.                            |
 | `/go/<id>`                     | `go/[id].ts`                               | Looks up an active link, increments `clicks` (via `ctx.waitUntil` when available), 302s to the URL.       |
+| `POST /admin/events`           | `admin/[resource]/index.astro` (`action=sync-gathin`) | Pulls both Gathin RSS feeds (`src/lib/gathin.ts`) and inserts unseen `guid`s as **draft** events. Create-only; POST, never GET. |
 | `/yt/<id>`                     | `yt/[id].ts`                               | Scrapes a YouTube **playlist** page (no Data API) for its first videoId, caches it in KV **7 days**, then 302s to the `i.ytimg.com` thumbnail. Used as a fallback recording cover. |
 | `/blog/banner/<slug>.svg`      | `blog/banner/[slug].svg.ts`                | Generates a monochrome AMOLED SVG OG/cover banner (radial gradient + dot pattern + wrapped title) for posts with no cover image. |
 
@@ -425,6 +437,19 @@ Console, and Access finalisation.
 
 - **Do not upgrade Astro to 6 / adapter to 13** without re-testing D1 reads end to end
   (issue #15237). The current pins are load-bearing.
+- **`platformProxy` runs with `remoteBindings: false`** (`astro.config.mjs`). Wrangler
+  4.x otherwise opens a *remote* proxy session for the bindings with no local
+  simulation (`AI`, `VECTORIZE`); on this account that fails with "Could not create
+  remote preview session" (the OAuth token has an `ai` scope but no `vectorize` one)
+  and takes the entire dev server down. Local-only is also what `wrangler.jsonc`
+  already documents — VECTORIZE is absent in dev and search falls back to a D1 LIKE
+  scan. Re-running `wrangler login` to pick up a `vectorize` scope is the real fix;
+  flipping this back without doing that will break `astro dev`.
+- **The Gathin import is create-only on purpose.** It will never update a row it has
+  already imported, so a rescheduled or renamed event keeps its stale value **and says
+  nothing**. That trade was made deliberately (see
+  [`docs/grills/2026-08-17-open-issues-sweep.md`](./docs/grills/2026-08-17-open-issues-sweep.md))
+  to protect hand-polished copy. Don't "fix" it into an upsert without revisiting it.
 - **Do not delete or edit `scripts/postbuild.mjs`** or stop running it on deploy —
   `dist/.assetsignore` is mandatory.
 - **Do not edit `migrations/0001_init.sql`** to add columns; add a new migration file.

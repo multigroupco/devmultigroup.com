@@ -56,42 +56,63 @@ const restUpcoming = featured ? upcoming.slice(1) : upcoming;
 >
   {
     featured ? (
-      <section class="relative isolate overflow-hidden">
-        <div class="absolute inset-0 -z-10" aria-hidden="true">
+      <!--
+        #12: structure unchanged — the next event stays in the foreground and keeps
+        its countdown. What changed is the design: the counter tiles are gone
+        (typographic now, separated by thin dividers) and the flat-black surround
+        gained depth — a soft wash plus a blurred bleed of the event's own cover, so
+        the hero is lit by the event it is selling.
+      -->
+      <section class="ev-hero relative isolate overflow-hidden">
+        <div class="absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
           {fcover && (
-            <div class="container-x relative h-full hidden lg:block">
-              <div class="absolute right-8 top-1/2 -translate-y-1/2 w-[40%] max-w-[34rem] aspect-[16/9] rounded-3xl overflow-hidden skeleton">
-                <img src={fcover} alt="" loading="eager" decoding="async" class="img-reveal w-full h-full object-cover" />
+            <>
+              {/* Colour bleed from the cover itself. Masked to nothing on every
+                  edge — an unmasked blurred box read as a cropped rectangle. */}
+              <div class="ev-bleed" style={`background-image:url('${fcover}')`}></div>
+              <div class="container-x relative h-full hidden lg:block">
+                <div class="absolute right-8 top-1/2 -translate-y-1/2 w-[40%] max-w-[34rem] aspect-video rounded-3xl overflow-hidden skeleton ring-1 ring-white/10">
+                  <img src={fcover} alt="" loading="eager" decoding="async" class="img-reveal w-full h-full object-cover" />
+                </div>
               </div>
-            </div>
+            </>
           )}
-          <div class="absolute inset-0 bg-gradient-to-r from-ink-950 via-ink-950/80 to-transparent to-[54%]" />
+          {/* Light behind the TEXT column too, so the left half is never dead
+              black next to a lit right half. */}
+          <div class="ev-wash"></div>
+          {/* Gradual scrim. A single `to-transparent to-[54%]` cut left a visible
+              vertical seam down the middle of the two-column layout. */}
+          <div class="ev-scrim"></div>
+          <div class="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-ink-950 via-ink-950/60 to-transparent" />
         </div>
-        <div class="container-x pt-16 pb-12 md:pt-20 md:pb-16">
-          <p class="text-sm text-ink-dim font-medium uppercase tracking-[0.18em] mb-6 flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-white animate-pulse" /> Sıradaki etkinlik
+
+        <div class="container-x pt-16 pb-14 md:pt-24 md:pb-20">
+          <p class="text-sm text-ink-dim font-medium uppercase tracking-[0.18em] mb-6 flex items-center gap-2.5">
+            <span class="ev-live-dot" /> Sıradaki etkinlik
           </p>
           <div class="max-w-3xl lg:max-w-none lg:pr-[44%]">
             <div class="min-w-0">
-              <h1 class="text-3xl md:text-5xl font-semibold leading-[1.06]">{featured.title}</h1>
-              <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-sm text-ink-dim">
+              <h1 class="text-4xl md:text-6xl font-semibold leading-[1.03] text-balance">{featured.title}</h1>
+              <div class="flex flex-wrap items-center gap-x-5 gap-y-1.5 mt-5 text-sm text-ink-dim">
                 <span class="inline-flex items-center gap-1.5"><Icon name="calendar" size={15} /> {fday?.weekday} {fday?.day} {fday?.month}{ftime && ` · ${ftime}`}</span>
                 {fwhere && <span class="inline-flex items-center gap-1.5"><Icon name="map-pin" size={15} /> {fwhere}</span>}
               </div>
-              <div class="ev-countdown flex items-center gap-2.5 mt-6" data-countdown={featured.starts_at} aria-label="Etkinliğe kalan süre">
+
+              <div class="ev-countdown mt-9" data-countdown={featured.starts_at} aria-label="Etkinliğe kalan süre">
                 {[
                   { k: "d", label: "gün" },
                   { k: "h", label: "saat" },
-                  { k: "m", label: "dk" },
-                  { k: "s", label: "sn" },
+                  { k: "m", label: "dakika" },
+                  { k: "s", label: "saniye" },
                 ].map((u) => (
-                  <div class="flex flex-col items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-xl bg-ink-950/55 backdrop-blur border border-line">
-                    <span class="font-display text-xl md:text-2xl font-semibold tabular-nums leading-none" data-cd={u.k}>--</span>
-                    <span class="text-[0.58rem] font-mono uppercase tracking-wide text-ink-faint mt-1">{u.label}</span>
+                  <div class="ev-cd-unit">
+                    <span class="ev-cd-num font-display tabular-nums" data-cd={u.k}>--</span>
+                    <span class="ev-cd-label font-mono">{u.label}</span>
                   </div>
                 ))}
               </div>
-              <div class="flex flex-wrap items-center gap-3 mt-6">
+
+              <div class="flex flex-wrap items-center gap-3 mt-10">
                 <a href={freg} target="_blank" rel="noopener noreferrer" class="btn btn-primary" data-track="event_register_click" data-track-props={JSON.stringify({ event_slug: featured.slug, event_title: featured.title, event_community: featured.community, location: "events_featured" })}><Icon name="arrow-up-right" size={16} /> Kayıt ol</a>
                 <a href={`/events/${featured.slug}`} class="btn btn-ghost" data-track="event_card_click" data-track-props={JSON.stringify({ event_slug: featured.slug, page: "events" })}>Detaylar</a>
               </div>
@@ -174,6 +195,132 @@ const restUpcoming = featured ? upcoming.slice(1) : upcoming;
       )
     }
   </section>
+
+  <style>
+    /* ── hero background ──────────────────────────────────────────────────
+       Three stacked layers, all of them edge-free: a masked colour bleed from
+       the event cover, a wide wash under the text column, and a shallow-angle
+       scrim with many stops. The point is that no layer has a hard boundary —
+       the previous version's blurred box and single-stop scrim both did. */
+    .ev-bleed {
+      position: absolute;
+      inset: -20%;
+      background-size: cover;
+      background-position: 70% 32%;
+      filter: blur(120px) saturate(135%);
+      opacity: 0.26;
+      -webkit-mask-image: radial-gradient(
+        56% 60% at 68% 34%,
+        #000 0%,
+        rgba(0, 0, 0, 0.62) 40%,
+        rgba(0, 0, 0, 0.2) 66%,
+        transparent 86%
+      );
+      mask-image: radial-gradient(
+        56% 60% at 68% 34%,
+        #000 0%,
+        rgba(0, 0, 0, 0.62) 40%,
+        rgba(0, 0, 0, 0.2) 66%,
+        transparent 86%
+      );
+    }
+    .ev-wash {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        72% 92% at 6% 28%,
+        rgba(255, 255, 255, 0.075),
+        rgba(255, 255, 255, 0.028) 44%,
+        transparent 78%
+      );
+    }
+    .ev-scrim {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        100deg,
+        rgba(0, 0, 0, 1) 0%,
+        rgba(0, 0, 0, 0.93) 16%,
+        rgba(0, 0, 0, 0.8) 32%,
+        rgba(0, 0, 0, 0.55) 46%,
+        rgba(0, 0, 0, 0.28) 60%,
+        rgba(0, 0, 0, 0.08) 72%,
+        transparent 84%
+      );
+    }
+
+    /* #12 — the countdown, un-boxed. Numbers carry it; hairline dividers do the
+       separating the bordered blur tiles used to do. */
+    .ev-countdown {
+      display: flex;
+      align-items: flex-start;
+      gap: clamp(1.1rem, 4vw, 2.4rem);
+    }
+    .ev-cd-unit {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-width: 3.1rem;
+    }
+    .ev-cd-unit + .ev-cd-unit::before {
+      content: "";
+      position: absolute;
+      left: calc(clamp(1.1rem, 4vw, 2.4rem) / -2);
+      top: 0.35rem;
+      bottom: 1.1rem;
+      width: 1px;
+      background: linear-gradient(
+        to bottom,
+        transparent,
+        var(--color-line) 25%,
+        var(--color-line) 75%,
+        transparent
+      );
+    }
+    .ev-cd-num {
+      font-size: clamp(2rem, 6vw, 3.25rem);
+      font-weight: 600;
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      background: linear-gradient(180deg, #fff 35%, rgba(255, 255, 255, 0.58));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .ev-cd-label {
+      margin-top: 0.55rem;
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--color-ink-faint);
+    }
+    .ev-countdown.is-done .ev-cd-num { opacity: 0.4; }
+
+    /* the "sıradaki etkinlik" dot: a pulse ring instead of a plain blink */
+    .ev-live-dot {
+      position: relative;
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 999px;
+      background: #fff;
+      flex: none;
+    }
+    .ev-live-dot::after {
+      content: "";
+      position: absolute;
+      inset: -0.28rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      animation: ev-ping 2.4s var(--ease-out-soft) infinite;
+    }
+    @keyframes ev-ping {
+      0% { transform: scale(0.65); opacity: 0.9; }
+      70%, 100% { transform: scale(1.5); opacity: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ev-live-dot::after { animation: none; opacity: 0.35; }
+    }
+  </style>
 
   <script is:inline>
     (() => {

@@ -34,6 +34,12 @@ export const EVENTS = {
   blogPostClick: "blog_post_click",
   blogFilter: "blog_filter",
 
+  // generic list filtering (companies sector, …)
+  contentFilter: "content_filter",
+
+  // ecosystem long-form pages
+  partnerCardClick: "partner_card_click",
+
   // recordings + links
   recordingPlay: "recording_play",
   linkClick: "link_click",

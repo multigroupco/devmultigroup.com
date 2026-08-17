@@ -22,10 +22,16 @@ const initials = member.name
   .join("")
   .toUpperCase();
 
-// whole card routes to the member's primary profile (LinkedIn first)
+// The card now routes to the member's own page when there is one (#9). Falling
+// back to the external profile keeps rows without a slug clickable.
 const primary = socials.linkedin || socials.github || socials.website || "";
-const Wrap = primary ? "a" : "div";
-const wrapAttrs = primary ? { href: primary, target: "_blank", rel: "noopener noreferrer" } : {};
+const internal = member.slug ? `/team/${member.slug}` : "";
+const Wrap = internal || primary ? "a" : "div";
+const wrapAttrs = internal
+  ? { href: internal }
+  : primary
+    ? { href: primary, target: "_blank", rel: "noopener noreferrer" }
+    : {};
 ---
 
 <Wrap id={`m-${member.id}`} {...wrapAttrs} class="card card-hover p-3.5 flex flex-col group scroll-mt-24">

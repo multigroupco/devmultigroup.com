@@ -324,10 +324,14 @@ export const RESOURCES: Record<string, Resource> = {
     ],
     fields: [
       { name: "name", label: "Name", type: "text", required: true },
+      { name: "slug", label: "Slug", type: "text", help: "Public page lives at /team/<slug>. Leave blank to auto-generate from the name." },
       { name: "role", label: "Title (membership level)", type: "text" },
       { name: "team", label: "Active area / team", type: "text" },
-      { name: "bio", label: "Bio", type: "textarea", full: true },
+      { name: "focus", label: "Focus areas", type: "tags", help: "Comma separated, e.g. Astro, Cloudflare, DX" },
+      { name: "bio", label: "Short bio (card)", type: "textarea", full: true, help: "One or two lines — this is what the /team grid shows." },
+      { name: "long_bio", label: "Profile page (Markdown)", type: "markdown", full: true, help: "The body of /team/<slug>. Optional — the page degrades to the short bio." },
       { name: "avatar_url", label: "Avatar", type: "image" },
+      { name: "joined_at", label: "Joined", type: "datetime" },
       { name: "community", label: "Community", type: "select", options: [...COMMUNITY, { value: "both", label: "both" }] },
       { name: "socials", label: "Socials (JSON)", type: "textarea", full: true, placeholder: '{"linkedin":"https://...","github":"https://...","twitter":"https://...","instagram":"https://...","website":"https://..."}' },
       { name: "sort_order", label: "Sort order", type: "number" },
@@ -357,6 +361,42 @@ export const RESOURCES: Record<string, Resource> = {
       { name: "logo_url", label: "Logo", type: "image" },
       { name: "instagram", label: "Instagram URL", type: "text" },
       { name: "url", label: "Website / link", type: "text" },
+      { name: "sort_order", label: "Sort order", type: "number" },
+      { name: "is_active", label: "Active", type: "boolean" },
+    ],
+  },
+
+  // ACTIVE collaborations (/partnerships). Not `companies` (employers our
+  // speakers came from) and not `communities` (partner chapters).
+  partners: {
+    key: "partners",
+    label: "Partners",
+    singular: "Partner",
+    table: "partners",
+    icon: "sparkles",
+    ns: [NS.partners, NS.home],
+    searchable: true,
+    defaultSort: "featured DESC, sort_order ASC, name ASC",
+    listColumns: [
+      { name: "name", label: "Name" },
+      { name: "kicker", label: "Programme" },
+      { name: "category", label: "Category" },
+      { name: "is_active", label: "Active" },
+    ],
+    fields: [
+      { name: "name", label: "Name", type: "text", required: true },
+      { name: "slug", label: "Slug", type: "text", help: "Page lives at /partnerships/<slug>. Blank auto-generates from the name." },
+      { name: "kicker", label: "Programme name", type: "text", help: 'The work itself, e.g. "Android Workshop Serisi".' },
+      { name: "lede", label: "Lede", type: "textarea", full: true, help: "One paragraph. Used on the index card AND as the page hero paragraph." },
+      { name: "body_md", label: "Story (Markdown)", type: "markdown", full: true },
+      { name: "logo_url", label: "Logo", type: "image" },
+      { name: "hero_image", label: "Hero image", type: "image" },
+      { name: "website", label: "Website", type: "text" },
+      { name: "category", label: "Category", type: "text", help: 'Free text, e.g. "Android", "Platform", "AI".' },
+      { name: "year_from", label: "Collaboration started", type: "datetime" },
+      { name: "metrics_json", label: "Metrics (JSON)", type: "textarea", full: true, placeholder: '[{"value":"1.5k","label":"katılımcı"},{"value":"30+","label":"partner etkinliği"}]', help: "Rendered as animated counters. Max 4 read well." },
+      { name: "gallery_json", label: "Media grid (JSON)", type: "textarea", full: true, placeholder: '[{"img":"partners/wite-1.jpg","title":"Oturum 1","caption":"Architecture","href":"https://…"}]' },
+      { name: "featured", label: "Featured", type: "boolean", help: "Lifts the partner into the index hero rail." },
       { name: "sort_order", label: "Sort order", type: "number" },
       { name: "is_active", label: "Active", type: "boolean" },
     ],
@@ -467,6 +507,7 @@ export const SETTINGS_FIELDS: Field[] = [
   { name: "stat_companies", label: "Companies stat", type: "text", help: "e.g. 25+" },
   { name: "stat_speakers", label: "Speakers stat", type: "text", help: "e.g. 200+" },
   { name: "stat_cities", label: "Cities stat", type: "text" },
+  { name: "stat_partner_reach", label: "Partnership reach stat", type: "text", help: "Cumulative people reached through collaborations, e.g. 750+ — shown on /partnerships." },
 ];
 
 /* ── coercion ─────────────────────────────────────────────────────────────── */
@@ -541,9 +582,10 @@ export async function saveRow(
     values[f.name] = coerce(f, form.get(f.name));
   }
 
-  // auto-slug
+  // auto-slug — `name` covers team members / partners, which have no `title`
   if (res.fields.some((f) => f.name === "slug") && !values.slug) {
-    const base = (values.title as string) || (values.label as string) || "item";
+    const base =
+      (values.title as string) || (values.name as string) || (values.label as string) || "item";
     values.slug = slugify(base);
   }
 

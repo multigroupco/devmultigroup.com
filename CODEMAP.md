@@ -99,7 +99,8 @@ devmultigroup.com/
     │   ├── types.ts              Row interfaces mirroring the D1 schema (events/posts/links/academy links/hero slides/resources/recordings/gallery/team/social/community/company/speaker) + Community/AccentKey + ACCENTS palette.
     │   ├── db.ts                 D1 helpers all/first/run + uuid, nowSec, slugify (TR transliteration), csv, bool.
     │   ├── cache.ts              Version-stamped KV read-through cache: cached() (+shouldCache), invalidate/invalidateMany, NS namespaces (incl. search).
-    │   ├── content.ts            Cached public read layer over D1 — the only content API pages call (events/posts/links/resources/recordings/gallery/team/communities/companies/speakers/social/settings/stats + pagination).
+    │   ├── content.ts            Cached public read layer over D1 — the only content API pages call (events/posts/links/resources/recordings/gallery/team/communities/companies/partners/speakers/social/settings/stats + pagination).
+    │   ├── gathin.ts             Gathin RSS import (#7): parses gathin.com/communities/<id>/rss.xml for both communities, mirrors covers into R2, inserts UNSEEN guids as DRAFT events. CREATE-ONLY — a known external_id is never touched again, so hand-edited copy can't be clobbered. Fired by the POST button in /admin/events; no cron (that would mean wrapping the pinned adapter's worker).
     │   ├── admin.ts              Config-driven admin: RESOURCES registry (+ searchable→Vectorize), SETTINGS_FIELDS, saveRow/deleteRow/saveSettings, uploadImage (R2), coercion, datetime↔epoch (UTC+3).
     │   ├── site.ts               Single source of truth: BRAND, CANONICAL_HOST/isApexHost, NAV/FOOTER_NAV/LEGAL_NAV, COMPANIES (R2 logos), GATHIN, JOIN_FORM, SOCIALS, SUBBRANDS, resolveSite(settings).
     │   ├── ui.ts                 imageSrc (bare R2 key → /media), category/community accent mapping, Turkish category labels, YouTube url/id helpers.
@@ -166,10 +167,13 @@ devmultigroup.com/
         ├── about.astro           About: mission, values cards, MultiAcademy card; reads stats/settings.
         ├── academy.astro         MultiAcademy: hero + value chips, programs, upcoming + past academy events, bootcamp recordings.
         ├── team.astro            Team: members grouped into named squads (Pioneer/Initiate/Veteran) via TeamCard, join CTA.
+        ├── team/[slug].astro     One volunteer's public profile: avatar, role/team, focus tags, long_bio markdown, socials, squad rail. Editing stays in /admin/team (no self-service tier).
         ├── speakers.astro        Speakers directory: cards with client-side query + sector filter; talk/company tallies.
-        ├── companies.astro       Companies (employers seen at events): sector filter rail + logo grid, per-company speaker counts.
+        ├── companies.astro       Companies (employers seen at events): search + sector DROPDOWN (was an unbounded chip row) + logo grid, per-company speaker counts.
         ├── communities.astro     Partner communities: CommunitiesMap + list; emits ItemList JSON-LD.
-        ├── partnerships.astro    İş birlikleri: featured collaborations (Wite/Lodos sessions), CompanyStrip; ItemList JSON-LD.
+        ├── partnerships.astro    İş birlikleri INDEX — sell-oriented, DB-driven from `partners`. Hero pairs the pitch with a two-ring counter-rotating partner-logo orbit (replaced the two CompanyStrip marquees); editorial hairline rows (deliberately not `.card` boxes), centred stat rail, offer grid, card-glow sponsor CTA; ItemList JSON-LD.
+        ├── partnerships/[slug].astro  One collaboration, long-form: hero, animated metric counters (metrics_json), story markdown, media grid (gallery_json), CTA, sibling rail. ONE template for every partner.
+        ├── contact.astro         İletişim: three public addresses, subject-selecting form posting to /api/contact, org info, socials. ContactModal stays for in-context CTAs. schema.org ContactPage. No FAQ by design.
         ├── kaynakca.astro        Curated open-source resources (/kaynakca), grouped (kaynakça/bootcamp/diğer) from the resources table.
         ├── links.astro           Linktree-style page: next-event card (16:9 cover) + grouped LinkButton links + socials.
         ├── academy-links.astro   MultiAcademy linktree: latest academy event (upcoming, else most recent past) + grouped academy_links + MultiAcademy socials.

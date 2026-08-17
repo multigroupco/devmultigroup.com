@@ -1,0 +1,276 @@
+---
+// /partnerships/<slug> — one collaboration, long-form.
+//
+// ONE template for every partner (the #5 decision: "one table, one strong
+// template"). Variation comes from content — hero image, metric count, gallery
+// size — not from layout. Adding a partner never touches this file.
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Icon from "@/components/Icon.astro";
+import { getEnv } from "@/lib/runtime";
+import { getPartner, listPartners } from "@/lib/content";
+import { renderMarkdown } from "@/lib/markdown";
+import { imageSrc } from "@/lib/ui";
+import { formatDate } from "@/lib/format";
+import { BRAND } from "@/lib/site";
+import type { PartnerMetric, PartnerGalleryItem } from "@/lib/types";
+
+const env = getEnv(Astro.locals);
+const { slug } = Astro.params;
+const partner = slug ? await getPartner(env, slug) : null;
+if (!partner) Astro.response.status = 404;
+
+const parse = <T,>(raw: string): T[] => {
+  try {
+    const v = JSON.parse(raw || "[]");
+    return Array.isArray(v) ? (v as T[]) : [];
+  } catch {
+    return [];
+  }
+};
+
+const metrics = partner ? parse<PartnerMetric>(partner.metrics_json) : [];
+const gallery = partner ? parse<PartnerGalleryItem>(partner.gallery_json) : [];
+const body = partner ? renderMarkdown(partner.body_md) : "";
+const hero = partner ? imageSrc(partner.hero_image) : "";
+const logo = partner ? imageSrc(partner.logo_url) : "";
+
+// siblings for the "other collaborations" rail
+const others = partner
+  ? (await listPartners(env)).filter((p) => p.id !== partner.id).slice(0, 3)
+  : [];
+
+const ld = partner
+  ? {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: partner.name,
+      description: partner.lede,
+      url: `${BRAND.url}/partnerships/${partner.slug}`,
+      ...(partner.website ? { sameAs: [partner.website] } : {}),
+      ...(logo ? { logo: logo.startsWith("http") ? logo : BRAND.url + logo } : {}),
+    }
+  : undefined;
+---
+
+{
+  partner ? (
+    <BaseLayout
+      title={`${partner.name} · ${partner.kicker || "İş Birliği"}`}
+      description={partner.lede || `Developer MultiGroup × ${partner.name} iş birliği.`}
+      canonicalPath={`/partnerships/${partner.slug}`}
+      image={hero ? (hero.startsWith("http") ? hero : BRAND.url + hero) : undefined}
+      jsonLd={ld}
+      breadcrumbs={[
+        { name: "İş Birlikleri", item: `${BRAND.url}/partnerships` },
+        { name: partner.name, item: `${BRAND.url}/partnerships/${partner.slug}` },
+      ]}
+    >
+      {/* ── hero ─────────────────────────────────────────────────────────── */}
+      <section class="relative isolate overflow-hidden">
+        {hero && (
+          <div class="absolute inset-0 -z-10" aria-hidden="true">
+            <img src={hero} alt="" loading="eager" decoding="async" class="w-full h-full object-cover opacity-25" />
+            <div class="absolute inset-0 bg-gradient-to-b from-ink-950/70 via-ink-950/85 to-ink-950" />
+          </div>
+        )}
+        <div class="container-x pt-14 pb-12 md:pt-20 md:pb-16">
+          <a href="/partnerships" class="inline-flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink-text transition-colors">
+            <Icon name="arrow-right" size={14} class="rotate-180" /> İş birlikleri
+          </a>
+
+          <div class="flex items-center gap-4 flex-wrap mt-8">
+            {logo ? (
+              <img src={logo} alt={partner.name} height="36" class="h-8 md:h-9 w-auto max-w-[190px] object-contain" />
+            ) : (
+              <span class="font-display text-2xl font-semibold">{partner.name}</span>
+            )}
+            {partner.category && <span class="chip">{partner.category}</span>}
+            {partner.year_from && (
+              <span class="text-ink-faint text-xs font-mono uppercase tracking-wider">
+                {formatDate(partner.year_from)}'den beri
+              </span>
+            )}
+          </div>
+
+          <h1 class="text-4xl md:text-6xl font-semibold leading-[1.04] mt-6 max-w-4xl text-balance">
+            {partner.kicker || partner.name}
+          </h1>
+          {partner.lede && (
+            <p class="text-ink-dim text-lg md:text-xl mt-6 max-w-2xl leading-relaxed">{partner.lede}</p>
+          )}
+
+          {partner.website && (
+            <a
+              href={partner.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-ghost mt-8"
+              data-track="cta_click"
+              data-track-props={JSON.stringify({ cta_id: "partner_website", partner: partner.slug, href: partner.website })}
+            >
+              <Icon name="globe" size={16} /> {partner.name} sitesi <Icon name="arrow-up-right" size={14} />
+            </a>
+          )}
+        </div>
+      </section>
+
+      {/* ── metrics: counters that animate up on first view ──────────────── */}
+      {metrics.length > 0 && (
+        <section class="container-x py-10">
+          <dl class:list={["grid grid-cols-2 gap-y-9 border-y border-line py-10", metrics.length >= 4 ? "md:grid-cols-4" : metrics.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2"]}>
+            {metrics.map((m) => (
+              <div class="text-center px-2 md:border-l md:border-line md:first:border-l-0">
+                <dt
+                  class="pm-value font-display text-4xl md:text-5xl font-semibold tabular-nums text-grad"
+                  data-metric={m.value}
+                >
+                  {m.value}
+                </dt>
+                <dd class="text-ink-faint text-[0.7rem] mt-2 font-mono uppercase tracking-wider">{m.label}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
+
+      {/* ── the story ────────────────────────────────────────────────────── */}
+      {body && (
+        <section class="container-x py-6">
+          <div class="prose-dmg max-w-2xl" set:html={body} />
+        </section>
+      )}
+
+      {/* ── media grid ───────────────────────────────────────────────────── */}
+      {gallery.length > 0 && (
+        <section class="container-x py-10">
+          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {gallery.map((g) => {
+              const src = imageSrc(g.img);
+              const inner = (
+                <>
+                  <span class="block skeleton">
+                    <img src={src} alt={g.title || ""} loading="lazy" decoding="async"
+                      class="img-reveal w-full aspect-video object-cover transition duration-500 group-hover:scale-[1.03]" />
+                  </span>
+                  {(g.title || g.caption) && (
+                    <span class="flex items-center justify-between gap-2 p-4">
+                      <span class="min-w-0">
+                        {g.title && <span class="block font-medium text-sm">{g.title}</span>}
+                        {g.caption && <span class="block text-ink-faint text-xs mt-0.5 truncate">{g.caption}</span>}
+                      </span>
+                      {g.href && <Icon name="arrow-up-right" size={16} class="text-ink-faint group-hover:text-ink-text transition-colors shrink-0" />}
+                    </span>
+                  )}
+                </>
+              );
+              return g.href ? (
+                <a href={g.href} target="_blank" rel="noopener noreferrer"
+                  class="group rounded-xl overflow-hidden ring-1 ring-line card-hover block"
+                  data-track="cta_click"
+                  data-track-props={JSON.stringify({ cta_id: "partner_gallery", partner: partner.slug, href: g.href })}>
+                  {inner}
+                </a>
+              ) : (
+                <div class="group rounded-xl overflow-hidden ring-1 ring-line">{inner}</div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ── CTA ──────────────────────────────────────────────────────────── */}
+      <section class="container-x py-12">
+        <div class="border-t border-line pt-10 flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <h2 class="font-display text-2xl md:text-3xl font-semibold max-w-md leading-tight">
+              Benzer bir program kurmak ister misiniz?
+            </h2>
+            <p class="text-ink-dim mt-3 max-w-lg leading-relaxed">
+              {partner.name} ile yaptığımızın aynısını yapmak zorunda değiliz — formatı
+              sizin hedefinize göre kuruyoruz.
+            </p>
+          </div>
+          <button type="button" data-contact="sponsor" class="btn btn-primary shrink-0"
+            data-track="cta_click"
+            data-track-props={JSON.stringify({ cta_id: "partner_detail_sponsor", partner: partner.slug })}>
+            <Icon name="mail" size={17} /> Konuşalım
+          </button>
+        </div>
+      </section>
+
+      {/* ── other collaborations ─────────────────────────────────────────── */}
+      {others.length > 0 && (
+        <section class="container-x pb-20">
+          <h2 class="text-sm text-ink-faint uppercase tracking-[0.18em] mb-6">Diğer iş birlikleri</h2>
+          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {others.map((o) => (
+              <a href={`/partnerships/${o.slug}`} class="group block rounded-2xl border border-line p-6 card-hover"
+                data-track="partner_card_click"
+                data-track-props={JSON.stringify({ partner: o.slug, page: "partner_detail" })}>
+                {imageSrc(o.logo_url) ? (
+                  <img src={imageSrc(o.logo_url)} alt={o.name} height="22" loading="lazy"
+                    class="h-5 w-auto max-w-[120px] object-contain opacity-70 group-hover:opacity-100 transition-opacity" />
+                ) : (
+                  <span class="font-display font-semibold">{o.name}</span>
+                )}
+                <p class="font-medium mt-4 leading-snug">{o.kicker || o.name}</p>
+                <p class="text-ink-faint text-sm mt-1.5 line-clamp-2 leading-relaxed">{o.lede}</p>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Counters count up once, on first scroll into view. Re-armed on every
+          astro:page-load because view transitions keep the document alive. */}
+      <script is:inline>
+        (() => {
+          const run = () => {
+            const els = document.querySelectorAll(".pm-value[data-metric]");
+            if (!els.length) return;
+            const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            const io = new IntersectionObserver((entries) => {
+              entries.forEach((e) => {
+                if (!e.isIntersecting) return;
+                const el = e.target;
+                io.unobserve(el);
+                if (el.dataset.done) return;
+                el.dataset.done = "1";
+                const raw = el.dataset.metric || "";
+                // "1.5k" / "30+" / "6 yıl" — animate the leading number, keep the rest.
+                const m = raw.match(/^([\d.,]+)(.*)$/);
+                if (!m || reduce) return;
+                const target = parseFloat(m[1].replace(",", "."));
+                if (!isFinite(target)) return;
+                const decimals = (m[1].split(/[.,]/)[1] || "").length;
+                const suffix = m[2];
+                const start = performance.now();
+                const dur = 900;
+                const tick = (now) => {
+                  const t = Math.min(1, (now - start) / dur);
+                  const eased = 1 - Math.pow(1 - t, 3);
+                  el.textContent = (target * eased).toFixed(decimals) + suffix;
+                  if (t < 1) requestAnimationFrame(tick);
+                  else el.textContent = raw;
+                };
+                el.textContent = (0).toFixed(decimals) + suffix;
+                requestAnimationFrame(tick);
+              });
+            }, { threshold: 0.4 });
+            els.forEach((el) => io.observe(el));
+          };
+          document.addEventListener("astro:page-load", run);
+          run();
+        })();
+      </script>
+    </BaseLayout>
+  ) : (
+    <BaseLayout title="İş birliği bulunamadı" noindex canonicalPath="/partnerships">
+      <section class="container-x py-24 text-center">
+        <h1 class="font-display text-3xl font-semibold">Bu iş birliğini bulamadık</h1>
+        <p class="text-ink-dim mt-3">Bağlantı eskimiş olabilir.</p>
+        <a href="/partnerships" class="btn btn-primary mt-8">Tüm iş birlikleri</a>
+      </section>
+    </BaseLayout>
+  )
+}

@@ -27,6 +27,8 @@ export interface EventRow {
   timezone: string;
   registration_url: string;
   source: string;
+  /** Stable upstream id (Gathin RSS <guid>). Empty for manually-created rows. */
+  external_id: string;
   status: string;
   is_featured: number;
   tags: string;
@@ -139,12 +141,58 @@ export interface GalleryRow {
 export interface TeamRow {
   id: string;
   name: string;
+  slug: string;
   role: string;
   team: string;
   bio: string;
+  /** Long-form markdown shown on /team/<slug>; `bio` stays the card one-liner. */
+  long_bio: string;
+  /** Comma-separated focus areas, e.g. "Astro, Cloudflare, DX". */
+  focus: string;
   avatar_url: string;
   community: string;
   socials: string; // json
+  joined_at: number | null;
+  sort_order: number;
+  is_active: number;
+  created_at: number;
+  updated_at: number;
+}
+
+/** One animated counter on a partner page. */
+export interface PartnerMetric {
+  value: string;
+  label: string;
+}
+
+/** One linked tile in a partner's media grid. */
+export interface PartnerGalleryItem {
+  img: string;
+  title?: string;
+  caption?: string;
+  href?: string;
+}
+
+/**
+ * An ACTIVE collaboration (/partnerships). Distinct from `CompanyRow` (an
+ * employer a speaker came from) and `CommunityRow` (a partner chapter) — see
+ * migrations/0009 for the three-way split.
+ */
+export interface PartnerRow {
+  id: string;
+  slug: string;
+  name: string;
+  kicker: string;
+  lede: string;
+  body_md: string;
+  logo_url: string;
+  hero_image: string;
+  website: string;
+  category: string;
+  year_from: number | null;
+  metrics_json: string; // json PartnerMetric[]
+  gallery_json: string; // json PartnerGalleryItem[]
+  featured: number;
   sort_order: number;
   is_active: number;
   created_at: number;

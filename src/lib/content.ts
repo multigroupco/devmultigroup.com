@@ -16,6 +16,7 @@ import type {
   TeamRow,
   CommunityRow,
   CompanyRow,
+  PartnerRow,
   SpeakerRow,
   EventSpeaker,
   Community,
@@ -344,7 +345,38 @@ export async function listTeam(
   });
 }
 
-/* ── communities (partners) ──────────────────────────────────────────────── */
+export async function getTeamMember(env: Env, slug: string): Promise<TeamRow | null> {
+  return cached(env, NS.team, `get:${slug}`, () =>
+    first<TeamRow>(
+      env.DB,
+      "SELECT * FROM team_members WHERE slug=? AND is_active=1 LIMIT 1",
+      [slug],
+    ),
+  );
+}
+
+/* ── partners (active collaborations — /partnerships) ─────────────────────── */
+export async function listPartners(env: Env): Promise<PartnerRow[]> {
+  return cached(env, NS.partners, "c:all", () =>
+    all<PartnerRow>(
+      env.DB,
+      `SELECT * FROM partners WHERE is_active=1
+       ORDER BY featured DESC, sort_order ASC, name ASC`,
+    ),
+  );
+}
+
+export async function getPartner(env: Env, slug: string): Promise<PartnerRow | null> {
+  return cached(env, NS.partners, `get:${slug}`, () =>
+    first<PartnerRow>(
+      env.DB,
+      "SELECT * FROM partners WHERE slug=? AND is_active=1 LIMIT 1",
+      [slug],
+    ),
+  );
+}
+
+/* ── communities (partner chapters) ──────────────────────────────────────── */
 export async function listCommunities(env: Env): Promise<CommunityRow[]> {
   return cached(env, NS.communities, "c:all", () =>
     all<CommunityRow>(

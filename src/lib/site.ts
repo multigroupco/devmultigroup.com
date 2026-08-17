@@ -9,7 +9,7 @@ export const BRAND = {
   tagline: "Where Developers Become Together",
   domain: "devmultigroup.com",
   url: "https://devmultigroup.com",
-  email: "iletisim@devmultigroup.com",
+  email: "support@devmultigroup.com",
   description:
     "Developer MultiGroup; iOS, web, yapay zekâ ve daha fazlasında geliştiricilerin birlikte büyüdüğü gönüllü bir Türk yazılım topluluğu — buluşmalar, konferanslar ve akademisiyle ücretsiz bootcamp'ler.",
 } as const;
@@ -76,6 +76,7 @@ export const FOOTER_NAV: { label: string; href: string }[] = [
   { label: "Ekip", href: "/team" },
   { label: "Mağaza", href: "/store" },
   { label: "Bağlantılar", href: "/links" },
+  { label: "İletişim", href: "/contact" },
 ];
 
 /** Gizlilik / KVKK footer links. */
@@ -182,6 +183,8 @@ export interface SiteConfig {
   recordings: string;
   companies: string;
   speakers: string;
+  /** Cumulative reach across collaborations — shown on /partnerships. */
+  partnerReach: string;
 }
 
 /** Merge DB settings over sane defaults so the site renders before seeding. */
@@ -203,5 +206,6 @@ export function resolveSite(settings: Settings): SiteConfig {
     recordings: settings.stat_recordings || "17+",
     companies: settings.stat_companies || "25+",
     speakers: settings.stat_speakers || "200+",
+    partnerReach: settings.stat_partner_reach || "750+",
   };
 }
