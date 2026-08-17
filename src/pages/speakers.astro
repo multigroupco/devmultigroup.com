@@ -220,17 +220,36 @@ const speakersLd = speakers.length
        The beam itself lives in the SVG above; this only places and animates it.
        It starts off-frame and drifts in once, rather than looping — a looping
        spotlight reads as a loading state. */
-    .sp-stage { --sp-pad: 0rem; }
     .sp-spot {
       position: absolute;
-      top: -38%;
-      right: -22%;
-      width: 118%;
-      height: 190%;
+      /* Pulled up and in so the bright part of the beam lands on the metrics.
+         It used to span the full hero and get guillotined at the section edge,
+         right above the speaker marquee. */
+      top: -62%;
+      right: -12%;
+      width: 88%;
+      height: 168%;
       z-index: -1;
       pointer-events: none;
       opacity: 0;
       animation: sp-spot-in 2.2s var(--ease-out-soft) 0.15s forwards;
+      /* Dissolve well before the section boundary. With the light already gone
+         by then, the container's clip has nothing left to cut — continuity
+         without letting the glow spill onto the cards below. */
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        #000 0%,
+        #000 34%,
+        rgba(0, 0, 0, 0.4) 62%,
+        transparent 86%
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        #000 0%,
+        #000 34%,
+        rgba(0, 0, 0, 0.4) 62%,
+        transparent 86%
+      );
     }
     @keyframes sp-spot-in {
       from { opacity: 0; transform: translate(6%, -6%) scale(1.06); }
