@@ -13,7 +13,7 @@ export async function GET(context: APIContext) {
   } catch { /* pre-seed */ }
 
   return rss({
-    title: `${BRAND.name} — Blog`,
+    title: `${BRAND.name} · Blog`,
     description: BRAND.description,
     site: context.site ?? BRAND.url,
     items: posts.map((p) => ({

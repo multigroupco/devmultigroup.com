@@ -75,7 +75,7 @@ const ld = member
   member ? (
     <BaseLayout
       title={`${member.name}${member.role ? ` · ${member.role}` : ""}`}
-      description={member.bio || `${member.name} — Developer MultiGroup ${member.team || "ekibi"}.`}
+      description={member.bio || `${member.name}, Developer MultiGroup ${member.team || "ekibi"}.`}
       canonicalPath={`/team/${member.slug}`}
       type="profile"
       image={absAvatar || undefined}

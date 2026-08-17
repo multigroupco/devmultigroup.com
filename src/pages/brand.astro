@@ -1,0 +1,520 @@
+---
+// /brand — press kit above, guidelines below (#4).
+//
+// Route is /brand, not /media: src/pages/media/[...key].ts is the R2 binary
+// streamer and its rest param would swallow a page at that path.
+//
+// Every asset is served from ONE place — the shared `multigroup-common-bucket`
+// behind assets.devmultigroup.com — so the mail templates, the sibling apps and
+// this page can never drift onto different copies of the same mark. The internal
+// per-team logos live under branding/legacy/ and are deliberately NOT listed
+// here: they are for our own squads, not for outside use.
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Icon from "@/components/Icon.astro";
+import { tryEnv } from "@/lib/runtime";
+import { getSettings, getStats } from "@/lib/content";
+import { BRAND, resolveSite } from "@/lib/site";
+
+const CDN = "https://assets.devmultigroup.com/branding";
+
+const env = tryEnv(Astro.locals);
+let site = resolveSite({});
+let stats = { events: 0, speakers: 0, companies: 0 } as Record<string, number>;
+if (env) {
+  try {
+    const [settings, s] = await Promise.all([getSettings(env), getStats(env)]);
+    site = resolveSite(settings);
+    stats = s as unknown as Record<string, number>;
+  } catch {
+    /* pre-seed — the page is static enough to stand without it */
+  }
+}
+
+interface Asset {
+  name: string;
+  file: string;
+  /** how to preview it: the checkerboard-free dark or light plate */
+  plate: "dark" | "light" | "blue";
+  note?: string;
+}
+
+const MG: Asset[] = [
+  { name: "Yatay logo, beyaz", file: "multigroup-logo-long-white.png", plate: "dark", note: "Koyu zeminde varsayılan" },
+  { name: "Yatay logo, siyah", file: "multigroup-logo-long-black.png", plate: "light", note: "Açık zeminde" },
+  { name: "Amblem, beyaz", file: "multigroup-logo-small-white.png", plate: "dark", note: "Kare alanlar, avatar" },
+  { name: "Amblem, siyah", file: "multigroup-logo-small-black.png", plate: "light" },
+];
+
+const MA: Asset[] = [
+  { name: "Yatay logo, beyaz", file: "multiacademy-logo-long-white.png", plate: "dark" },
+  { name: "Yatay logo, renkli", file: "multiacademy-logo-long-colored.png", plate: "light" },
+  { name: "Yatay logo, mavi zemin", file: "multiacademy-logo-long-white-blue-bg.png", plate: "blue" },
+  { name: "Yatay logo, siyah zemin", file: "multiacademy-logo-long-white-black-bg.png", plate: "dark" },
+  { name: "Amblem, beyaz", file: "multiacademy-logo-small-white.png", plate: "dark" },
+  { name: "Amblem, mavi", file: "multiacademy-logo-small-blue.png", plate: "light" },
+  { name: "İşaret, mavi", file: "multiacademy-mark-blue.png", plate: "light", note: "Yalnız sembol" },
+  { name: "İşaret, mavi zemin", file: "multiacademy-mark-white-blue-bg.png", plate: "blue" },
+];
+
+// Palette: the actual tokens from global.css, so this page can't drift from the
+// site it documents.
+const PALETTE = [
+  { name: "Ink 950", hex: "#000000", note: "Ana zemin (AMOLED)" },
+  { name: "Ink 900", hex: "#08080A", note: "Panel" },
+  { name: "Ink 850", hex: "#0C0C0E", note: "Yükseltilmiş yüzey" },
+  { name: "Ink Text", hex: "#EDEDEF", note: "Ana metin" },
+  { name: "Ink Dim", hex: "#A1A1A8", note: "İkincil metin" },
+  { name: "Ink Faint", hex: "#6E6E76", note: "Üçüncül metin" },
+  { name: "MultiAcademy Blue", hex: "#0B57D0", note: "Yalnız MultiAcademy" },
+];
+
+const TYPE = [
+  { name: "Hanken Grotesk", role: "Kelime markası", sample: "MultiGroup", css: '"Hanken Grotesk"' },
+  { name: "Space Grotesk", role: "Başlıklar", sample: "Where developers", css: "var(--font-display)" },
+  { name: "Inter", role: "Gövde metni", sample: "Geliştiriciler birlikte gelişir.", css: "var(--font-sans)" },
+  { name: "JetBrains Mono", role: "Etiket ve kod", sample: "become together", css: "var(--font-mono)" },
+];
+
+const MISUSE = [
+  "Logonun rengini değiştirmeyin.",
+  "Oranını bozmayın, esnetmeyin.",
+  "Gölge, kontur veya efekt eklemeyin.",
+  "Kalabalık bir görselin üzerine koymayın.",
+  "Amblemi kelime markasının yerine yazı içinde kullanmayın.",
+  "Ekip logolarını (legacy) dış iletişimde kullanmayın.",
+];
+
+const BOILERPLATE_TR = `Developer MultiGroup, 2020'den beri Türkiye merkezli, gönüllülerle yürüyen bir yazılım topluluğudur. Mobil, web, yapay zekâ, oyun geliştirme ve Web3 alanlarında buluşmalar, konferanslar ve atölyeler düzenler; öğrenme kolu MultiAcademy ile ücretsiz bootcamp'ler yürütür.`;
+
+const BOILERPLATE_EN = `Developer MultiGroup is a volunteer-run software community based in Türkiye, active since 2020. It organises meetups, conferences and workshops across mobile, web, AI, game development and Web3, and runs free bootcamps through its learning arm, MultiAcademy.`;
+
+const ld = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  name: "Marka ve Basın Kiti",
+  url: `${BRAND.url}/brand`,
+  about: { "@type": "Organization", name: BRAND.name, url: BRAND.url },
+};
+---
+
+<BaseLayout
+  title="Marka & Basın"
+  description="Developer MultiGroup ve MultiAcademy logoları, renk paleti, tipografi ve basın metinleri. İndirilebilir marka varlıkları ve kullanım kuralları."
+  canonicalPath="/brand"
+  jsonLd={ld}
+  breadcrumbs={[{ name: "Marka & Basın", item: `${BRAND.url}/brand` }]}
+>
+  <section class="container-x pt-16 pb-10">
+    <h1 class="text-4xl md:text-6xl font-semibold leading-[1.03] max-w-3xl text-balance">
+      Markamızı <span class="text-grad">doğru kullanın.</span>
+    </h1>
+    <p class="text-ink-dim text-lg mt-6 max-w-2xl leading-relaxed">
+      Logolarımız, renklerimiz ve basın metinlerimiz burada. Hepsi tek bir yerden
+      servis ediliyor; bir görseli kendi sunucunuza kopyalamak yerine doğrudan
+      bağlantı verebilirsiniz.
+    </p>
+    <div class="mt-8 flex flex-wrap items-center gap-3">
+      <a href="#logolar" class="btn btn-primary"><Icon name="download" size={17} /> Logolar</a>
+      <a href="/contact?type=support" class="btn btn-ghost"><Icon name="mail" size={16} /> Basın iletişimi</a>
+    </div>
+  </section>
+
+  <!-- ── hard facts ─────────────────────────────────────────────────────── -->
+  <section class="container-x py-8">
+    <dl class="grid grid-cols-2 md:grid-cols-4 gap-y-9 border-y border-line py-9">
+      {[
+        { n: "2020", l: "kuruluş" },
+        { n: site.members, l: "topluluk üyesi" },
+        { n: stats.events ? `${stats.events}+` : site.events, l: "etkinlik" },
+        { n: stats.speakers ? `${stats.speakers}+` : site.speakers, l: "konuşmacı" },
+      ].map((s) => (
+        <div class="text-center px-2 md:border-l md:border-line md:first:border-l-0">
+          <dt class="font-display text-3xl md:text-4xl font-semibold tabular-nums text-grad">{s.n}</dt>
+          <dd class="text-ink-faint text-[0.7rem] mt-1.5 font-mono uppercase tracking-wider">{s.l}</dd>
+        </div>
+      ))}
+    </dl>
+  </section>
+
+  <!-- ── logos ──────────────────────────────────────────────────────────── -->
+  <section id="logolar" class="container-x py-10 scroll-mt-24 space-y-12">
+    {
+      [
+        { title: "Developer MultiGroup", items: MG },
+        { title: "MultiAcademy", items: MA },
+      ].map((group) => (
+        <div>
+          <h2 class="font-display text-2xl md:text-3xl font-semibold">{group.title}</h2>
+          <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+            {group.items.map((a) => (
+              <figure class:list={["br-asset", `br-plate-${a.plate}`]}>
+                <img class="br-img" src={`${CDN}/${a.file}`} alt={`${group.title} ${a.name}`} loading="lazy" decoding="async" />
+                <figcaption class="br-over">
+                  <span class="br-name">{a.name}</span>
+                  {a.note && <span class="br-note">{a.note}</span>}
+                  <span class="br-acts">
+                    <a
+                      href={`${CDN}/${a.file}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="br-act"
+                      data-track="cta_click"
+                      data-track-props={JSON.stringify({ cta_id: "brand_asset", asset: a.file, page: "brand" })}
+                    >
+                      <Icon name="download" size={13} /> PNG
+                    </a>
+                    <button type="button" class="br-act" data-copy={`${CDN}/${a.file}`}>
+                      <Icon name="copy" size={13} /> <span data-copy-label>Bağlantı</span>
+                    </button>
+                  </span>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      ))
+    }
+    <div class="br-info">
+      <span class="br-info-icon"><Icon name="sparkles" size={16} /></span>
+      <p>
+        Bu görselleri kendi sunucunuza kopyalamanıza gerek yok. Bağlantılar doğrudan
+        kullanılabilir: <code>assets.devmultigroup.com/branding/…</code>
+      </p>
+    </div>
+  </section>
+
+  <!-- ── boilerplate ────────────────────────────────────────────────────── -->
+  <section class="container-x py-10">
+    <h2 class="font-display text-2xl md:text-3xl font-semibold">Basın metni</h2>
+    <p class="text-ink-dim mt-2.5">Haber ve duyurularda olduğu gibi kullanabilirsiniz.</p>
+    <div class="grid md:grid-cols-2 gap-4 mt-6">
+      {
+        [
+          { code: "tr", lang: "Türkçe", text: BOILERPLATE_TR },
+          { code: "en", lang: "English", text: BOILERPLATE_EN },
+        ].map((b) => (
+          <div class="br-quote">
+            <div class="flex items-center justify-between gap-3">
+              <span lang={b.code} class="text-ink-faint text-[0.68rem] font-mono uppercase tracking-[0.18em]">{b.lang}</span>
+              <button type="button" class="br-copy" data-copy={b.text}>
+                <Icon name="copy" size={13} /> <span data-copy-label>Kopyala</span>
+              </button>
+            </div>
+            <p class="text-ink-dim leading-relaxed mt-4">{b.text}</p>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- ── palette ────────────────────────────────────────────────────────── -->
+  <section class="container-x py-10">
+    <h2 class="font-display text-2xl md:text-3xl font-semibold">Renkler</h2>
+    <p class="text-ink-dim mt-2.5 max-w-2xl leading-relaxed">
+      Ana kimlik tek renk: siyah zemin üzerinde beyaz. Mavi yalnızca MultiAcademy
+      içindir, MultiGroup iletişiminde kullanılmaz.
+    </p>
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mt-6">
+      {
+        PALETTE.map((c) => (
+          <button type="button" class="br-swatch" data-copy={c.hex} title={`${c.hex} kopyala`}>
+            <span class="br-fill" style={`background:${c.hex}`}>
+              <span class="br-check"><Icon name="check" size={22} /></span>
+            </span>
+            <span class="br-meta">
+              <span class="br-name">{c.name}</span>
+              <span class="br-hex font-mono">{c.hex}</span>
+              <span class="br-note">{c.note}</span>
+            </span>
+          </button>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- ── typography ─────────────────────────────────────────────────────── -->
+  <section class="container-x py-10">
+    <h2 class="font-display text-2xl md:text-3xl font-semibold">Tipografi</h2>
+    <div class="grid sm:grid-cols-2 gap-4 mt-6">
+      {
+        TYPE.map((t) => (
+          <div class="br-type">
+            <div class="flex items-baseline justify-between gap-3">
+              <span class="font-medium">{t.name}</span>
+              <span class="text-ink-faint text-[0.68rem] font-mono uppercase tracking-[0.16em]">{t.role}</span>
+            </div>
+            <p class="br-sample" style={`font-family:${t.css}`}>{t.sample}</p>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- ── clear space + misuse ───────────────────────────────────────────── -->
+  <section class="container-x py-10">
+    <div class="grid lg:grid-cols-2 gap-10">
+      <div>
+        <h2 class="font-display text-2xl md:text-3xl font-semibold">Boşluk ve minimum boyut</h2>
+        <p class="text-ink-dim mt-2.5 leading-relaxed">
+          Logonun her yanında, amblemin yüksekliğinin yarısı kadar boş alan bırakın.
+          Yatay logoyu 120 pikselden, amblemi 24 pikselden küçük kullanmayın.
+        </p>
+        <div class="br-clear mt-6">
+          <div class="br-clear-inner">
+            <img src={`${CDN}/multigroup-logo-long-white.png`} alt="Boşluk kuralı" loading="lazy" />
+          </div>
+        </div>
+      </div>
+      <div>
+        <h2 class="font-display text-2xl md:text-3xl font-semibold">Yapmayın</h2>
+        <ul class="mt-6 border-t border-line">
+          {
+            MISUSE.map((m) => (
+              <li class="flex items-start gap-3 py-3.5 border-b border-line text-ink-dim">
+                <Icon name="close" size={16} class="text-ink-faint shrink-0 mt-0.5" />
+                <span class="leading-relaxed">{m}</span>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA ────────────────────────────────────────────────────────────── -->
+  <section class="container-x pb-20 pt-4">
+    <div class="card card-glow relative overflow-hidden px-7 py-12 md:px-14 md:py-14 text-center">
+      <div class="absolute inset-0 -z-10 opacity-50" aria-hidden="true"
+        style="background:radial-gradient(60% 80% at 50% 0%, rgba(255,255,255,.08), transparent 70%)"></div>
+      <h2 class="font-display text-2xl md:text-4xl font-semibold max-w-2xl mx-auto leading-tight text-balance">
+        Aradığınız varlık burada yoksa yazın.
+      </h2>
+      <p class="text-ink-dim mt-4 max-w-xl mx-auto leading-relaxed">
+        Farklı bir format, vektör dosya ya da özel bir kullanım için bize ulaşın.
+      </p>
+      <a href="/contact?type=support" class="btn btn-primary mt-7"><Icon name="mail" size={17} /> Bize ulaşın</a>
+    </div>
+  </section>
+
+  <style>
+    /* ── logo card ─────────────────────────────────────────────────────────
+       Square, uniform, and the actions live on hover — a permanent caption bar
+       turned every tile into a different height and made the grid read as a
+       list of rows rather than a set of marks. */
+    .br-asset {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 1rem;
+      border: 1px solid var(--color-line);
+      overflow: hidden;
+      margin: 0;
+    }
+    .br-plate-dark { background: #000; }
+    .br-plate-light { background: #fff; }
+    .br-plate-blue { background: #0b57d0; }
+
+    /* absolutely positioned + object-fit is the only way the mark can never
+       outgrow its tile, whatever the source image's aspect ratio is */
+    .br-img {
+      position: absolute;
+      inset: 18%;
+      width: 64%;
+      height: 64%;
+      object-fit: contain;
+      transition: transform 0.35s var(--ease-out-soft), opacity 0.25s var(--ease-out-soft);
+    }
+    .br-asset:hover .br-img { transform: scale(0.94); opacity: 0.25; }
+
+    .br-over {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 0.1rem;
+      padding: 1rem;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.88));
+      opacity: 0;
+      transition: opacity 0.25s var(--ease-out-soft);
+    }
+    .br-asset:hover .br-over,
+    .br-asset:focus-within .br-over { opacity: 1; }
+    .br-over .br-name { font-size: 0.88rem; color: #fff; }
+    .br-over .br-note { font-size: 0.74rem; color: rgba(255, 255, 255, 0.6); }
+    .br-acts { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.7rem; }
+    .br-act {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.3rem 0.55rem; border-radius: 0.45rem;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff; font-size: 0.72rem; font-family: var(--font-mono);
+      cursor: pointer;
+      transition: background-color 0.15s, border-color 0.15s;
+    }
+    .br-act:hover { background: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.4); }
+    .br-act.is-done { border-color: rgba(63, 196, 138, 0.6); color: #7ce0b0; }
+    /* touch devices have no hover: keep the panel readable but out of the way */
+    @media (hover: none) {
+      .br-over { opacity: 1; background: linear-gradient(180deg, transparent 42%, rgba(0, 0, 0, 0.9)); }
+      .br-asset .br-img { opacity: 1; }
+    }
+
+    /* ── info banner ──────────────────────────────────────────────────────── */
+    .br-info {
+      display: flex; align-items: flex-start; gap: 0.85rem;
+      border-radius: 1rem;
+      padding: 1rem 1.2rem;
+      border: 1px solid rgba(59, 130, 246, 0.32);
+      background:
+        radial-gradient(120% 160% at 0% 0%, rgba(59, 130, 246, 0.22), transparent 62%),
+        linear-gradient(180deg, rgba(11, 87, 208, 0.16), rgba(11, 87, 208, 0.07));
+      color: #cfe0ff;
+      line-height: 1.6;
+      font-size: 0.9rem;
+    }
+    .br-info-icon {
+      display: grid; place-items: center; flex: none;
+      width: 1.9rem; height: 1.9rem; border-radius: 0.55rem;
+      background: rgba(59, 130, 246, 0.22);
+      border: 1px solid rgba(59, 130, 246, 0.38);
+      color: #dbe8ff;
+    }
+    .br-info code {
+      font-family: var(--font-mono);
+      font-size: 0.85em;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.09);
+      padding: 0.1rem 0.35rem;
+      border-radius: 0.3rem;
+    }
+
+    .br-quote {
+      border: 1px solid var(--color-line);
+      border-radius: 1rem;
+      padding: 1.25rem 1.4rem 1.5rem;
+    }
+    .br-copy {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.72rem;
+      color: var(--color-ink-faint);
+      border: 1px solid var(--color-line);
+      border-radius: 0.45rem;
+      padding: 0.25rem 0.5rem;
+      background: transparent;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .br-copy:hover { color: var(--color-ink-text); border-color: rgba(255, 255, 255, 0.22); }
+    .br-copy.is-done { color: #3fc48a; border-color: rgba(63, 196, 138, 0.45); }
+
+    /* ── colour swatch: the card IS the colour ───────────────────────────── */
+    .br-swatch {
+      display: block;
+      text-align: left;
+      border: 1px solid var(--color-line);
+      border-radius: 0.9rem;
+      overflow: hidden;
+      padding: 0;
+      background: transparent;
+      cursor: pointer;
+      transition: border-color 0.15s var(--ease-out-soft), transform 0.15s var(--ease-out-soft);
+    }
+    .br-swatch:hover { border-color: rgba(255, 255, 255, 0.24); transform: translateY(-2px); }
+    .br-fill {
+      position: relative;
+      display: block;
+      aspect-ratio: 4 / 3;
+      border-bottom: 1px solid var(--color-line);
+    }
+    .br-check {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      opacity: 0;
+      transform: scale(0.6);
+      transition: opacity 0.2s var(--ease-out-soft), transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .br-check :global(svg) {
+      color: #0b1a12;
+      background: #3fc48a;
+      border-radius: 999px;
+      padding: 0.35rem;
+      width: 2.1rem;
+      height: 2.1rem;
+      box-shadow: 0 6px 18px -6px rgba(63, 196, 138, 0.8);
+    }
+    .br-swatch.is-done .br-check { opacity: 1; transform: scale(1); }
+    .br-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      padding: 0.7rem 0.85rem 0.85rem;
+    }
+    .br-hex { font-size: 0.72rem; color: var(--color-ink-dim); }
+    .br-swatch.is-done .br-hex { color: #3fc48a; }
+
+    .br-type {
+      border: 1px solid var(--color-line);
+      border-radius: 1rem;
+      padding: 1.15rem 1.3rem 1.4rem;
+    }
+    .br-sample {
+      margin-top: 0.9rem;
+      font-size: clamp(1.35rem, 3vw, 1.9rem);
+      line-height: 1.2;
+      color: var(--color-ink-text);
+    }
+
+    .br-clear {
+      border: 1px solid var(--color-line);
+      border-radius: 1rem;
+      padding: 2.4rem;
+      background: #000;
+    }
+    /* the dashed frame IS the clear-space rule, drawn at the distance it asks for */
+    .br-clear-inner {
+      border: 1px dashed rgba(255, 255, 255, 0.25);
+      padding: 1.6rem;
+      display: grid;
+      place-items: center;
+    }
+    .br-clear-inner img { max-width: 100%; height: auto; }
+  </style>
+
+  <script is:inline>
+    (() => {
+      const init = () => {
+        document.querySelectorAll("[data-copy]").forEach((el) => {
+          if (el.dataset.copyBound) return;
+          el.dataset.copyBound = "1";
+          el.addEventListener("click", async (e) => {
+            e.preventDefault();
+            const value = el.getAttribute("data-copy") || "";
+            try {
+              await navigator.clipboard.writeText(value);
+            } catch (err) {
+              return; // clipboard blocked; the value is visible on the page anyway
+            }
+            el.classList.add("is-done");
+            // Buttons with a text label swap it; the colour swatches show a
+            // check mark instead, which is pure CSS off .is-done.
+            const label = el.querySelector("[data-copy-label]");
+            const prev = label ? label.textContent : null;
+            if (label) label.textContent = "Kopyalandı";
+            clearTimeout(el.__t);
+            el.__t = setTimeout(() => {
+              el.classList.remove("is-done");
+              if (label && prev) label.textContent = prev;
+            }, 1600);
+          });
+        });
+      };
+      document.addEventListener("astro:page-load", init);
+      init();
+    })();
+  </script>
+
+</BaseLayout>

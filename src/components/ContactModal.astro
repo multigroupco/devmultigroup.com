@@ -39,7 +39,7 @@ import Icon from "./Icon.astro";
     <div id="contact-success" class="contact-success" hidden>
       <div class="contact-check"><Icon name="check" size={26} /></div>
       <h4 id="contact-success-title" class="font-display text-lg font-semibold mt-3">Teşekkürler!</h4>
-      <p id="contact-success-text" class="text-ink-dim text-sm mt-1.5">Mesajın bize ulaştı — en kısa sürede döneceğiz.</p>
+      <p id="contact-success-text" class="text-ink-dim text-sm mt-1.5">Mesajın bize ulaştı, en kısa sürede döneceğiz.</p>
       <button type="button" class="btn btn-ghost mt-5 justify-center" data-close>Kapat</button>
     </div>
   </div>
@@ -47,7 +47,7 @@ import Icon from "./Icon.astro";
 
 <script is:inline>
   (() => {
-    const SUCCESS = { title: "Teşekkürler!", text: "Mesajın bize ulaştı — en kısa sürede döneceğiz." };
+    const SUCCESS = { title: "Teşekkürler!", text: "Mesajın bize ulaştı, en kısa sürede döneceğiz." };
     const TYPES = {
       partner: { title: "Partner ol", sub: "Topluluğunu ağa katmak için bilgilerini bırak." },
       sponsor: { title: "Sponsor ol", sub: "Markanı topluluğa taşımak için bize ulaş." },
@@ -57,7 +57,7 @@ import Icon from "./Icon.astro";
         sub: "Yeni etkinlik ve duyurulardan ilk sen haberdar ol.",
         newsletter: true,
         submit: "Abone ol",
-        success: { title: "Aramızdasın! 🎉", text: "Bültene abone oldun — yeni içeriklerden ilk sen haberdar olacaksın." },
+        success: { title: "Aramızdasın! 🎉", text: "Bültene abone oldun. Yeni içeriklerden ilk sen haberdar olacaksın." },
       },
     };
     const m = () => document.getElementById("contact-modal");

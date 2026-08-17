@@ -18,10 +18,10 @@ const [upcoming, past, recs] = await Promise.all([
 ]);
 
 const programs = [
-  { title: "Modern iOS", text: "SwiftUI, mimari ve App Store'a yayınlama.", icon: "smartphone", tag: "iOS · SwiftUI" },
-  { title: "Android · Compose", text: "XML'den modern Android'e Jetpack Compose.", icon: "layers", tag: "Android · Kotlin" },
-  { title: "GenAI Temelleri", text: "Google Gemini ile LLM'ler, prompt yazımı ve ajanlar.", icon: "cpu", tag: "AI · Gemini" },
-  { title: "Web Temelleri", text: "Tarayıcıdan üretim seviyesi uygulamalara.", icon: "code", tag: "Web · Fullstack" },
+  { title: "Modern iOS", text: "SwiftUI, mimari ve App Store'a yayınlama.", icon: "smartphone", tag: "SwiftUI" },
+  { title: "Android & Compose", text: "XML'den modern Android'e Jetpack Compose.", icon: "layers", tag: "Kotlin" },
+  { title: "GenAI Temelleri", text: "Google Gemini ile LLM'ler, prompt yazımı ve ajanlar.", icon: "cpu", tag: "Gemini" },
+  { title: "Web Temelleri", text: "Tarayıcıdan üretim seviyesi uygulamalara.", icon: "code", tag: "Fullstack" },
 ];
 
 // value chips shown in the hero — honest, no invented numbers
@@ -34,7 +34,7 @@ const VALUE = [
 
 // "Neden MultiAcademy" value points
 const WHY = [
-  { icon: "check", title: "Katılım ücretsiz", text: "Tüm bootcamp'ler ücretsiz — gereken tek şey merak ve emek." },
+  { icon: "check", title: "Katılım ücretsiz", text: "Tüm bootcamp'ler ücretsiz. Gereken tek şey merak ve emek." },
   { icon: "users", title: "Mentör eşliğinde", text: "Alanında üretmiş geliştiriciler yol boyunca yanında." },
   { icon: "layers", title: "Gerçek projeler", text: "Öğrendiğini portföyüne koyabileceğin projelerle pekiştir." },
   { icon: "sparkles", title: "Topluluk desteği", text: "Birlikte öğrenen, birbirini iten bir topluluğun parçası ol." },
@@ -83,7 +83,7 @@ const academyLd = {
 
 <BaseLayout
   title="Ücretsiz Yazılım Bootcamp'leri · MultiAcademy"
-  description="MultiAcademy — Developer MultiGroup'un öğrenme kolu. Modern iOS'tan GenAI'a ücretsiz, yoğun ve mentör eşliğinde bootcamp'ler."
+  description="MultiAcademy, Developer MultiGroup'un öğrenme kolu. Modern iOS'tan GenAI'a ücretsiz, yoğun ve mentör eşliğinde bootcamp'ler."
   canonicalPath="/academy"
   jsonLd={academyLd}
   breadcrumbs={[{ name: "Akademi", item: `${BRAND.url}/academy` }]}
@@ -95,15 +95,11 @@ const academyLd = {
         style="background:radial-gradient(38% 42% at 26% 34%, rgba(139,92,246,.42), transparent 62%), radial-gradient(36% 40% at 72% 30%, rgba(236,72,153,.36), transparent 64%), radial-gradient(44% 46% at 50% 64%, rgba(34,211,238,.3), transparent 66%)"></div>
     </div>
     <div class="container-x pt-16 pb-10 md:pt-24 md:pb-14 text-center">
-      <p class="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-[0.22em] text-ink-faint">
-        <span class="inline-block w-1.5 h-1.5 rounded-full bg-white"></span>
-        MultiAcademy · Developer MultiGroup'un öğrenme kolu
-      </p>
-      <h1 class="mt-6 text-4xl md:text-6xl font-semibold leading-[1.05] max-w-4xl mx-auto text-balance">
+      <h1 class="text-4xl md:text-6xl font-semibold leading-[1.05] max-w-4xl mx-auto text-balance">
         Ücretsiz bootcamp'lerle <span class="text-grad">üreterek öğren.</span>
       </h1>
       <p class="mt-5 text-lg text-ink-dim max-w-2xl mx-auto leading-relaxed">
-        Modern iOS'tan GenAI'a — mentör eşliğinde, gerçek projelerle ilerleyen yoğun programlar.
+        Modern iOS'tan GenAI'a, mentör eşliğinde ve gerçek projelerle ilerleyen yoğun programlar.
         Merakını üretime hazır beceriye dönüştür; katılım tamamen ücretsiz.
       </p>
       <ul class="mt-7 flex flex-wrap items-center justify-center gap-2.5">
@@ -126,7 +122,10 @@ const academyLd = {
   {
     featured && (
       <section class="container-x pb-4">
-        <div class="card overflow-hidden grid md:grid-cols-[1.05fr_1fr]">
+        <div class="card overflow-hidden grid md:grid-cols-[1.05fr_1fr] relative">
+          {/* "Yaklaşıyor" rides the banner itself, top-left, instead of sitting
+              in the copy column as a line of eyebrow text. */}
+          <span class="ac-soon">Yaklaşıyor</span>
           <div class="relative min-h-[13rem] md:min-h-full bg-ink-900 skeleton">
             {fcover ? (
               <img src={fcover} alt="" loading="eager" decoding="async" class="img-reveal absolute inset-0 w-full h-full object-cover" />
@@ -137,10 +136,7 @@ const academyLd = {
             )}
           </div>
           <div class="p-6 md:p-8">
-            <p class="text-xs font-mono uppercase tracking-[0.18em] text-ink-faint flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-white animate-pulse" /> Sıradaki bootcamp
-            </p>
-            <h2 class="mt-3 text-2xl md:text-3xl font-semibold leading-tight">{featured.title}</h2>
+            <h2 class="text-2xl md:text-3xl font-semibold leading-tight">{featured.title}</h2>
             <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-sm text-ink-dim">
               <span class="inline-flex items-center gap-1.5"><Icon name="calendar" size={15} /> {fday?.weekday} {fday?.day} {fday?.month}{ftime && ` · ${ftime}`}</span>
               {fwhere && <span class="inline-flex items-center gap-1.5"><Icon name="map-pin" size={15} /> {fwhere}</span>}
@@ -170,7 +166,7 @@ const academyLd = {
 
   {/* ── programs / tracks — what you actually learn (the core sell) ── */}
   <section class="container-x py-8">
-    <SectionHeader title="Programlar" description="MultiAcademy'de öğrenebileceğin alanlar — her biri sıfırdan üretime, uygulamalı." />
+    <SectionHeader title="Programlar" description="MultiAcademy'de öğrenebileceğin alanlar. Her biri sıfırdan üretime, uygulamalı." />
     <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
       {programs.map((p) => (
         <div class="card p-6 flex flex-col">
@@ -192,12 +188,12 @@ const academyLd = {
         <div>
           <h2 class="text-2xl md:text-3xl font-semibold leading-tight">Neden MultiAcademy?</h2>
           <p class="text-ink-dim mt-4 leading-relaxed">
-            Bootcamp'lerimiz ürün çıkarmış geliştiricilerle birlikte kurgulanır — teoriyle değil,
+            Bootcamp'lerimiz ürün çıkarmış geliştiricilerle birlikte kurgulanır. Teoriyle değil,
             üreterek ilerlersin. Sonunda portföyünde gerçek bir proje olur.
           </p>
           <div class="flex flex-wrap gap-3 mt-6">
             <a href={GATHIN.multiacademy} target="_blank" rel="noopener noreferrer" class="btn btn-primary" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "academy_apply", page: "academy", href: GATHIN.multiacademy })}>
-              <Icon name="arrow-up-right" size={16} /> Hemen başvur
+              <Icon name="arrow-up-right" size={16} /> Hemen üye ol
             </a>
           </div>
         </div>
@@ -290,4 +286,27 @@ const academyLd = {
       init();
     })();
   </script>
+
+  <style>
+    /* Squared-off, not pill: the site's `.chip` is fully rounded, and this badge
+       needs to read as a label stamped on the banner rather than another chip. */
+    .ac-soon {
+      position: absolute;
+      top: 0.85rem;
+      left: 0.85rem;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      padding: 0.32rem 0.62rem;
+      border-radius: 0.3rem;
+      background: #e01b24;
+      color: #fff;
+      font-size: 0.66rem;
+      font-weight: 600;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      line-height: 1;
+      box-shadow: 0 2px 12px -2px rgba(224, 27, 36, 0.55);
+    }
+  </style>
 </BaseLayout>

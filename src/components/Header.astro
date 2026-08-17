@@ -89,12 +89,14 @@ const isActive = (href: string) =>
       }
     </nav>
 
-    <div class="flex items-center gap-2">
-      <button type="button" data-search-open class="btn btn-ghost !rounded-xl !p-2.5" aria-label="Ara" title="Ara">
-        <Icon name="search" size={16} />
+    <div class="flex items-center gap-1">
+      {/* Bare icons, no button box. Only "Aramıza katıl" keeps its frame, so it
+          reads as the single action in this cluster instead of one of three. */}
+      <button type="button" data-search-open class="hd-icon" aria-label="Ara" title="Ara">
+        <Icon name="search" size={17} />
       </button>
-      <button type="button" data-contact="newsletter" class="btn btn-ghost hidden sm:inline-flex !rounded-xl !p-2.5" aria-label="Bültene abone ol" title="Bültene abone ol">
-        <Icon name="bell" size={16} />
+      <button type="button" data-contact="newsletter" class="hd-icon hidden sm:inline-flex" aria-label="Bültene abone ol" title="Bültene abone ol">
+        <Icon name="bell" size={17} />
       </button>
       <a href={JOIN_FORM} target="_blank" rel="noopener noreferrer" class="btn btn-ghost group hidden sm:inline-flex !rounded-xl !py-2 !px-3.5 text-sm" data-track="join_click" data-track-props={JSON.stringify({ location: "header" })}>
         Aramıza katıl
@@ -148,6 +150,29 @@ const isActive = (href: string) =>
 </header>
 
 <style>
+  /* Frameless header icons: hit area stays generous, the box is gone. */
+  .hd-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 0;
+    background: transparent;
+    color: var(--color-ink-dim);
+    cursor: pointer;
+    border-radius: 0.6rem;
+    transition: color 0.15s var(--ease-out-soft), transform 0.15s var(--ease-out-soft);
+  }
+  .hd-icon:hover {
+    color: var(--color-ink-text);
+    transform: translateY(-1px);
+  }
+  .hd-icon:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.45);
+    outline-offset: 2px;
+  }
+
   .site-header {
     position: sticky;
     top: 0;

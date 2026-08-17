@@ -19,9 +19,9 @@ const site = resolveSite(settings);
 
 const values = [
   { icon: "users", title: "Önce topluluk", text: "Yaptığımız her şey geliştiriciler tarafından, geliştiriciler için. Kapı tutmak yok, ego yok." },
-  { icon: "book-open", title: "Açıkça öğren", text: "Konuşmalar, kayıtlar ve notlar — bilgiye erişim ücretsiz olmalı." },
+  { icon: "book-open", title: "Açıkça öğren", text: "Konuşmalar, kayıtlar ve notlar. Bilgiye erişim ücretsiz olmalı." },
   { icon: "sparkles", title: "Birlikte üret", text: "En iyi gelişim, omuz omuza gerçek işler ortaya koyarak olur." },
-  { icon: "globe", title: "Türkiye'nin her yerinde", text: "Çevrimiçi ve yüz yüze — geliştiriciler neredeyse, biz de orada olmak istiyoruz." },
+  { icon: "globe", title: "Türkiye'nin her yerinde", text: "Çevrimiçi ve yüz yüze. Geliştiriciler neredeyse, biz de orada olmak istiyoruz." },
 ];
 
 // Self-contained Turkish Q&A — visible on the page AND emitted as FAQPage so
@@ -65,7 +65,7 @@ const faqLd = {
 ---
 
 <BaseLayout
-  title="Hakkımızda — Türkiye'nin Geliştirici Topluluğu"
+  title="Hakkımızda · Türkiye'nin Geliştirici Topluluğu"
   description="Developer MultiGroup'un hikâyesi, misyonu ve değerleri. 2020'den beri Türkiye'de geliştiricileri bir araya getiren gönüllü topluluk."
   canonicalPath="/about"
   jsonLd={faqLd}
@@ -77,8 +77,8 @@ const faqLd = {
     </h1>
     <p class="text-ink-dim text-lg mt-6 max-w-2xl leading-relaxed">
       {BRAND.short} basit bir inançla başladı: geliştiriciler birlikte daha hızlı gelişir.
-      Bir avuç buluşma olarak başlayan şey — mobil, web, AI, oyunlar ve daha fazlasını
-      kapsayan — bir topluluklar şemsiyesine, ayrıca merakı ustalığa dönüştüren
+      Bir avuç buluşma olarak başlayan şey; mobil, web, AI, oyunlar ve daha fazlasını
+      kapsayan bir topluluklar şemsiyesine, ayrıca merakı ustalığa dönüştüren
       bir akademiye dönüştü.
     </p>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-12 max-w-2xl">
@@ -116,7 +116,7 @@ const faqLd = {
           <h2 class="text-2xl md:text-3xl font-semibold">MultiAcademy</h2>
           <p class="text-ink-dim mt-3 max-w-lg leading-relaxed">
             Öğrenme kolumuz, gerçek ürünler geliştirmiş mentörlerle ücretsiz, yoğun
-            bootcamp'ler düzenliyor — Modern iOS'tan GenAI temellerine kadar.
+            bootcamp'ler düzenliyor. Modern iOS'tan GenAI temellerine kadar.
           </p>
           <a href="/academy" class="btn btn-primary mt-6" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "academy", page: "about", href: "/academy" })}>Akademiyi keşfet <Icon name="arrow-right" size={16} /></a>
         </div>

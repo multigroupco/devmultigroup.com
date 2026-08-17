@@ -93,7 +93,7 @@ if (hub) {
     {
       dots.map((d) => (
         <g class="map-node" data-city={d.city}>
-          <title>{`${d.city} — ${d.n} topluluk`}</title>
+          <title>{`${d.city}: ${d.n} topluluk`}</title>
           <circle class="node-halo" cx={d.x} cy={d.y} r={d.r + 5} fill="rgba(255,255,255,0.06)" />
           <circle cx={d.x} cy={d.y} r={d.r} fill="#ffffff" fill-opacity="0.95" />
           <text x={d.x} y={d.y + 3.1} text-anchor="middle" class="map-count">{d.n}</text>

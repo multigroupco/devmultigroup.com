@@ -69,7 +69,7 @@ function describeOidcError(err: unknown): string {
       const parts = [e.error];
       if (e.error_description) parts.push(e.error_description);
       if (typeof e.status === "number") parts.push(`HTTP ${e.status}`);
-      return parts.join(" — ");
+      return parts.join(" · ");
     }
     if (e.message) return e.message;
   }

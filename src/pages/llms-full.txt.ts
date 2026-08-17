@@ -36,7 +36,7 @@ export const GET: APIRoute = async (context) => {
     })
     .join("\n\n");
 
-  const body = `# ${BRAND.name} — Full Content
+  const body = `# ${BRAND.name} · Full Content
 
 ${BRAND.tagline}.
 
@@ -62,10 +62,10 @@ only fixed English string is the motto "${BRAND.tagline}".
 Mobile / iOS, web, AI / GenAI, game development, Web3, and career growth.
 
 ## MultiAcademy bootcamps (free)
-- Modern iOS — SwiftUI, architecture and shipping to the App Store.
-- Android · Compose — from XML to modern Android with Jetpack Compose.
-- GenAI Temelleri — LLMs, prompting and agents with Google Gemini.
-- Web Temelleri — from the browser to production-grade apps.
+- Modern iOS: SwiftUI, architecture and shipping to the App Store.
+- Android · Compose: from XML to modern Android with Jetpack Compose.
+- GenAI Temelleri: LLMs, prompting and agents with Google Gemini.
+- Web Temelleri: from the browser to production-grade apps.
 Site: https://academy.devmultigroup.com
 
 ## Official links

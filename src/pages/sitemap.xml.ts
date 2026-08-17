@@ -22,6 +22,7 @@ const STATIC: { path: string; priority: string }[] = [
   { path: "/speakers", priority: "0.6" },
   { path: "/about", priority: "0.6" },
   { path: "/contact", priority: "0.5" },
+  { path: "/brand", priority: "0.4" },
   { path: "/store", priority: "0.5" },
   { path: "/links", priority: "0.4" },
   { path: "/academy-links", priority: "0.4" },

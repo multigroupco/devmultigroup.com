@@ -19,12 +19,14 @@ import Icon from "./Icon.astro";
         aria-controls="search-results"
       />
       <button type="button" class="dmg-search-esc" data-search-close aria-label="Kapat">ESC</button>
+      {/* indeterminate bar: the only thing that says "we're working on it" while
+          the embedding round-trip is in flight */}
+      <span id="search-bar" class="dmg-search-bar" aria-hidden="true"></span>
     </div>
     <div id="search-results" class="dmg-search-results" role="listbox" aria-label="Arama sonuçları"></div>
     <div class="dmg-search-foot">
       <span><kbd>↑</kbd><kbd>↓</kbd> Gez</span>
       <span><kbd>↵</kbd> Aç</span>
-      <span class="dmg-search-hint">Anlamsal arama · bge-m3</span>
     </div>
   </div>
 </div>
@@ -119,13 +121,81 @@ import Icon from "./Icon.astro";
     padding: 0.05rem 0.32rem; margin-right: 0.15rem;
     font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.66rem;
   }
-  .dmg-search-hint { margin-left: auto; font-family: var(--font-mono, ui-monospace, monospace); }
   @media (max-width: 640px) {
     .dmg-search-panel { top: 6vh; max-height: 82vh; }
-    .dmg-search-hint { display: none; }
   }
+
+  /* ── searching state ──────────────────────────────────────────────────── */
+  .dmg-search-head { position: relative; }
+  .dmg-search-bar {
+    position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+    overflow: hidden; opacity: 0; transition: opacity 0.2s ease;
+    pointer-events: none;
+  }
+  .dmg-search-bar::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, #fff, transparent);
+    transform: translateX(-100%);
+  }
+  .dmg-search.is-busy .dmg-search-bar { opacity: 1; }
+  .dmg-search.is-busy .dmg-search-bar::after { animation: dmg-search-scan 1s linear infinite; }
+  @keyframes dmg-search-scan {
+    to { transform: translateX(100%); }
+  }
+
+  /* skeleton rows stand in for results so the panel keeps its shape while the
+     request is in flight, instead of collapsing to an empty box */
+  .sr-skel { padding: 0.7rem 1rem; }
+  .sr-skel span {
+    display: block; border-radius: 6px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.045), rgba(255,255,255,0.10), rgba(255,255,255,0.045));
+    background-size: 200% 100%;
+    animation: dmg-search-shimmer 1.3s ease-in-out infinite;
+  }
+  .sr-skel .l1 { height: 0.78rem; width: 46%; }
+  .sr-skel .l2 { height: 0.62rem; width: 72%; margin-top: 0.5rem; opacity: 0.6; }
+  .sr-skel:nth-child(2) .l1 { width: 58%; animation-delay: 0.12s; }
+  .sr-skel:nth-child(3) .l1 { width: 38%; animation-delay: 0.24s; }
+  .sr-skel:nth-child(4) .l1 { width: 52%; animation-delay: 0.36s; }
+  @keyframes dmg-search-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* results fade+lift in, so the swap from skeleton to content reads as a step */
+  .sr-in { animation: dmg-search-in 0.28s var(--ease-out-soft) both; }
+  @keyframes dmg-search-in {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* ── empty state: suggestions instead of a dead panel ─────────────────── */
+  .sr-sug-head {
+    padding: 0.85rem 1rem 0.5rem;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--color-ink-faint);
+  }
+  .sr-sugs { display: flex; flex-wrap: wrap; gap: 0.45rem; padding: 0 1rem 0.9rem; }
+  .sr-sug {
+    padding: 0.4rem 0.75rem; border-radius: 0.55rem;
+    border: 1px solid var(--color-line);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--color-ink-dim);
+    font-size: 0.8rem; cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+  }
+  .sr-sug:hover, .sr-sug:focus-visible {
+    color: var(--color-ink-text);
+    border-color: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.07);
+    outline: none;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .dmg-search-backdrop, .dmg-search-panel { transition: none; animation: none; }
+    .dmg-search-bar::after, .sr-skel span, .sr-in { animation: none; }
+    .sr-in { opacity: 1; transform: none; }
   }
 </style>
 
@@ -146,8 +216,43 @@ import Icon from "./Icon.astro";
         ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
       );
 
+    // Empty state carries suggestions rather than a dead panel: a first-time
+    // visitor has no idea what this index actually contains.
+    const SUGGEST = ["Bootcamp", "iOS", "Yapay zekâ", "Android", "Web", "Konuşmacı", "Kayıtlar"];
+    const QUICK = [
+      ["Etkinlikler", "/events"],
+      ["Akademi", "/academy"],
+      ["Blog", "/blog"],
+      ["Ekip", "/team"],
+      ["İş Birlikleri", "/partnerships"],
+      ["İletişim", "/contact"],
+    ];
     const EMPTY =
-      '<div class="sr-msg"><span class="sr-msg-title">Ne arıyorsun?</span><span class="sr-msg-sub">Etkinlik, yazı, kayıt, bağlantı, ekip, topluluk…</span></div>';
+      '<div class="sr-sug-head">Ne arıyorsun?</div>' +
+      '<div class="sr-sugs">' +
+      SUGGEST.map((s) => `<button type="button" class="sr-sug" data-sug="${esc(s)}">${esc(s)}</button>`).join("") +
+      "</div>" +
+      '<div class="sr-sug-head">Hızlı erişim</div>' +
+      '<div class="sr-sugs">' +
+      QUICK.map(([l, h]) => `<a class="sr-sug" href="${esc(h)}" data-sr role="option">${esc(l)}</a>`).join("") +
+      "</div>";
+
+    const SKELETON = Array.from({ length: 4 })
+      .map(() => '<div class="sr-skel"><span class="l1"></span><span class="l2"></span></div>')
+      .join("");
+
+    const setBusy = (on) => {
+      el()?.classList.toggle("is-busy", !!on);
+      box()?.setAttribute("aria-busy", on ? "true" : "false");
+    };
+
+    function showEmpty() {
+      const b = box();
+      if (!b) return;
+      b.innerHTML = EMPTY;
+      items = [...b.querySelectorAll("[data-sr]")];
+      active = -1;
+    }
 
     function open(source) {
       const e = el();
@@ -160,7 +265,7 @@ import Icon from "./Icon.astro";
       const i = input();
       setTimeout(() => { i?.focus(); i?.select(); }, 40);
       if (i && i.value.trim().length >= 2) runSearch(i.value);
-      else if (box()) { box().innerHTML = EMPTY; items = []; active = -1; }
+      else showEmpty();
     }
 
     function close() {
@@ -170,6 +275,7 @@ import Icon from "./Icon.astro";
       e.setAttribute("aria-hidden", "true");
       document.documentElement.style.overflow = "";
       controller?.abort();
+      setBusy(false);
     }
 
     function highlight(next) {
@@ -183,7 +289,7 @@ import Icon from "./Icon.astro";
       const b = box();
       if (!b) return;
       if (!results.length) {
-        b.innerHTML = '<div class="sr-msg">Sonuç bulunamadı.</div>';
+        b.innerHTML = '<div class="sr-msg sr-in">Sonuç bulunamadı.</div>';
         items = []; active = -1; return;
       }
       // group by type, order groups by best score within each
@@ -206,7 +312,7 @@ import Icon from "./Icon.astro";
             `</a>`;
         }
       }
-      b.innerHTML = html;
+      b.innerHTML = `<div class="sr-in">${html}</div>`;
       items = [...b.querySelectorAll("[data-sr]")];
       highlight(0);
     }
@@ -215,10 +321,14 @@ import Icon from "./Icon.astro";
       const b = box();
       if (!b) return;
       q = q.trim();
-      if (q.length < 2) { b.innerHTML = EMPTY; items = []; active = -1; return; }
+      if (q.length < 2) { setBusy(false); showEmpty(); return; }
       controller?.abort();
       controller = new AbortController();
-      b.setAttribute("aria-busy", "true");
+      // Skeleton + scanning bar: the embedding round-trip is slow enough that an
+      // unchanged panel reads as "nothing happened".
+      b.innerHTML = SKELETON;
+      items = []; active = -1;
+      setBusy(true);
       try {
         const r = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: controller.signal });
         const j = await r.json();
@@ -229,11 +339,11 @@ import Icon from "./Icon.astro";
         }
       } catch (err) {
         if (err.name !== "AbortError") {
-          b.innerHTML = '<div class="sr-msg">Arama şu an kullanılamıyor.</div>';
+          b.innerHTML = '<div class="sr-msg sr-in">Arama şu an kullanılamıyor.</div>';
           items = []; active = -1;
         }
       } finally {
-        b.removeAttribute("aria-busy");
+        setBusy(false);
       }
     }
 
@@ -244,6 +354,14 @@ import Icon from "./Icon.astro";
       document.addEventListener("click", (e) => {
         if (e.target.closest("[data-search-open]")) { e.preventDefault(); open("button"); return; }
         if (e.target.closest("[data-search-close]")) { e.preventDefault(); close(); return; }
+        const sug = e.target.closest("[data-sug]");
+        if (sug) {
+          e.preventDefault();
+          const i = input();
+          if (i) { i.value = sug.getAttribute("data-sug") || ""; i.focus(); }
+          runSearch(i ? i.value : "");
+          return;
+        }
         // result click: close (clears scroll lock) then let ClientRouter navigate
         const sr = e.target.closest("[data-sr]");
         if (sr) {

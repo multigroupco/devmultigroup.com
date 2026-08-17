@@ -32,7 +32,7 @@ const {
 const siteOrigin = (Astro.site?.origin ?? BRAND.url).replace(/\/$/, "");
 const path = canonicalPath ?? Astro.url.pathname;
 const canonical = siteOrigin + (path === "/" ? "" : path.replace(/\/$/, "")) || siteOrigin + "/";
-const fullTitle = title ? `${title} · ${BRAND.short}` : `${BRAND.name} — ${BRAND.tagline}`;
+const fullTitle = title ? `${title} · ${BRAND.short}` : `${BRAND.name} · ${BRAND.tagline}`;
 
 // Open Graph image: use the page's real cover when one is passed; otherwise
 // generate a branded, title-bearing dynamic card via /api/og. The eyebrow is

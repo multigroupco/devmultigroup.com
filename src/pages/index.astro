@@ -150,14 +150,13 @@ recordings = recordings.slice(0, 3);
 
     <!-- ortaya hizalı içerik (boş alanlar arkadaki foto hover'ına geçsin diye pointer-events yok) -->
     <div class="hero-content container-x text-center w-full animate-rise pointer-events-none">
-      <p class="text-sm text-ink-dim font-medium mb-5 uppercase tracking-[0.18em]">2020'den beri · Türkiye</p>
       <h1 class="text-[2.6rem] leading-[1.05] sm:text-6xl lg:text-[4.6rem] font-semibold tracking-tight max-w-4xl mx-auto">
         Where developers<br />
         <span class="text-grad">become together.</span>
       </h1>
       <p class="text-ink-dim text-lg mt-6 max-w-xl mx-auto leading-relaxed">
         {BRAND.short}; 2020'den beri iOS, web, yapay zekâ ve daha fazlasında üreten
-        geliştiricilerin topluluğu — buluşmalar, konferanslar, bootcamp'ler ve
+        geliştiricilerin topluluğu. Buluşmalar, konferanslar, bootcamp'ler ve
         mühendisleri birlikte büyüten bir akademi.
       </p>
       <div class="flex flex-wrap items-center justify-center gap-3 mt-8 pointer-events-auto">
@@ -188,7 +187,7 @@ recordings = recordings.slice(0, 3);
 
   <!-- ───────────────────── impact / KPI strip ───────────────────── -->
   <ImpactStrip
-    eyebrow="2020'den beri · Etki"
+    eyebrow="2020'den beri sahnede"
     title="Sadece bir topluluk değil."
     items={kpis}
   />
@@ -211,10 +210,10 @@ recordings = recordings.slice(0, 3);
       <div class="absolute -right-20 -top-20 w-72 h-72 rounded-full blur-3xl opacity-50" style="background:radial-gradient(circle, rgba(255,255,255,.06), transparent 70%)"></div>
       <div class="relative grid md:grid-cols-[1.4fr_1fr] gap-8 items-center">
         <div>
-          <h2 class="text-2xl md:text-3xl font-semibold">Ürün çıkarmış kişilerle, yaparak öğren.</h2>
+          <h2 class="text-2xl md:text-3xl font-semibold">Tecrübeli ekiplerle, deneyimleyerek öğren.</h2>
           <p class="text-ink-dim mt-3 max-w-lg leading-relaxed">
             Akademimiz Modern iOS'tan GenAI temellerine kadar yoğun ve katılımı
-            ücretsiz bootcamp'ler düzenliyor — merakı üretime hazır beceriye dönüştürüyor.
+            ücretsiz bootcamp'ler düzenliyor, merakı üretime hazır beceriye dönüştürüyor.
           </p>
           <div class="flex flex-wrap gap-3 mt-6">
             <a href="/academy" class="btn btn-primary" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "academy_explore", page: "home" })}>Akademiyi keşfet <Icon name="arrow-right" size={16} /></a>
@@ -279,13 +278,13 @@ recordings = recordings.slice(0, 3);
   <section class="container-x py-10">
     <div class="card card-glow relative overflow-hidden p-10 md:p-14 text-center">
       <div class="absolute inset-0 -z-10 opacity-50" style="background:radial-gradient(60% 80% at 50% 0%, rgba(255,255,255,.08), transparent 70%)"></div>
-      <h2 class="text-3xl md:text-4xl font-semibold max-w-2xl mx-auto">Bizimle inşa etmeye hazır mısın?</h2>
+      <h2 class="text-3xl md:text-4xl font-semibold max-w-2xl mx-auto">Beraber çalışmak ister misin?</h2>
       <p class="text-ink-dim mt-4 max-w-xl mx-auto leading-relaxed">
         Türkiye'nin dört bir yanındaki binlerce geliştiriciye katıl. Bir etkinliğe
         gel, bir konuşma izle ya da doğrudan topluluğa atla.
       </p>
       <div class="flex flex-wrap justify-center gap-3 mt-8">
-        <a href="/links" class="btn btn-primary" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "all_links", page: "home" })}><Icon name="sparkles" size={17} /> Tüm bağlantılarımız</a>
+        <a href="/contact" class="btn btn-primary" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "home_contact", page: "home" })}><Icon name="mail" size={17} /> Bize ulaşın</a>
         <a href={GATHIN.multigroup} target="_blank" rel="noopener noreferrer" class="btn btn-ghost" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "events_gathin", page: "home" })}>Gathin'de etkinliklere göz at</a>
       </div>
     </div>

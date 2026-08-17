@@ -11,7 +11,7 @@ export const BRAND = {
   url: "https://devmultigroup.com",
   email: "support@devmultigroup.com",
   description:
-    "Developer MultiGroup; iOS, web, yapay zekâ ve daha fazlasında geliştiricilerin birlikte büyüdüğü gönüllü bir Türk yazılım topluluğu — buluşmalar, konferanslar ve akademisiyle ücretsiz bootcamp'ler.",
+    "Developer MultiGroup; iOS, web, yapay zekâ ve daha fazlasında geliştiricilerin birlikte büyüdüğü gönüllü bir Türk yazılım topluluğu. Buluşmalar, konferanslar ve akademisiyle ücretsiz bootcamp'ler.",
 } as const;
 
 /** The one canonical, indexable apex host. Analytics + the noindex guard key off
@@ -77,6 +77,7 @@ export const FOOTER_NAV: { label: string; href: string }[] = [
   { label: "Mağaza", href: "/store" },
   { label: "Bağlantılar", href: "/links" },
   { label: "İletişim", href: "/contact" },
+  { label: "Marka & Basın", href: "/brand" },
 ];
 
 /** Gizlilik / KVKK footer links. */
@@ -136,7 +137,7 @@ export const SUBBRANDS: {
   {
     strong: "Multi",
     tail: "Academy",
-    desc: "Öğrenme kolu — ücretsiz bootcamp'ler ve uygulamalı programlar.",
+    desc: "Öğrenme kolu. Ücretsiz bootcamp'ler ve uygulamalı programlar.",
     href: "/academy",
     hrefLabel: "Akademi",
     linktree: { href: "/academy-links", label: "MultiAcademy bağlantıları" },
@@ -149,7 +150,7 @@ export const SUBBRANDS: {
   {
     strong: "Multi",
     tail: "Store",
-    desc: "Ürün kolu — topluluk merch'i, etkinlikte teslim ön sipariş drop'ları.",
+    desc: "Ürün kolu. Topluluk merch'i, etkinlikte teslim ön sipariş drop'ları.",
     href: "/store",
     hrefLabel: "Mağaza",
     socials: [{ icon: "instagram", href: SOCIALS.multistore.instagram, label: "MultiStore Instagram" }],

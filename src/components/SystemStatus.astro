@@ -37,24 +37,19 @@ const STATUS_URL = "https://status.devmultigroup.com";
 </a>
 
 <style>
+  /* Plain inline text, not a chip. It sits next to other footer/linktree copy
+     and a bordered pill made it read as a button competing with the nav. */
   .sysstat {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.45rem;
     font-size: 0.75rem;
-    color: var(--color-ink-dim);
-    border-radius: var(--radius-pill);
-    border: 1px solid var(--color-line);
-    background: rgba(255, 255, 255, 0.02);
-    padding: 0.32rem 0.75rem;
-    transition: color 0.2s var(--ease-out-soft), border-color 0.2s var(--ease-out-soft),
-      background-color 0.2s var(--ease-out-soft);
+    color: var(--color-ink-faint);
     white-space: nowrap;
+    transition: color 0.2s var(--ease-out-soft);
   }
   .sysstat:hover {
     color: var(--color-ink-text);
-    border-color: var(--color-line-strong);
-    background: rgba(255, 255, 255, 0.05);
   }
   .sysstat-center {
     display: flex;
