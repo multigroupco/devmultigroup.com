@@ -174,13 +174,6 @@ const ld = {
         </div>
       ))
     }
-    <div class="br-info">
-      <span class="br-info-icon"><Icon name="sparkles" size={16} /></span>
-      <p>
-        Bu görselleri kendi sunucunuza kopyalamanıza gerek yok. Bağlantılar doğrudan
-        kullanılabilir: <code>assets.devmultigroup.com/branding/…</code>
-      </p>
-    </div>
   </section>
 
   <!-- ── boilerplate ────────────────────────────────────────────────────── -->
@@ -217,15 +210,17 @@ const ld = {
     <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mt-6">
       {
         PALETTE.map((c) => (
-          <button type="button" class="br-swatch" data-copy={c.hex} title={`${c.hex} kopyala`}>
-            <span class="br-fill" style={`background:${c.hex}`}>
-              <span class="br-check"><Icon name="check" size={22} /></span>
-            </span>
-            <span class="br-meta">
-              <span class="br-name">{c.name}</span>
-              <span class="br-hex font-mono">{c.hex}</span>
-              <span class="br-note">{c.note}</span>
-            </span>
+          <button
+            type="button"
+            class="br-swatch"
+            data-copy={c.hex}
+            title={`${c.name} · ${c.hex} — ${c.note}`}
+            aria-label={`${c.name}, ${c.hex}, ${c.note}. Kopyalamak için tıkla`}
+            style={`background:${c.hex}`}
+          >
+            {/* hex surfaces on hover only — the resting tile is pure colour */}
+            <span class="br-hex font-mono">{c.hex}</span>
+            <span class="br-check"><Icon name="check" size={22} /></span>
           </button>
         ))
       }
@@ -321,9 +316,11 @@ const ld = {
       width: 64%;
       height: 64%;
       object-fit: contain;
-      transition: transform 0.35s var(--ease-out-soft), opacity 0.25s var(--ease-out-soft);
+      transition: opacity 0.3s var(--ease-out-soft);
     }
-    .br-asset:hover .br-img { transform: scale(0.94); opacity: 0.25; }
+    /* The mark stays clearly legible on hover. Dimming it to 0.25 behind a
+       near-opaque sheet read as the tile switching off. */
+    .br-asset:hover .br-img { opacity: 0.72; }
 
     .br-over {
       position: absolute;
@@ -332,60 +329,41 @@ const ld = {
       flex-direction: column;
       justify-content: flex-end;
       gap: 0.1rem;
-      padding: 1rem;
-      background: linear-gradient(180deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.88));
+      padding: 0.9rem;
+      /* transparent across the top half so the logo shows through; the scrim
+         only builds where the text and buttons actually sit */
+      background: linear-gradient(
+        180deg,
+        transparent 24%,
+        rgba(0, 0, 0, 0.45) 58%,
+        rgba(0, 0, 0, 0.82) 100%
+      );
       opacity: 0;
-      transition: opacity 0.25s var(--ease-out-soft);
+      transition: opacity 0.28s var(--ease-out-soft);
     }
     .br-asset:hover .br-over,
     .br-asset:focus-within .br-over { opacity: 1; }
-    .br-over .br-name { font-size: 0.88rem; color: #fff; }
-    .br-over .br-note { font-size: 0.74rem; color: rgba(255, 255, 255, 0.6); }
-    .br-acts { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.7rem; }
+    .br-over .br-name { font-size: 0.86rem; color: #fff; }
+    .br-over .br-note { font-size: 0.72rem; color: rgba(255, 255, 255, 0.62); }
+    .br-acts { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
     .br-act {
       display: inline-flex; align-items: center; gap: 0.3rem;
       padding: 0.3rem 0.55rem; border-radius: 0.45rem;
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      /* No backdrop-filter here. Inside .br-over, which fades via opacity, the
+         opacity creates a group and the filter samples the wrong backdrop for a
+         frame — the buttons flashed black before settling. The scrim underneath
+         is already dark enough to carry them. */
+      background: rgba(255, 255, 255, 0.12);
       color: #fff; font-size: 0.72rem; font-family: var(--font-mono);
       cursor: pointer;
       transition: background-color 0.15s, border-color 0.15s;
     }
-    .br-act:hover { background: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.4); }
+    .br-act:hover { background: rgba(255, 255, 255, 0.2); border-color: rgba(255, 255, 255, 0.42); }
     .br-act.is-done { border-color: rgba(63, 196, 138, 0.6); color: #7ce0b0; }
-    /* touch devices have no hover: keep the panel readable but out of the way */
     @media (hover: none) {
-      .br-over { opacity: 1; background: linear-gradient(180deg, transparent 42%, rgba(0, 0, 0, 0.9)); }
+      .br-over { opacity: 1; }
       .br-asset .br-img { opacity: 1; }
-    }
-
-    /* ── info banner ──────────────────────────────────────────────────────── */
-    .br-info {
-      display: flex; align-items: flex-start; gap: 0.85rem;
-      border-radius: 1rem;
-      padding: 1rem 1.2rem;
-      border: 1px solid rgba(59, 130, 246, 0.32);
-      background:
-        radial-gradient(120% 160% at 0% 0%, rgba(59, 130, 246, 0.22), transparent 62%),
-        linear-gradient(180deg, rgba(11, 87, 208, 0.16), rgba(11, 87, 208, 0.07));
-      color: #cfe0ff;
-      line-height: 1.6;
-      font-size: 0.9rem;
-    }
-    .br-info-icon {
-      display: grid; place-items: center; flex: none;
-      width: 1.9rem; height: 1.9rem; border-radius: 0.55rem;
-      background: rgba(59, 130, 246, 0.22);
-      border: 1px solid rgba(59, 130, 246, 0.38);
-      color: #dbe8ff;
-    }
-    .br-info code {
-      font-family: var(--font-mono);
-      font-size: 0.85em;
-      color: #fff;
-      background: rgba(255, 255, 255, 0.09);
-      padding: 0.1rem 0.35rem;
-      border-radius: 0.3rem;
     }
 
     .br-quote {
@@ -409,25 +387,34 @@ const ld = {
     .br-copy:hover { color: var(--color-ink-text); border-color: rgba(255, 255, 255, 0.22); }
     .br-copy.is-done { color: #3fc48a; border-color: rgba(63, 196, 138, 0.45); }
 
-    /* ── colour swatch: the card IS the colour ───────────────────────────── */
+    /* ── colour swatch: the tile IS the colour, nothing else ─────────────── */
     .br-swatch {
+      position: relative;
       display: block;
-      text-align: left;
+      aspect-ratio: 1;
       border: 1px solid var(--color-line);
       border-radius: 0.9rem;
       overflow: hidden;
       padding: 0;
-      background: transparent;
       cursor: pointer;
       transition: border-color 0.15s var(--ease-out-soft), transform 0.15s var(--ease-out-soft);
     }
-    .br-swatch:hover { border-color: rgba(255, 255, 255, 0.24); transform: translateY(-2px); }
-    .br-fill {
-      position: relative;
-      display: block;
-      aspect-ratio: 4 / 3;
-      border-bottom: 1px solid var(--color-line);
+    .br-swatch:hover { border-color: rgba(255, 255, 255, 0.3); transform: translateY(-2px); }
+    .br-swatch:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.55); outline-offset: 2px; }
+    /* the hex is the one label, and only while pointing at the tile — without it
+       you cannot tell what you just copied */
+    .br-hex {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      padding: 0.55rem 0.6rem;
+      font-size: 0.7rem;
+      color: #fff;
+      background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.78));
+      opacity: 0;
+      transition: opacity 0.2s var(--ease-out-soft);
     }
+    .br-swatch:hover .br-hex,
+    .br-swatch:focus-visible .br-hex { opacity: 1; }
     .br-check {
       position: absolute;
       inset: 0;
@@ -447,14 +434,10 @@ const ld = {
       box-shadow: 0 6px 18px -6px rgba(63, 196, 138, 0.8);
     }
     .br-swatch.is-done .br-check { opacity: 1; transform: scale(1); }
-    .br-meta {
-      display: flex;
-      flex-direction: column;
-      gap: 0.15rem;
-      padding: 0.7rem 0.85rem 0.85rem;
+    .br-swatch.is-done .br-hex { opacity: 0; }
+    @media (hover: none) {
+      .br-hex { opacity: 1; }
     }
-    .br-hex { font-size: 0.72rem; color: var(--color-ink-dim); }
-    .br-swatch.is-done .br-hex { color: #3fc48a; }
 
     .br-type {
       border: 1px solid var(--color-line);
