@@ -175,6 +175,27 @@ const structured = [orgLd, ...extra, ...(breadcrumbLd ? [breadcrumbLd] : [])];
     {!bare && <SearchPalette />}
     {!bare && <ConsentBanner />}
 
+    {/* `html { scroll-behavior: smooth }` is wanted for the in-page anchors
+        (#gecmis, #logolar, #is-birlikleri…) but it also catches ClientRouter's
+        scroll reset after a swap: instead of jumping to the top, the page
+        ANIMATES there while the new content is already painting. That is the
+        lurch between pages. Suspend it for the duration of the swap only.
+
+        Set twice on purpose — the swap replaces <html>'s attributes with the
+        incoming document's, which wipes an inline style set before it. */}
+    <script is:inline>
+      (() => {
+        if (window.__dmgScrollFix) return;
+        window.__dmgScrollFix = true;
+        const root = document.documentElement;
+        const hold = () => { root.style.scrollBehavior = "auto"; };
+        const release = () => { root.style.scrollBehavior = ""; };
+        document.addEventListener("astro:before-swap", hold);
+        document.addEventListener("astro:after-swap", hold);
+        document.addEventListener("astro:page-load", release);
+      })();
+    </script>
+
     <script is:inline>
       (() => {
         const clearSkeleton = (img) => {
