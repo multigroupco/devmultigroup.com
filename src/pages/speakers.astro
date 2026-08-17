@@ -99,7 +99,7 @@ const speakersLd = speakers.length
         <ellipse
           cx="1924.71" cy="273.501" rx="1924.71" ry="273.501"
           transform="matrix(-0.822377 -0.568943 -0.568943 0.822377 3631.88 2291.09)"
-          fill="white" fill-opacity="0.16"></ellipse>
+          fill="white" fill-opacity="0.34"></ellipse>
       </g>
       <defs>
         <filter id="sp-blur" x="0.860352" y="0.838989" width="3785.16" height="2840.26"
@@ -220,6 +220,29 @@ const speakersLd = speakers.length
        The beam itself lives in the SVG above; this only places and animates it.
        It starts off-frame and drifts in once, rather than looping — a looping
        spotlight reads as a loading state. */
+    /* The beam is aimed at a two-column hero. On mobile the layout stacks, so
+       it has nothing to land on and just smears a grey diagonal across the
+       title — hide it there and light the corner softly instead. */
+    .sp-spot { display: none; }
+    .sp-stage::before {
+      content: "";
+      position: absolute;
+      inset: -30% -20% auto auto;
+      width: 90%;
+      height: 70%;
+      z-index: -1;
+      pointer-events: none;
+      background: radial-gradient(
+        closest-side,
+        rgba(255, 255, 255, 0.13),
+        rgba(255, 255, 255, 0.04) 55%,
+        transparent 78%
+      );
+    }
+    @media (min-width: 1024px) {
+      .sp-stage::before { display: none; }
+      .sp-spot { display: block; }
+    }
     .sp-spot {
       position: absolute;
       /* Pulled up and in so the bright part of the beam lands on the metrics.
@@ -239,16 +262,16 @@ const speakersLd = speakers.length
       -webkit-mask-image: linear-gradient(
         to bottom,
         #000 0%,
-        #000 34%,
-        rgba(0, 0, 0, 0.4) 62%,
-        transparent 86%
+        #000 48%,
+        rgba(0, 0, 0, 0.55) 72%,
+        transparent 92%
       );
       mask-image: linear-gradient(
         to bottom,
         #000 0%,
-        #000 34%,
-        rgba(0, 0, 0, 0.4) 62%,
-        transparent 86%
+        #000 48%,
+        rgba(0, 0, 0, 0.55) 72%,
+        transparent 92%
       );
     }
     @keyframes sp-spot-in {

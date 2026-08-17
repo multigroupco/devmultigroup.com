@@ -179,6 +179,22 @@
     background: transparent;
   }
 
+  /* Touch devices draw overlay scrollbars, so the themed 11px bar and the
+     reserved `scrollbar-gutter` only cost a black strip down the right edge
+     that the banner and header then stop short of. Give the layout the full
+     width back and hide the bar entirely. */
+  @media (max-width: 767px), (pointer: coarse) {
+    html {
+      scrollbar-gutter: auto;
+      scrollbar-width: none;
+    }
+    ::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+      display: none;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
