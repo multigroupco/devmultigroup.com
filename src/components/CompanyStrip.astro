@@ -40,17 +40,21 @@ const logos = [...brands, ...brands];
       >
         {logos.map((c) => (
           /* The track animates to translateX(-50%), so its width must be final
-             BEFORE the first frame. `w-auto` + `loading="lazy"` made each cell
-             resize as it decoded, moving the -50% target mid-animation — the
-             stagger. Every cell now reserves a fixed box and loads eagerly. */
+             BEFORE the first frame. The original bug was `w-auto`: each cell
+             resized as its image decoded, moving the -50% target mid-animation.
+             The FIXED WIDTH is what fixes that — the box is reserved whether or
+             not the image has loaded.
+             Loading stays lazy on purpose. Forcing all 16 eager decoded them in
+             one burst on every view-transition navigation back to this page,
+             which janked the running marquee — trading the old stagger for a
+             new one. With the width pinned, lazy costs nothing. */
           <img
             src={c.logo}
             alt={c.name}
             width="120"
             height="32"
-            loading="eager"
+            loading="lazy"
             decoding="async"
-            fetchpriority="low"
             class="h-7 md:h-8 w-[104px] md:w-[120px] object-contain opacity-50 hover:opacity-100 transition-opacity shrink-0"
           />
         ))}

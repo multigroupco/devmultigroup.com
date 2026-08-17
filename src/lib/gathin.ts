@@ -166,8 +166,19 @@ async function syncOne(env: Env, community: Community): Promise<SyncReport> {
   report.fetched = items.length;
   if (!items.length) return report;
 
-  // One round-trip for every guid we already hold. `external_id` is the only
-  // thing that decides "new"; slug collisions are handled separately below.
+  // Two dedupe axes, and BOTH are load-bearing:
+  //
+  //   external_id — the feed's <guid>. Correct for every run after the first.
+  //   registration_url — the Gathin event URL. Needed *because* of the first
+  //     run: this database already held 100+ events from the archive seed and
+  //     from manual entry, none of which carried an external_id, so a
+  //     guid-only check called every one of them new. The first prod sync
+  //     created 23 draft duplicates of already-published events before this
+  //     was caught.
+  //
+  // Matching on the URL means an existing row is skipped WITHOUT being written
+  // to — no live row is ever touched, which is also why we don't "adopt" it by
+  // stamping the guid on.
   const known = new Set(
     (
       await all<{ external_id: string }>(
@@ -176,12 +187,21 @@ async function syncOne(env: Env, community: Community): Promise<SyncReport> {
       )
     ).map((r) => r.external_id),
   );
+  const knownUrls = new Set(
+    (
+      await all<{ registration_url: string }>(
+        env.DB,
+        `SELECT registration_url FROM events WHERE registration_url <> ''`,
+      )
+    ).map((r) => r.registration_url.trim().replace(/\/$/, "")),
+  );
   const slugs = new Set(
     (await all<{ slug: string }>(env.DB, `SELECT slug FROM events`)).map((r) => r.slug),
   );
 
   for (const item of items) {
-    if (known.has(item.guid)) {
+    const url = item.link.trim().replace(/\/$/, "");
+    if (known.has(item.guid) || (url && knownUrls.has(url))) {
       report.skipped++;
       continue;
     }
@@ -218,6 +238,7 @@ async function syncOne(env: Env, community: Community): Promise<SyncReport> {
         ],
       );
       known.add(item.guid);
+      if (url) knownUrls.add(url);
       report.created++;
       report.titles.push(item.title);
     } catch (err) {
