@@ -122,6 +122,45 @@ export interface RecordingRow {
   updated_at: number;
 }
 
+/** One icon + title + line block on a podcast page ("neler bekliyor" / "kimler için"). */
+export interface PodcastFeature {
+  /** An Icon.astro name — the monochrome set, never an emoji. */
+  icon: string;
+  title: string;
+  text: string;
+}
+
+/**
+ * A podcast SHOW (a series), not an episode — episodes live on the platforms.
+ * See migrations/0010 for why the row stops at the show.
+ */
+export interface PodcastRow {
+  id: string;
+  slug: string;
+  title: string;
+  show_name: string;
+  kicker: string;
+  lede: string;
+  body_md: string;
+  cover_image: string;
+  host: string;
+  host_slug: string;
+  schedule: string;
+  episode_length: string;
+  spotify_url: string;
+  apple_url: string;
+  youtube_url: string;
+  subscribe_url: string;
+  highlights_json: string; // json PodcastFeature[]
+  audience_json: string; // json PodcastFeature[]
+  first_episode_at: number | null;
+  is_soon: number;
+  sort_order: number;
+  is_active: number;
+  created_at: number;
+  updated_at: number;
+}
+
 export interface GalleryRow {
   id: string;
   title: string;

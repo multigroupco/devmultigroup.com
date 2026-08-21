@@ -1,0 +1,168 @@
+---
+// One podcast SHOW on /podcasts.
+//
+// Wide by design: the show art is 16:9 and there will only ever be a handful of
+// series, so a horizontal card fills the row instead of leaving a two-column
+// grid half empty. It reads as a poster + pitch, which is what a show is.
+import Icon from "./Icon.astro";
+import { imageSrc } from "@/lib/ui";
+import { formatDateTime } from "@/lib/format";
+import type { PodcastRow } from "@/lib/types";
+
+interface Props {
+  pod: PodcastRow;
+  /** Analytics context: which page the card is rendered on. */
+  page?: string;
+}
+const { pod, page } = Astro.props;
+
+const cover = imageSrc(pod.cover_image);
+const href = `/podcasts/${pod.slug}`;
+// Only platforms that actually have a link — a dead badge is worse than none.
+const platforms = [
+  { key: "spotify", label: "Spotify", icon: "spotify", url: pod.spotify_url },
+  { key: "apple", label: "Apple Podcasts", icon: "mic", url: pod.apple_url },
+  { key: "youtube", label: "YouTube", icon: "youtube", url: pod.youtube_url },
+].filter((p) => p.url);
+
+const trackProps = JSON.stringify({ podcast: pod.slug, page });
+---
+
+<a
+  href={href}
+  class="pod-card card card-hover group block overflow-hidden"
+  data-track="podcast_card_click"
+  data-track-props={trackProps}
+>
+  <div class="pod-card-grid">
+    <div class="pod-art skeleton">
+      {cover && (
+        <img
+          src={cover}
+          alt={`${pod.show_name ? pod.show_name + " — " : ""}${pod.title}`}
+          loading="lazy"
+          decoding="async"
+          class="img-reveal absolute inset-0 w-full h-full object-cover transition duration-500 group-hover:scale-[1.03]"
+        />
+      )}
+      {pod.is_soon === 1 && <span class="absolute top-3 left-3 chip bg-ink-950/80 backdrop-blur">Yakında</span>}
+    </div>
+
+    <div class="pod-body">
+      {pod.show_name && (
+        <p class="font-mono text-[0.66rem] uppercase tracking-[0.28em] text-ink-faint">{pod.show_name}</p>
+      )}
+      <h2 class="font-display text-2xl md:text-3xl font-semibold leading-tight mt-2">{pod.title}</h2>
+      {pod.kicker && <p class="text-ink-dim text-sm mt-2 italic">{pod.kicker}</p>}
+      {pod.lede && <p class="text-ink-dim mt-4 leading-relaxed line-clamp-3">{pod.lede}</p>}
+
+      <ul class="pod-meta">
+        {pod.schedule && (
+          <li><Icon name="calendar" size={14} /> {pod.schedule}</li>
+        )}
+        {pod.episode_length && (
+          <li><Icon name="play" size={14} /> {pod.episode_length}</li>
+        )}
+        {pod.host && (
+          <li><Icon name="mic" size={14} /> {pod.host}</li>
+        )}
+      </ul>
+
+      <div class="pod-foot">
+        <span class="pod-more">
+          Seriyi incele <Icon name="arrow-right" size={15} />
+        </span>
+        {platforms.length > 0 ? (
+          <span class="pod-platforms" aria-hidden="true">
+            {platforms.map((p) => <Icon name={p.icon} size={15} />)}
+          </span>
+        ) : (
+          pod.first_episode_at && (
+            <span class="text-ink-faint text-xs font-mono">
+              İlk bölüm · {formatDateTime(pod.first_episode_at)}
+            </span>
+          )
+        )}
+      </div>
+    </div>
+  </div>
+</a>
+
+<style>
+  .pod-card-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 768px) {
+    .pod-card-grid {
+      grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+      align-items: stretch;
+    }
+  }
+  .pod-art {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+  }
+  @media (min-width: 768px) {
+    .pod-art {
+      aspect-ratio: auto;
+      min-height: 100%;
+    }
+  }
+  .pod-body {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+  }
+  @media (min-width: 768px) {
+    .pod-body {
+      padding: 2rem 2.2rem;
+    }
+  }
+  .pod-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.1rem;
+    margin-top: 1.4rem;
+    font-size: 0.78rem;
+    color: var(--color-ink-faint);
+  }
+  .pod-meta li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .pod-foot {
+    margin-top: auto;
+    padding-top: 1.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .pod-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.86rem;
+    font-weight: 500;
+    color: var(--color-ink-dim);
+    transition: color 0.2s;
+  }
+  .pod-card:hover .pod-more {
+    color: var(--color-ink-text);
+  }
+  .pod-more :global(svg) {
+    transition: transform 0.2s;
+  }
+  .pod-card:hover .pod-more :global(svg) {
+    transform: translateX(3px);
+  }
+  .pod-platforms {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--color-ink-faint);
+  }
+</style>

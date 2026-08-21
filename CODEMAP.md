@@ -96,10 +96,10 @@ devmultigroup.com/
     │   └── global.css            AMOLED monochrome design system (Tailwind v4 @theme + layers): true-black surfaces, white-only accent, Hanken @font-face, .card/.btn/.chip/.prose-dmg, skeleton shimmer, grain, marquee, custom scrollbar, motion.
     │
     ├── lib/                      ── DATA / DOMAIN LAYER ──
-    │   ├── types.ts              Row interfaces mirroring the D1 schema (events/posts/links/academy links/hero slides/resources/recordings/gallery/team/social/community/company/speaker) + Community/AccentKey + ACCENTS palette.
+    │   ├── types.ts              Row interfaces mirroring the D1 schema (events/posts/links/academy links/hero slides/resources/recordings/podcasts/gallery/team/social/community/company/speaker) + Community/AccentKey + ACCENTS palette.
     │   ├── db.ts                 D1 helpers all/first/run + uuid, nowSec, slugify (TR transliteration), csv, bool.
     │   ├── cache.ts              Version-stamped KV read-through cache: cached() (+shouldCache), invalidate/invalidateMany, NS namespaces (incl. search).
-    │   ├── content.ts            Cached public read layer over D1 — the only content API pages call (events/posts/links/resources/recordings/gallery/team/communities/companies/partners/speakers/social/settings/stats + pagination).
+    │   ├── content.ts            Cached public read layer over D1 — the only content API pages call (events/posts/links/resources/recordings/podcasts/gallery/team/communities/companies/partners/speakers/social/settings/stats + pagination).
     │   ├── gathin.ts             Gathin RSS import (#7): parses gathin.com/communities/<id>/rss.xml for both communities, mirrors covers into R2, inserts UNSEEN guids as DRAFT events. CREATE-ONLY — a known external_id is never touched again, so hand-edited copy can't be clobbered. Fired by the POST button in /admin/events; no cron (that would mean wrapping the pinned adapter's worker).
     │   ├── admin.ts              Config-driven admin: RESOURCES registry (+ searchable→Vectorize), SETTINGS_FIELDS, saveRow/deleteRow/saveSettings, uploadImage (R2), coercion, datetime↔epoch (UTC+3).
     │   ├── site.ts               Single source of truth: BRAND, CANONICAL_HOST/isApexHost, NAV/FOOTER_NAV/LEGAL_NAV, COMPANIES (R2 logos), GATHIN, JOIN_FORM, SOCIALS, SUBBRANDS, resolveSite(settings).
@@ -129,6 +129,7 @@ devmultigroup.com/
     │   ├── EventCard.astro       Event card: cover + date badge, summary, date/place, conditional register CTA; self-instruments (event_card_click / event_register_click).
     │   ├── EventDetail.astro     Shared event detail body for /events/[slug] + /academy/[slug]: chips, meta, cover, markdown, register CTA, speakers, recordings, related; emits Event JSON-LD.
     │   ├── PostCard.astro        Blog card (+ featured variant): cover (falls back to /blog/banner/<slug>.svg), title/excerpt, author/date/reading-time; emits blog_post_click.
+    │   ├── PodcastCard.astro     Wide show card for /podcasts: 16:9 cover art, umbrella brand + title, kicker/lede, schedule·length·host meta, live-platform marks or premiere date; emits podcast_card_click.
     │   ├── RecordingCard.astro   Playlist card: thumbnail (cover or /yt/<id> fallback), play overlay, video count; emits recording_play.
     │   ├── SpeakerCard.astro     Speaker card: avatar/initials, title, company logo/name, talk-count or event-role chip, social links; carries data-q/company/sector for client filtering.
     │   ├── TeamCard.astro        Member card: avatar/initials, name, role, active area, social icons; whole card links to the primary profile (LinkedIn first).
@@ -175,6 +176,8 @@ devmultigroup.com/
         ├── partnerships/[slug].astro  One collaboration, long-form: hero, animated metric counters (metrics_json), story markdown, media grid (gallery_json), CTA, sibling rail. ONE template for every partner.
         ├── contact.astro         İletişim: three public addresses, subject-selecting form posting to /api/contact, org info, socials. ContactModal stays for in-context CTAs. schema.org ContactPage. No FAQ by design.
         ├── kaynakca.astro        Curated open-source resources (/kaynakca), grouped (kaynakça/bootcamp/diğer) from the resources table.
+        ├── podcasts.astro        Podcast INDEX — hero (AsciiMic) + one PodcastCard per show from `podcasts`; falls back to the original "çok yakında" zero-state when the table is empty; PodcastSeries JSON-LD.
+        ├── podcasts/[slug].astro  One show, long-form: cover hero, notify-me CTA + live platform buttons (missing ones read "yayına alınıyor"), premiere band, intro markdown, "neler bekliyor" / "kimler için" grids (highlights_json / audience_json), host card, sibling rail. ONE template for every show.
         ├── links.astro           Linktree-style page: next-event card (16:9 cover) + grouped LinkButton links + socials.
         ├── academy-links.astro   MultiAcademy linktree: latest academy event (upcoming, else most recent past) + grouped academy_links + MultiAcademy socials.
         ├── 404.astro             Not-found page (noindex, no banner) with navigation buttons.

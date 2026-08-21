@@ -51,6 +51,7 @@ SQLite (D1). Timestamps are **unix epoch seconds (UTC)**; booleans are `0/1`. Ta
 | `academy_links` | same shape as `links`, for the MultiAcademy linktree (`/academy-links`)  |
 | `hero_slides`   | the photo bands flowing behind the homepage hero (admin-managed)        |
 | `recordings`    | YouTube playlists (talks / bootcamp series)                              |
+| `podcasts`      | podcast **shows** (a series, not an episode) — `/podcasts/<slug>`        |
 | `gallery_items` | photos — `image_url` (external or `/media/<key>`) or `image_key` (R2)    |
 | `team_members`  | organizers/volunteers; `socials` is a JSON string, `slug` → `/team/<slug>` |
 | `partners`      | **active collaborations** (`/partnerships`) — long-form, metrics/gallery JSON |
@@ -63,7 +64,8 @@ Row shapes mirror this schema in [`src/lib/types.ts`](./src/lib/types.ts).
 The **only** thing public pages should call for content. Every export wraps a D1 query
 in `cached(...)` (see below): `getSettings`/`getSetting`, `listEvents`, `getEvent`,
 `featuredEvent` (the banner event = featured + soonest upcoming, with a fallback),
-`listPosts`, `getPost`, `listLinks`, `listRecordings`, `listGallery`, `listTeam`,
+`listPosts`, `getPost`, `listLinks`, `listRecordings`, `listPodcasts`, `getPodcast`,
+`listGallery`, `listTeam`,
 `getTeamMember`, `listPartners`, `getPartner`,
 `listSocial`, and `getStats` (aggregate landing counts). Pages **never** write raw SQL.
 Events use a 6-hour "grace" window (`GRACE`) so they read as upcoming until 6h after

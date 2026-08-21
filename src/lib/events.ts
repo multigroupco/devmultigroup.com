@@ -40,8 +40,9 @@ export const EVENTS = {
   // ecosystem long-form pages
   partnerCardClick: "partner_card_click",
 
-  // recordings + links
+  // recordings + podcasts + links
   recordingPlay: "recording_play",
+  podcastCardClick: "podcast_card_click",
   linkClick: "link_click",
   linkRedirect: "link_redirect", // server
 

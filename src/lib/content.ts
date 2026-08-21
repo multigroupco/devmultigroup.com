@@ -8,6 +8,7 @@ import type {
   GalleryRow,
   HeroSlideRow,
   LinkRow,
+  PodcastRow,
   PostRow,
   RecordingRow,
   ResourceRow,
@@ -296,6 +297,26 @@ export async function getEventRecordings(env: Env, eventId: string): Promise<Rec
        WHERE er.event_id = ? AND r.is_active = 1
        ORDER BY r.sort_order ASC`,
       [eventId],
+    ),
+  );
+}
+
+/* ── podcasts (shows — /podcasts) ─────────────────────────────────────────── */
+export async function listPodcasts(env: Env): Promise<PodcastRow[]> {
+  return cached(env, NS.podcasts, "c:all", () =>
+    all<PodcastRow>(
+      env.DB,
+      `SELECT * FROM podcasts WHERE is_active=1 ORDER BY sort_order ASC, title ASC`,
+    ),
+  );
+}
+
+export async function getPodcast(env: Env, slug: string): Promise<PodcastRow | null> {
+  return cached(env, NS.podcasts, `get:${slug}`, () =>
+    first<PodcastRow>(
+      env.DB,
+      "SELECT * FROM podcasts WHERE slug=? AND is_active=1 LIMIT 1",
+      [slug],
     ),
   );
 }

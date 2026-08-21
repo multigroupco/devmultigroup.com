@@ -79,6 +79,7 @@ export const NS = {
   hero: "hero",
   resources: "resources",
   recordings: "recordings",
+  podcasts: "podcasts",
   gallery: "gallery",
   team: "team",
   social: "social",

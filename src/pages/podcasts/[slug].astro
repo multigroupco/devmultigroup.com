@@ -1,0 +1,403 @@
+---
+// /podcasts/<slug> — one show, long-form.
+//
+// ONE template for every series, the same call partners made in 0009: variation
+// comes from content (how many highlights, which platforms are live, whether
+// the pilot has aired), never from layout. Adding a show is a form, not a
+// deploy.
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import Icon from "@/components/Icon.astro";
+import { getEnv } from "@/lib/runtime";
+import { getPodcast, listPodcasts, listTeam } from "@/lib/content";
+import { renderMarkdown } from "@/lib/markdown";
+import { imageSrc } from "@/lib/ui";
+import { formatDate, formatTime, iso, isUpcoming } from "@/lib/format";
+import { BRAND, GATHIN } from "@/lib/site";
+import type { PodcastFeature } from "@/lib/types";
+
+const env = getEnv(Astro.locals);
+const { slug } = Astro.params;
+const pod = slug ? await getPodcast(env, slug) : null;
+if (!pod) Astro.response.status = 404;
+
+const parse = (raw: string): PodcastFeature[] => {
+  try {
+    const v = JSON.parse(raw || "[]");
+    return Array.isArray(v) ? (v as PodcastFeature[]) : [];
+  } catch {
+    return [];
+  }
+};
+
+const highlights = pod ? parse(pod.highlights_json) : [];
+const audience = pod ? parse(pod.audience_json) : [];
+const body = pod ? renderMarkdown(pod.body_md) : "";
+const cover = pod ? imageSrc(pod.cover_image) : "";
+
+// A platform with no URL is listed as upcoming rather than linked — the show
+// exists before every feed does, and a dead badge is worse than an honest one.
+const PLATFORMS = pod
+  ? [
+      { label: "Spotify", icon: "spotify", url: pod.spotify_url },
+      { label: "Apple Podcasts", icon: "mic", url: pod.apple_url },
+      { label: "YouTube", icon: "youtube", url: pod.youtube_url },
+    ]
+  : [];
+const live = PLATFORMS.filter((p) => p.url);
+const pending = PLATFORMS.filter((p) => !p.url);
+
+// "Bölümler çıkınca haber ver" → the show's own Gathin event when it has one,
+// the community page otherwise, so the CTA is never a dead end.
+const subscribe = pod?.subscribe_url || GATHIN.multigroup;
+const premiere = pod?.first_episode_at ?? null;
+const upcoming = premiere != null && isUpcoming(premiere);
+
+// The host, linked to their team page when the slug resolves to a real member.
+const hostMember =
+  pod && pod.host_slug
+    ? (await listTeam(env)).find((m) => m.slug === pod.host_slug) ?? null
+    : null;
+
+const others = pod ? (await listPodcasts(env)).filter((p) => p.id !== pod.id) : [];
+
+const fullName = pod ? [pod.show_name, pod.title].filter(Boolean).join(" — ") : "";
+const ld = pod
+  ? {
+      "@context": "https://schema.org",
+      "@type": "PodcastSeries",
+      name: fullName,
+      description: pod.lede,
+      url: `${BRAND.url}/podcasts/${pod.slug}`,
+      inLanguage: "tr-TR",
+      ...(cover ? { image: cover.startsWith("http") ? cover : BRAND.url + cover } : {}),
+      ...(pod.host ? { author: { "@type": "Person", name: pod.host } } : {}),
+      publisher: { "@type": "Organization", name: BRAND.name, url: BRAND.url },
+      ...(live.length ? { sameAs: live.map((p) => p.url) } : {}),
+    }
+  : undefined;
+---
+
+{
+  pod ? (
+    <BaseLayout
+      title={fullName}
+      description={pod.lede || `${pod.title} — Developer MultiGroup podcast serisi.`}
+      canonicalPath={`/podcasts/${pod.slug}`}
+      image={cover ? (cover.startsWith("http") ? cover : BRAND.url + cover) : undefined}
+      jsonLd={ld}
+      breadcrumbs={[
+        { name: "Podcast'ler", item: `${BRAND.url}/podcasts` },
+        { name: pod.title, item: `${BRAND.url}/podcasts/${pod.slug}` },
+      ]}
+    >
+      {/* ── hero ─────────────────────────────────────────────────────────── */}
+      <section class="relative isolate overflow-hidden">
+        {cover && (
+          <div class="absolute inset-0 -z-10" aria-hidden="true">
+            <img src={cover} alt="" loading="eager" decoding="async" class="w-full h-full object-cover opacity-20 blur-2xl scale-110" />
+            <div class="absolute inset-0 bg-gradient-to-b from-ink-950/70 via-ink-950/90 to-ink-950" />
+          </div>
+        )}
+
+        <div class="container-x pt-12 pb-10 md:pt-16 md:pb-14">
+          <a href="/podcasts" class="inline-flex items-center gap-1.5 text-sm text-ink-faint hover:text-ink-text transition-colors">
+            <Icon name="arrow-right" size={14} class="rotate-180" /> Podcast'ler
+          </a>
+
+          <div class="grid lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-9 lg:gap-12 items-center mt-8">
+            {cover && (
+              <div class="pod-hero-art skeleton">
+                <img src={cover} alt={fullName} loading="eager" decoding="async" class="img-reveal w-full h-full object-cover" />
+              </div>
+            )}
+
+            <div>
+              {pod.show_name && (
+                <p class="font-mono text-[0.68rem] uppercase tracking-[0.36em] text-ink-faint">{pod.show_name}</p>
+              )}
+              <h1 class="text-4xl md:text-5xl font-semibold leading-[1.04] mt-3 text-balance">{pod.title}</h1>
+              {pod.kicker && <p class="text-ink-dim text-base md:text-lg mt-4 italic">{pod.kicker}</p>}
+              {pod.lede && <p class="text-ink-dim mt-5 max-w-xl leading-relaxed">{pod.lede}</p>}
+
+              <ul class="pod-facts">
+                {pod.schedule && <li><Icon name="calendar" size={15} /> {pod.schedule}</li>}
+                {pod.episode_length && <li><Icon name="play" size={15} /> {pod.episode_length}</li>}
+                {pod.host && (
+                  <li>
+                    <Icon name="mic" size={15} />
+                    {hostMember ? (
+                      <a href={`/team/${hostMember.slug}`} class="underline underline-offset-4 decoration-line-strong hover:decoration-current">
+                        {pod.host}
+                      </a>
+                    ) : (
+                      pod.host
+                    )}
+                  </li>
+                )}
+              </ul>
+
+              <div class="flex flex-wrap items-center gap-3 mt-8">
+                <a
+                  href={subscribe}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="btn btn-primary"
+                  data-track="cta_click"
+                  data-track-props={JSON.stringify({ cta_id: "podcast_subscribe", podcast: pod.slug, page: "podcast_detail", href: subscribe })}
+                >
+                  <Icon name="bell" size={16} /> Bölümlerden haberdar ol
+                </a>
+                {live.map((p) => (
+                  <a
+                    href={p.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="btn btn-ghost"
+                    data-track="cta_click"
+                    data-track-props={JSON.stringify({ cta_id: "podcast_platform", podcast: pod.slug, platform: p.label, href: p.url })}
+                  >
+                    <Icon name={p.icon} size={16} /> {p.label}
+                  </a>
+                ))}
+              </div>
+
+              {pending.length > 0 && (
+                <p class="text-ink-faint text-xs mt-4 font-mono">
+                  {pending.map((p) => p.label).join(" · ")} — yayına alınıyor
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── premiere band ────────────────────────────────────────────────── */}
+      {premiere && (
+        <section class="container-x">
+          <div class="premiere">
+            <div>
+              <p class="font-mono text-[0.66rem] uppercase tracking-[0.28em] text-ink-faint">
+                {upcoming ? "İlk bölüm" : "Yayında"}
+              </p>
+              <p class="font-display text-2xl md:text-3xl font-semibold mt-2">
+                <time datetime={iso(premiere)}>
+                  {formatDate(premiere, { weekday: "long", day: "numeric", month: "long" })}
+                  {" · "}
+                  {formatTime(premiere)}
+                </time>
+              </p>
+            </div>
+            <p class="text-ink-dim text-sm max-w-sm leading-relaxed">
+              {upcoming
+                ? "Pilot bölümle başlıyoruz. Yayına girdiği an haberin olsun diye kayıt bırakabilirsin."
+                : "Yeni bölümler aynı gün ve saatte yayında."}
+            </p>
+          </div>
+        </section>
+      )}
+
+      {/* ── intro ────────────────────────────────────────────────────────── */}
+      {body && (
+        <section class="container-x py-10">
+          <div class="prose-dmg max-w-2xl" set:html={body} />
+        </section>
+      )}
+
+      {/* ── what to expect ───────────────────────────────────────────────── */}
+      {highlights.length > 0 && (
+        <section class="container-x py-8">
+          <h2 class="font-display text-2xl md:text-3xl font-semibold">Bu seride seni neler bekliyor?</h2>
+          <div class="feat-grid">
+            {highlights.map((f) => (
+              <article class="feat">
+                <span class="feat-icon"><Icon name={f.icon || "sparkles"} size={17} /></span>
+                <h3 class="font-medium mt-4 leading-snug">{f.title}</h3>
+                <p class="text-ink-dim text-sm mt-2 leading-relaxed">{f.text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── who it's for ─────────────────────────────────────────────────── */}
+      {audience.length > 0 && (
+        <section class="container-x py-8">
+          <h2 class="font-display text-2xl md:text-3xl font-semibold">Bu seri kimler için?</h2>
+          <div class="feat-grid">
+            {audience.map((f) => (
+              <article class="feat">
+                <span class="feat-icon"><Icon name={f.icon || "users"} size={17} /></span>
+                <h3 class="font-medium mt-4 leading-snug">{f.title}</h3>
+                <p class="text-ink-dim text-sm mt-2 leading-relaxed">{f.text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── when & where + the CTA ───────────────────────────────────────── */}
+      <section class="container-x py-12">
+        <div class="border-t border-line pt-10 grid md:grid-cols-[minmax(0,1fr)_auto] gap-8 items-end">
+          <div>
+            <h2 class="font-display text-2xl md:text-3xl font-semibold leading-tight">Ne zaman, nerede?</h2>
+            <ul class="pod-facts mt-5">
+              {pod.schedule && <li><Icon name="calendar" size={15} /> {pod.schedule}</li>}
+              {PLATFORMS.map((p) => (
+                <li>
+                  <Icon name={p.icon} size={15} />
+                  {p.url ? (
+                    <a href={p.url} target="_blank" rel="noopener noreferrer" class="underline underline-offset-4 decoration-line-strong hover:decoration-current">
+                      {p.label}
+                    </a>
+                  ) : (
+                    <span class="opacity-60">{p.label}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <a
+            href={subscribe}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-primary shrink-0"
+            data-track="cta_click"
+            data-track-props={JSON.stringify({ cta_id: "podcast_subscribe_foot", podcast: pod.slug, page: "podcast_detail", href: subscribe })}
+          >
+            <Icon name="bell" size={16} /> Kayıt ol, haberin olsun
+          </a>
+        </div>
+      </section>
+
+      {/* ── host ─────────────────────────────────────────────────────────── */}
+      {hostMember && (
+        <section class="container-x pb-14">
+          <h2 class="text-sm text-ink-faint uppercase tracking-[0.18em] mb-5">Sunan</h2>
+          <a href={`/team/${hostMember.slug}`} class="host card card-hover" data-track="cta_click"
+            data-track-props={JSON.stringify({ cta_id: "podcast_host", podcast: pod.slug, member: hostMember.slug })}>
+            {imageSrc(hostMember.avatar_url) && (
+              <img src={imageSrc(hostMember.avatar_url)} alt={hostMember.name} loading="lazy" decoding="async" class="host-avatar" />
+            )}
+            <span class="min-w-0">
+              <span class="block font-display font-semibold">{hostMember.name}</span>
+              {hostMember.role && <span class="block text-ink-faint text-sm mt-0.5">{hostMember.role}</span>}
+              {hostMember.bio && <span class="block text-ink-dim text-sm mt-2 leading-relaxed line-clamp-2">{hostMember.bio}</span>}
+            </span>
+            <Icon name="arrow-up-right" size={16} class="text-ink-faint shrink-0 ml-auto" />
+          </a>
+        </section>
+      )}
+
+      {/* ── other shows ──────────────────────────────────────────────────── */}
+      {others.length > 0 && (
+        <section class="container-x pb-20">
+          <h2 class="text-sm text-ink-faint uppercase tracking-[0.18em] mb-6">Diğer seriler</h2>
+          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {others.map((o) => (
+              <a href={`/podcasts/${o.slug}`} class="group block rounded-2xl border border-line p-6 card-hover"
+                data-track="podcast_card_click"
+                data-track-props={JSON.stringify({ podcast: o.slug, page: "podcast_detail" })}>
+                {o.show_name && <p class="font-mono text-[0.62rem] uppercase tracking-[0.26em] text-ink-faint">{o.show_name}</p>}
+                <p class="font-display font-semibold mt-2 leading-snug">{o.title}</p>
+                <p class="text-ink-faint text-sm mt-1.5 line-clamp-2 leading-relaxed">{o.lede}</p>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+    </BaseLayout>
+  ) : (
+    <BaseLayout title="Podcast bulunamadı" noindex canonicalPath="/podcasts">
+      <section class="container-x py-24 text-center">
+        <h1 class="font-display text-3xl font-semibold">Bu seriyi bulamadık</h1>
+        <p class="text-ink-dim mt-3">Bağlantı eskimiş olabilir.</p>
+        <a href="/podcasts" class="btn btn-primary mt-8">Tüm podcast'ler</a>
+      </section>
+    </BaseLayout>
+  )
+}
+
+<style>
+  .pod-hero-art {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    border-radius: 1rem;
+    overflow: hidden;
+    border: 1px solid var(--color-line);
+    box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.9);
+  }
+  .pod-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem 1.4rem;
+    margin-top: 1.6rem;
+    font-size: 0.84rem;
+    color: var(--color-ink-dim);
+  }
+  .pod-facts li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+  .pod-facts :global(svg) {
+    color: var(--color-ink-faint);
+    flex-shrink: 0;
+  }
+
+  .premiere {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.5rem;
+    border-block: 1px solid var(--color-line);
+    padding-block: 1.8rem;
+  }
+
+  .feat-grid {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1.8rem;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 640px) {
+    .feat-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1024px) {
+    .feat-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .feat {
+    border: 1px solid var(--color-line);
+    border-radius: 1rem;
+    padding: 1.4rem;
+  }
+  .feat-icon {
+    display: grid;
+    place-items: center;
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 0.7rem;
+    border: 1px solid var(--color-line);
+    color: var(--color-ink-dim);
+  }
+
+  .host {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+    padding: 1.3rem 1.5rem;
+    max-width: 34rem;
+  }
+  .host-avatar {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 999px;
+    object-fit: cover;
+    border: 1px solid var(--color-line);
+    flex-shrink: 0;
+  }
+</style>

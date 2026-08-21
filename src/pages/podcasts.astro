@@ -1,59 +1,160 @@
 ---
-// /podcasts — zero-state while the podcast is being built.
+// /podcasts — the shows we make.
 //
-// Deliberately a placeholder: no episode list, no feed, no CMS entity yet.
-// Same "ascii-mark centrepiece" direction as the store zero-state, with the
-// rotating ASCII microphone in place of the flower. Everything else stays
-// restrained so this page needs no maintenance until there are real episodes.
+// Two states in one file. With no rows it stays the zero-state it has always
+// been (the rotating ASCII microphone, "çok yakında"); the moment a show is
+// added in /admin/podcasts it becomes an index. Keeping the placeholder means
+// emptying the table can never leave a blank page behind.
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import AsciiMic from "@/components/AsciiMic.astro";
+import PodcastCard from "@/components/PodcastCard.astro";
 import Icon from "@/components/Icon.astro";
+import { getEnv } from "@/lib/runtime";
+import { listPodcasts } from "@/lib/content";
 import { BRAND, SOCIALS } from "@/lib/site";
+import { imageSrc } from "@/lib/ui";
+
+const env = getEnv(Astro.locals);
+let pods = [] as Awaited<ReturnType<typeof listPodcasts>>;
+try {
+  pods = await listPodcasts(env);
+} catch {
+  /* table not migrated yet → fall through to the zero-state */
+}
+
+const hero = pods[0] ?? null;
+const heroCover = hero ? imageSrc(hero.cover_image) : "";
+
+const ld =
+  pods.length > 0
+    ? pods.map((p) => ({
+        "@context": "https://schema.org",
+        "@type": "PodcastSeries",
+        name: [p.show_name, p.title].filter(Boolean).join(" — "),
+        description: p.lede,
+        url: `${BRAND.url}/podcasts/${p.slug}`,
+        inLanguage: "tr-TR",
+        ...(p.host ? { author: { "@type": "Person", name: p.host } } : {}),
+      }))
+    : undefined;
 ---
 
 <BaseLayout
   title="Podcast'ler"
-  description="Developer MultiGroup podcast'i hazırlanıyor: topluluktan sohbetler, konuk anlatımları ve etkinlik kayıtları."
+  description={
+    hero
+      ? `${[hero.show_name, hero.title].filter(Boolean).join(" — ")}: ${hero.lede}`
+      : "Developer MultiGroup podcast'i hazırlanıyor: topluluktan sohbetler, konuk anlatımları ve etkinlik kayıtları."
+  }
   canonicalPath="/podcasts"
+  image={heroCover ? (heroCover.startsWith("http") ? heroCover : BRAND.url + heroCover) : undefined}
+  jsonLd={ld}
+  breadcrumbs={pods.length > 0 ? [{ name: "Podcast'ler", item: `${BRAND.url}/podcasts` }] : undefined}
 >
-  <section class="pod-soon container-x">
-    <div class="soon-inner">
-      <div class="mic-stage animate-rise">
-        <AsciiMic />
-      </div>
+  {
+    pods.length > 0 ? (
+      <>
+        {/* ── hero ─────────────────────────────────────────────────────── */}
+        <section class="container-x pt-14 pb-10 md:pt-20">
+          <div class="grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-10 lg:gap-14 items-center">
+            <div>
+              <p class="font-mono text-[0.68rem] uppercase tracking-[0.4em] text-ink-faint animate-rise">
+                PODCAST
+              </p>
+              <h1 class="text-4xl md:text-5xl font-semibold leading-[1.06] mt-5 animate-rise" style="animation-delay: 70ms">
+                Kulaklığını tak, <span class="text-grad">hikâyeyi dinle.</span>
+              </h1>
+              <p class="text-ink-dim text-lg mt-5 max-w-lg leading-relaxed animate-rise" style="animation-delay: 140ms">
+                Kariyer hikâyeleri, işin gerçek hali ve dışarıdan görünmeyen tarafı.
+                Topluluğun mikrofonu açık — her seride başka bir sohbet.
+              </p>
+              <div class="flex flex-wrap items-center gap-3 mt-8 animate-rise" style="animation-delay: 210ms">
+                <a
+                  href={SOCIALS.multigroup.youtube}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="btn btn-ghost"
+                  data-track="cta_click"
+                  data-track-props={JSON.stringify({ cta_id: "podcasts_youtube", page: "podcasts", href: SOCIALS.multigroup.youtube })}
+                >
+                  <Icon name="youtube" size={17} /> YouTube kanalı
+                </a>
+                <a
+                  href="/recordings"
+                  class="btn btn-ghost"
+                  data-track="cta_click"
+                  data-track-props={JSON.stringify({ cta_id: "podcasts_recordings", page: "podcasts" })}
+                >
+                  Kayıtlara göz at <Icon name="arrow-right" size={15} />
+                </a>
+              </div>
+            </div>
 
-      <p class="soon-eyebrow font-mono animate-rise" style="animation-delay: 80ms">PODCAST</p>
+            <div class="hidden lg:block justify-self-end">
+              <AsciiMic />
+            </div>
+          </div>
+        </section>
 
-      <h1 class="soon-head animate-rise" style="animation-delay: 140ms">
-        <span class="text-grad">Çok</span> yakında
-      </h1>
+        {/* ── the shows ────────────────────────────────────────────────── */}
+        <section class="container-x pb-20">
+          <h2 class="text-sm text-ink-faint uppercase tracking-[0.18em] border-t border-line pt-8 mb-6">
+            Seriler
+          </h2>
+          <div class="flex flex-col gap-6">
+            {pods.map((p) => <PodcastCard pod={p} page="podcasts" />)}
+          </div>
 
-      <p class="soon-sub animate-rise" style="animation-delay: 210ms">
-        Topluluktan sohbetler, konuk anlatımları ve sahne arkası. Mikrofonu kuruyoruz.
-      </p>
+          <p class="text-ink-faint text-sm mt-10 max-w-xl leading-relaxed">
+            Bir seride konuk olmak ya da kendi serini kurmak ister misin?{" "}
+            <a href="/contact" class="text-ink-text underline underline-offset-4 decoration-line-strong hover:decoration-current">
+              Bize yaz
+            </a>{" "}
+            — mikrofon topluluğun.
+          </p>
+        </section>
+      </>
+    ) : (
+      <section class="pod-soon container-x">
+        <div class="soon-inner">
+          <div class="mic-stage animate-rise">
+            <AsciiMic />
+          </div>
 
-      <div class="soon-actions animate-rise" style="animation-delay: 280ms">
-        <a href="/recordings" class="btn btn-primary" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "podcasts_recordings", page: "podcasts" })}>
-          Kayıtlara göz at
-          <Icon name="arrow-right" size={16} />
-        </a>
-      </div>
+          <p class="soon-eyebrow font-mono animate-rise" style="animation-delay: 80ms">PODCAST</p>
 
-      <div class="soon-foot animate-rise" style="animation-delay: 360ms">
-        <p class="soon-motto font-mono">{BRAND.tagline}</p>
-        <a
-          href={SOCIALS.multigroup.youtube}
-          target="_blank"
-          rel="me noopener noreferrer"
-          class="soon-yt"
-          aria-label="Developer MultiGroup YouTube"
-          title="Developer MultiGroup YouTube"
-        >
-          <Icon name="youtube" size={16} />
-        </a>
-      </div>
-    </div>
-  </section>
+          <h1 class="soon-head animate-rise" style="animation-delay: 140ms">
+            <span class="text-grad">Çok</span> yakında
+          </h1>
+
+          <p class="soon-sub animate-rise" style="animation-delay: 210ms">
+            Topluluktan sohbetler, konuk anlatımları ve sahne arkası. Mikrofonu kuruyoruz.
+          </p>
+
+          <div class="soon-actions animate-rise" style="animation-delay: 280ms">
+            <a href="/recordings" class="btn btn-primary" data-track="cta_click" data-track-props={JSON.stringify({ cta_id: "podcasts_recordings", page: "podcasts" })}>
+              Kayıtlara göz at
+              <Icon name="arrow-right" size={16} />
+            </a>
+          </div>
+
+          <div class="soon-foot animate-rise" style="animation-delay: 360ms">
+            <p class="soon-motto font-mono">{BRAND.tagline}</p>
+            <a
+              href={SOCIALS.multigroup.youtube}
+              target="_blank"
+              rel="me noopener noreferrer"
+              class="soon-yt"
+              aria-label="Developer MultiGroup YouTube"
+              title="Developer MultiGroup YouTube"
+            >
+              <Icon name="youtube" size={16} />
+            </a>
+          </div>
+        </div>
+      </section>
+    )
+  }
 </BaseLayout>
 
 <style>

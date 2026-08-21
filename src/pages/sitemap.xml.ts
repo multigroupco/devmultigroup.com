@@ -13,6 +13,7 @@ const STATIC: { path: string; priority: string }[] = [
   { path: "/events", priority: "0.8" },
   { path: "/academy", priority: "0.8" },
   { path: "/recordings", priority: "0.7" },
+  { path: "/podcasts", priority: "0.7" },
   { path: "/blog", priority: "0.7" },
   { path: "/kaynakca", priority: "0.7" },
   { path: "/team", priority: "0.6" },
@@ -43,6 +44,7 @@ export const GET: APIRoute = async (context) => {
   let events: Row[] = [];
   let partners: Row[] = [];
   let team: Row[] = [];
+  let podcasts: Row[] = [];
   try {
     posts = await all<Row>(env.DB, "SELECT slug, updated_at, cover_image, title FROM posts WHERE status='published'");
   } catch { /* table empty/missing */ }
@@ -54,6 +56,9 @@ export const GET: APIRoute = async (context) => {
   } catch { /* table empty/missing */ }
   try {
     team = await all<Row>(env.DB, "SELECT slug, updated_at, avatar_url cover_image, name title FROM team_members WHERE is_active=1 AND slug <> ''");
+  } catch { /* table empty/missing */ }
+  try {
+    podcasts = await all<Row>(env.DB, "SELECT slug, updated_at, cover_image, title FROM podcasts WHERE is_active=1");
   } catch { /* table empty/missing */ }
 
   const iso = (s: number) => new Date(s * 1000).toISOString();
@@ -79,6 +84,7 @@ export const GET: APIRoute = async (context) => {
     ...events.map((e) => urlEntry(`${origin}${e.community === "multiacademy" ? "/academy" : "/events"}/${e.slug}`, iso(e.updated_at), "0.6", absImage(e.cover_image), e.title)),
     ...posts.map((p) => urlEntry(`${origin}/blog/${p.slug}`, iso(p.updated_at), "0.6", absImage(p.cover_image), p.title)),
     ...partners.map((p) => urlEntry(`${origin}/partnerships/${p.slug}`, iso(p.updated_at), "0.6", absImage(p.cover_image), p.title)),
+    ...podcasts.map((p) => urlEntry(`${origin}/podcasts/${p.slug}`, iso(p.updated_at), "0.6", absImage(p.cover_image), p.title)),
     ...team.map((m) => urlEntry(`${origin}/team/${m.slug}`, iso(m.updated_at), "0.4", absImage(m.cover_image), m.title)),
   ];
 

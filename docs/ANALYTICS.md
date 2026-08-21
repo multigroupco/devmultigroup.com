@@ -61,7 +61,7 @@ near-duplicate. ~27 events; highlights:
 - **Page/nav:** `page_view`, `nav_click`, `join_click`, `social_click`, `cta_click`
 - **Search:** `search_open`, `search_submit` (surface: palette/blog/communities/store), `search_result_click`
 - **Events:** `event_register_click`, `event_card_click`, `event_banner_dismiss`
-- **Content:** `blog_post_click`, `blog_filter`, `recording_play`
+- **Content:** `blog_post_click`, `blog_filter`, `recording_play`, `podcast_card_click`
 - **Links:** `link_click` (client) + `link_redirect` (server, via /go/[id])
 - **Lead/news:** `contact_modal_open`, `contact_submit` (server), `generate_lead` (GA4 conversion), `newsletter_signup`
 - **Store:** `store_product_view`, `store_product_click`, `store_variant_select`, `store_reserve_submit`, `store_reserve_success` (server + GA4 mirror), `store_reserve_error`

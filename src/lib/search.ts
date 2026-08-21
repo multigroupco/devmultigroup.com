@@ -22,6 +22,7 @@ export type SearchType =
   | "posts"
   | "events"
   | "recordings"
+  | "podcasts"
   | "links"
   | "team"
   | "communities"
@@ -100,6 +101,17 @@ export const TYPES: Record<SearchType, TypeConfig> = {
     published: isActive,
     table: "recordings",
     cols: ["title", "description"],
+    where: "is_active=1",
+  },
+  podcasts: {
+    label: "Podcast'ler",
+    title: (r) => [r.show_name, r.title].filter(Boolean).join(" — "),
+    text: (r) => `${r.title}\n${r.show_name ?? ""}\n${r.kicker ?? ""}\n${r.lede ?? ""}`,
+    snippet: (r) => clip(r.lede || r.kicker, 300),
+    url: (r) => `/podcasts/${r.slug}`,
+    published: isActive,
+    table: "podcasts",
+    cols: ["title", "show_name", "kicker", "lede"],
     where: "is_active=1",
   },
   links: {
