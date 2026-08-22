@@ -322,6 +322,23 @@ export async function getPodcast(env: Env, slug: string): Promise<PodcastRow | n
 }
 
 /* ── gallery ──────────────────────────────────────────────────────────────── */
+/**
+ * Photos for one album (an event slug — ADR 0004) or, with no album, the whole
+ * gallery river.
+ *
+ * The two cases sort differently on purpose. The admin form no longer writes
+ * `sort_order` or `taken_at` (they cost a field each across ~50 hand-uploads and
+ * nothing rendered them), so every row carries the schema default and the
+ * tiebreak decides the order outright:
+ *
+ *   - inside an album  → `created_at ASC`, i.e. **upload order**. You upload an
+ *     event's photos in the order the evening happened; the album should read
+ *     back the same way, not backwards.
+ *   - the whole river  → `created_at DESC`, newest first, so /gallery leads with
+ *     the most recent event.
+ *
+ * `sort_order` still leads both, so a row edited in D1 can still be pinned.
+ */
 export async function listGallery(
   env: Env,
   opts: { album?: string; limit?: number } = {},
@@ -332,7 +349,7 @@ export async function listGallery(
       return all<GalleryRow>(
         env.DB,
         `SELECT * FROM gallery_items WHERE is_active=1 AND album=?
-         ORDER BY sort_order ASC, COALESCE(taken_at, created_at) DESC LIMIT ?`,
+         ORDER BY sort_order ASC, COALESCE(taken_at, created_at) ASC LIMIT ?`,
         [album, limit],
       );
     }
@@ -342,6 +359,22 @@ export async function listGallery(
        ORDER BY sort_order ASC, COALESCE(taken_at, created_at) DESC LIMIT ?`,
       [limit],
     );
+  });
+}
+
+/**
+ * Event slugs that actually have photos, newest album first — used to caption
+ * the gallery river and to decide whether an event page shows a photo section
+ * without pulling every row twice.
+ */
+export async function listGalleryAlbums(env: Env): Promise<string[]> {
+  return cached(env, NS.gallery, "albums", async () => {
+    const rows = await all<{ album: string }>(
+      env.DB,
+      `SELECT album, MAX(created_at) AS newest FROM gallery_items
+       WHERE is_active=1 AND album <> '' GROUP BY album ORDER BY newest DESC`,
+    );
+    return rows.map((r) => r.album);
   });
 }
 

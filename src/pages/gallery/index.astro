@@ -1,0 +1,120 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import GalleryGrid from "@/components/GalleryGrid.astro";
+import Icon from "@/components/Icon.astro";
+import { tryEnv } from "@/lib/runtime";
+import { listGallery, listGalleryAlbums, listEvents } from "@/lib/content";
+import { BRAND, GALLERY_PUBLIC } from "@/lib/site";
+import { formatDate } from "@/lib/format";
+import type { GalleryRow } from "@/lib/types";
+
+// A flat river, not an album index. At ~50 photos across 5 events an album list
+// would render five cards and feel empty; the river shows the community at a
+// glance, which is the whole reason this page exists. The album-list shape is
+// the documented upgrade path past ~10 albums (grill 2026-08-22, Q10).
+const env = tryEnv(Astro.locals);
+let photos: GalleryRow[] = [];
+let albums: string[] = [];
+if (env) {
+  try {
+    [photos, albums] = await Promise.all([listGallery(env, { limit: 300 }), listGalleryAlbums(env)]);
+  } catch {
+    /* pre-seed */
+  }
+}
+
+// `album` holds an event slug and nothing enforces that (ADR 0004), so a typo
+// simply produces a photo with no event behind it. Resolve what we can and let
+// the rest render uncaptioned rather than 404-ing the page.
+const albumLabels: Record<string, string> = {};
+const albumLinks: { slug: string; title: string; when: string }[] = [];
+if (env && albums.length) {
+  try {
+    const events = await listEvents(env, { limit: 1000 });
+    const bySlug = new Map(events.map((e) => [e.slug, e]));
+    for (const slug of albums) {
+      const ev = bySlug.get(slug);
+      if (!ev) continue;
+      albumLabels[slug] = ev.title;
+      albumLinks.push({
+        slug,
+        title: ev.title,
+        when: ev.starts_at ? formatDate(ev.starts_at) : "",
+      });
+    }
+  } catch {
+    /* pre-seed */
+  }
+}
+
+const count = photos.length;
+const title = "Galeri";
+const description = `${BRAND.name} etkinliklerinden kareler — konuşmalar, atölyeler ve buluşmalar.`;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalPath="/gallery"
+  noindex={!GALLERY_PUBLIC || count === 0}
+  breadcrumbs={[{ name: "Galeri", item: "/gallery" }]}
+>
+  <section class="container-x pt-14 pb-8">
+    <div class="max-w-2xl">
+      <h1 class="text-4xl md:text-5xl font-semibold leading-[1.05]">
+        Galeri
+      </h1>
+      <p class="text-ink-dim mt-4 leading-relaxed">
+        {description}
+      </p>
+      {count > 0 && (
+        <p class="text-ink-faint text-sm mt-3 tabular-nums">
+          {count} fotoğraf · {albumLinks.length || albums.length} etkinlik
+        </p>
+      )}
+    </div>
+
+    {albumLinks.length > 0 && (
+      <div class="flex flex-wrap gap-2 mt-7">
+        {albumLinks.map((a) => (
+          <a href={`/events/${a.slug}`} class="chip hover:text-ink-text transition-colors">
+            {a.title}
+            {a.when && <span class="text-ink-faint ml-1.5">{a.when}</span>}
+          </a>
+        ))}
+      </div>
+    )}
+  </section>
+
+  <section class="container-x pb-12">
+    {count > 0 ? (
+      <GalleryGrid items={photos} albumLabels={albumLabels} />
+    ) : (
+      <div class="card p-10 text-center">
+        <p class="text-ink-dim">Henüz fotoğraf yüklenmedi.</p>
+        <a href="/events" class="btn btn-ghost mt-5">
+          <Icon name="arrow-right" size={16} /> Etkinliklere göz at
+        </a>
+      </div>
+    )}
+  </section>
+
+  {/*
+    Required by ADR 0003: these photographs are published under legitimate
+    interest with notice, not consent, so the right to object has to be
+    reachable from the page itself — not only from the privacy notice.
+  */}
+  <section class="container-x pb-16">
+    <div class="card p-5 sm:p-6 max-w-2xl text-sm text-ink-dim leading-relaxed">
+      <p class="flex items-start gap-2.5">
+        <Icon name="user-check" size={16} class="mt-0.5 shrink-0" />
+        <span>
+          Bu fotoğraflar etkinliklerimizde çekildi ve tanıtım amacıyla yayınlanıyor.
+          Bir karede yer alıyor ve kaldırılmasını istiyorsanız
+          <strong class="text-ink-text"> kvkk@devmultigroup.com</strong> adresine yazmanız yeterli —
+          gerekçe belirtmenize gerek yok. Ayrıntı: <a href="/privacy">Aydınlatma Metni</a> §2 ve §7.
+        </span>
+      </p>
+    </div>
+  </section>
+</BaseLayout>

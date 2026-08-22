@@ -134,7 +134,7 @@ devmultigroup.com/
     │   ├── SpeakerCard.astro     Speaker card: avatar/initials, title, company logo/name, talk-count or event-role chip, social links; carries data-q/company/sector for client filtering.
     │   ├── TeamCard.astro        Member card: avatar/initials, name, role, active area, social icons; whole card links to the primary profile (LinkedIn first).
     │   ├── LinkButton.astro      Link card routing through /go/<id> for click counting; icon + label + description + arrow; emits link_click. data-astro-prefetch="false" so the viewport prefetcher can't inflate the counter.
-    │   ├── GalleryGrid.astro     Masonry photo grid with load skeletons + lightbox modal (Escape/click; re-binds on astro:page-load).
+    │   ├── GalleryGrid.astro     Masonry photo grid with load skeletons + lightbox modal (Escape/click; re-binds on astro:page-load). Optional `albumLabels` captions each frame with its event (only /gallery passes it). A 3:2 skeleton box reserves height because photo dimensions are not stored.
     │   ├── CommunitiesMap.astro  Türkiye map of partner communities: sized city dots (counts), animated hub-and-spoke connection arcs, hover tooltips (uses turkey.svg + turkey-map).
     │   ├── CompanyStrip.astro    Infinite marquee of company logos, admin-picked (companies.in_strip → listStripCompanies, falls back to featured then the static COMPANIES), forward/reverse, pause on hover.
     │   ├── ImpactStrip.astro     Scroll-revealed KPI strip with a digit "odometer" roll; SSR renders final values (correct with JS off).
@@ -173,6 +173,7 @@ devmultigroup.com/
         ├── companies.astro       Companies (employers seen at events): search + sector DROPDOWN (was an unbounded chip row) + logo grid, per-company speaker counts.
         ├── communities.astro     Partner communities: CommunitiesMap + list; emits ItemList JSON-LD.
         ├── partnerships.astro    İş birlikleri INDEX — sell-oriented, DB-driven from `partners`. Hero pairs the pitch with a two-ring counter-rotating partner-logo orbit (replaced the two CompanyStrip marquees); editorial hairline rows (deliberately not `.card` boxes), centred stat rail, offer grid, card-glow sponsor CTA; ItemList JSON-LD.
+        ├── gallery/index.astro   Public photo river — every active gallery_items row in one masonry, newest first, with event chips and the KVKK takedown line (ADR 0003). Per-event photos live on the event page instead.
         ├── partnerships/[slug].astro  One collaboration, long-form: hero, animated metric counters (metrics_json), story markdown, media grid (gallery_json), CTA, sibling rail. ONE template for every partner.
         ├── contact.astro         İletişim: three public addresses, subject-selecting form posting to /api/contact, org info, socials. ContactModal stays for in-context CTAs. schema.org ContactPage. No FAQ by design.
         ├── kaynakca.astro        Curated open-source resources (/kaynakca), grouped (kaynakça/bootcamp/diğer) from the resources table.

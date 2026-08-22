@@ -24,8 +24,15 @@ Developer MultiGroup (**DMG**), iOS, web, veri ve yapay zekâ alanlarında geli�
 | Sipariş (mağaza) | Ad, e-posta, ürün/adet, sipariş notu | Mağaza ön sipariş/rezervasyon |
 | İşlem güvenliği / Kullanım | Çerez kimlikleri, cihaz/tarayıcı bilgisi, sayfa etkileşimleri, hata kayıtları | Web sitesi (çerez/analitik), hata izleme |
 | E-posta etkileşimi | Gönderdiğimiz e-postalardaki bağlantı tıklamaları | E-posta bülteni |
+| Görsel veri | Etkinliklerimizde çekilen fotoğraflar (yüz görüntüsü içerebilir) | Yüz yüze etkinlikler |
 
 **Özel nitelikli kişisel veri (din, sağlık, üyelik, biyometrik vb.) toplamıyoruz.**
+Etkinlik fotoğrafları **biyometrik veri değildir**: yüz tanıma, yüz eşleştirme veya yüzle
+arama yapmıyoruz; fotoğraflar yalnızca ait oldukları etkinliğe göre gruplanır.
+
+> [AVUKAT] Etkinlik fotoğraflarının meşru menfaat (m.5/2-f) ile yayınlanması ve açık rıza
+> yerine bildirim + itiraz mekanizmasının yeterliliği teyit edilmelidir. Bkz. K-018 ve
+> `docs/adr/0003-public-event-photography.md`.
 
 ## 3. İşleme Amaçları ve Hukuki Sebepleri (KVKK m.5)
 

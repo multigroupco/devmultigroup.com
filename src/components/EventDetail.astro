@@ -6,13 +6,14 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Icon from "@/components/Icon.astro";
 import { getEnv } from "@/lib/runtime";
-import { listEvents, getEventRecordings, getEventSpeakers, listCompanies } from "@/lib/content";
+import { listEvents, getEventRecordings, getEventSpeakers, listCompanies, listGallery } from "@/lib/content";
 import { renderMarkdown } from "@/lib/markdown";
 import { formatDate, formatTime, iso, isUpcoming } from "@/lib/format";
 import { categoryAccent, accentHex, imageSrc } from "@/lib/ui";
 import { GATHIN, BRAND } from "@/lib/site";
 import EventCard from "@/components/EventCard.astro";
 import RecordingCard from "@/components/RecordingCard.astro";
+import GalleryGrid from "@/components/GalleryGrid.astro";
 import SpeakerCard from "@/components/SpeakerCard.astro";
 import type { EventRow, CompanyRow } from "@/lib/types";
 
@@ -37,6 +38,10 @@ const reg = event
 const where = event ? (event.is_online ? "Çevrimiçi" : [event.location, event.city].filter(Boolean).join(", ")) : "";
 const body = event ? renderMarkdown(event.description) : "";
 const recordings = event ? await getEventRecordings(env, event.id) : [];
+// Photos bind to an event by SLUG, not by id — there is no foreign key
+// (ADR 0004). Most events have none, and that is the normal case: the section
+// simply does not render.
+const photos = event ? await listGallery(env, { album: event.slug, limit: 60 }) : [];
 const speakers = event ? await getEventSpeakers(env, event.id) : [];
 const companyMap = speakers.length
   ? new Map<string, CompanyRow>((await listCompanies(env)).map((c) => [c.id, c]))
@@ -186,6 +191,21 @@ const eventLd =
             <div class="grid sm:grid-cols-2 gap-4">
               {recordings.map((r) => <RecordingCard rec={r} />)}
             </div>
+          </div>
+        )}
+
+        {photos.length > 0 && (
+          <div class="mt-10 pt-6 border-t border-line">
+            <h2 class="font-display text-lg font-semibold mb-5 flex items-center gap-2">
+              <Icon name="camera" size={18} /> Fotoğraflar
+              <span class="chip tabular-nums">{photos.length}</span>
+            </h2>
+            <GalleryGrid items={photos} />
+            <p class="text-xs text-ink-faint mt-4">
+              Bir karede yer alıyor ve kaldırılmasını istiyorsanız{" "}
+              <strong class="text-ink-dim">kvkk@devmultigroup.com</strong>.
+              <a href="/gallery" class="ml-1.5 underline decoration-line hover:text-ink-text transition-colors">Tüm galeri</a>
+            </p>
           </div>
         )}
 

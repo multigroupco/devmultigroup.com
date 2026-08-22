@@ -77,7 +77,26 @@
 ### K-014 — VERBİS / özel nitelikli veri
 - **Karar:** Özel nitelikli veri (din/sağlık/üyelik/biyometrik vb.) **toplamıyoruz** — sadece ad/e-posta/mesaj/sipariş → VERBİS ekonomik istisna varsayımı.
 - **AVUKAT:** Teyit.
-- **Durum:** Karar verildi.
+- **Durum:** Karar verildi. **K-018 ile güncellendi (2026-08-22):** envantere *görsel veri
+  (etkinlik fotoğrafları)* eklendi. Bu, özel nitelikli veri kararını değiştirmez — düz
+  fotoğraf biyometrik veri değildir; biyometrik hâle gelmesi için yüz tanıma/eşleştirme
+  yapılması gerekir ve K-018 bunu açıkça yasaklar.
+
+### K-018 — Etkinlik fotoğraflarının yayınlanması
+- **Karar:** Etkinliklerde çekilen fotoğraflar, seçilmiş kareler hâlinde `/gallery` ve etkinlik
+  sayfalarında **herkese açık** yayınlanır. Hukuki sebep **meşru menfaat (m.5/2-f)**; açık rıza
+  toplanmaz. Karşılığında iki şart, ve galeri bunlarsız yayına çıkmaz:
+  1. Aydınlatma metnine görsel veri satırı + amaç/hukuki sebep + saklama süresi eklenir.
+  2. Galeri sayfasında ve her etkinliğin fotoğraf bölümünde **gerekçesiz kaldırma** yolu
+     (`kvkk@devmultigroup.com`) görünür şekilde yer alır.
+- **Yasak:** Yüz tanıma, yüz eşleştirme, yüzle arama, otomatik etiketleme. Bunlar biyometrik
+  işleme olur ve K-014'ün kapsamı dışına çıkar.
+- **Saklama:** Topluluk arşivi olarak süresiz; itiraz üzerine derhal kaldırılır.
+- **AVUKAT:** Meşru menfaat dengesi ve açık rıza yerine bildirim+itiraz mekanizmasının
+  yeterliliği teyit edilmeli. Süresiz saklamanın ölçülülüğü ayrıca değerlendirilmeli.
+- **Kaynak:** `docs/grills/2026-08-22-dmg-gallery-system.md` (Q3, Q9) →
+  `docs/adr/0003-public-event-photography.md`.
+- **Durum:** Karar verildi, avukat teyidi bekliyor.
 
 ### K-015 — Mailing analitik yapısı
 - **Karar:** Ayrı proje YOK; **tek proje + tagging + iyi yapılandırılmış dashboard'lar** yeterli (PostHog tek EU projesi + `source:'mailing'` property; Sentry tek proje + `environment`/tag). Sunucu-ağırlıklı capture, açılma pixel'i YOK.

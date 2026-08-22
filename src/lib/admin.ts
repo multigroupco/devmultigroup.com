@@ -26,6 +26,12 @@ export interface Field {
   help?: string;
   placeholder?: string;
   full?: boolean; // span both columns
+  /**
+   * Value a NEW row starts with (existing rows always show their stored value).
+   * Today only `boolean` reads it: without it every checkbox renders unchecked
+   * on /new, so an "Active" flag has to be ticked by hand on every insert.
+   */
+  default?: number;
 }
 
 export interface Resource {
@@ -335,16 +341,17 @@ export const RESOURCES: Record<string, Resource> = {
       { name: "album", label: "Album" },
       { name: "is_active", label: "Active" },
     ],
+    // Deliberately short. The gallery is filled by hand, ~10 photos per event,
+    // so every extra field is paid ~50 times over. `width`/`height` were dropped
+    // because GalleryGrid never read them; `taken_at`/`sort_order` because the
+    // album order is upload order (see listGallery). Dropped fields keep their
+    // schema defaults — they are simply not written. ADR 0004.
     fields: [
-      { name: "image_url", label: "Image", type: "image", required: true, full: true, help: "Upload a file or paste an image URL." },
-      { name: "title", label: "Title", type: "text" },
-      { name: "caption", label: "Caption", type: "text", full: true },
-      { name: "album", label: "Album", type: "text", help: "Group photos by album name." },
-      { name: "taken_at", label: "Taken at", type: "datetime" },
-      { name: "width", label: "Width", type: "number" },
-      { name: "height", label: "Height", type: "number" },
-      { name: "sort_order", label: "Sort order", type: "number" },
-      { name: "is_active", label: "Active", type: "boolean" },
+      { name: "image_url", label: "Fotoğraf", type: "image", required: true, full: true, help: "Yükle. Tarayıcı göndermeden önce uzun kenarı 2000px'e indirir — orijinaller Drive'da kalır (ADR 0002)." },
+      { name: "album", label: "Albüm (etkinlik slug'ı)", type: "text", required: true, full: true, help: "Etkinliğin /events/<slug> adresindeki son parçası. Fotoğraf etkinliğe bu değerle bağlanır — yabancı anahtar yok, yazım hatası fotoğrafı görünmez kılar (ADR 0004)." },
+      { name: "title", label: "Başlık", type: "text", help: "İsteğe bağlı. Fotoğrafın üzerinde imleç durunca görünür." },
+      { name: "caption", label: "Açıklama", type: "text", full: true, help: "İsteğe bağlı. Başlık boşsa bunun yerine o gösterilir." },
+      { name: "is_active", label: "Yayında", type: "boolean", default: 1, help: "Kötü kareyi silmeden gizlemek için kapat." },
     ],
   },
 

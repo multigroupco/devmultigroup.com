@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { getEnv } from "@/lib/runtime";
 import { all } from "@/lib/db";
 import { imageSrc } from "@/lib/ui";
-import { BRAND } from "@/lib/site";
+import { BRAND, GALLERY_PUBLIC } from "@/lib/site";
 
 // Every indexable public page belongs here. Anything missing is discoverable
 // only by crawling, which is exactly how /speakers, /companies, /kaynakca,
@@ -15,6 +15,8 @@ const STATIC: { path: string; priority: string }[] = [
   { path: "/recordings", priority: "0.7" },
   { path: "/podcasts", priority: "0.7" },
   { path: "/blog", priority: "0.7" },
+  // Listed only once the gallery actually has photos — see GALLERY_PUBLIC.
+  ...(GALLERY_PUBLIC ? [{ path: "/gallery", priority: "0.6" }] : []),
   { path: "/kaynakca", priority: "0.7" },
   { path: "/team", priority: "0.6" },
   { path: "/communities", priority: "0.6" },

@@ -26,6 +26,18 @@ export function isApexHost(host: string | null | undefined): boolean {
   return !!host && host.replace(/\.$/, "").toLowerCase() === CANONICAL_HOST;
 }
 
+/**
+ * `/gallery` ships built and reachable, but it has no photos yet. Until the
+ * first albums are uploaded it is kept OFF every discovery surface — header
+ * nav, footer, sitemap and llms.txt — so search engines and answer engines
+ * never meet an empty page (the page also self-`noindex`es while empty).
+ *
+ * The route itself stays live, so a direct link works and the admin can check
+ * the result. Flip this to `true` — one line, nothing else to edit — once the
+ * photos are in.
+ */
+export const GALLERY_PUBLIC = false;
+
 export type NavChild = { label: string; href: string; soon?: boolean };
 export type NavItem = { label: string; href: string; children?: NavChild[] };
 export const NAV: NavItem[] = [
@@ -38,6 +50,7 @@ export const NAV: NavItem[] = [
       { label: "Blog", href: "/blog" },
       { label: "Podcast'ler", href: "/podcasts" },
       { label: "Kayıtlar", href: "/recordings" },
+      ...(GALLERY_PUBLIC ? [{ label: "Galeri", href: "/gallery" }] : []),
       { label: "Kaynakça", href: "/kaynakca" },
     ],
   },
@@ -71,6 +84,7 @@ export const FOOTER_NAV: { label: string; href: string }[] = [
   { label: "Etkinlikler", href: "/events" },
   { label: "Akademi", href: "/academy" },
   { label: "Kayıtlar", href: "/recordings" },
+  ...(GALLERY_PUBLIC ? [{ label: "Galeri", href: "/gallery" }] : []),
   { label: "Blog", href: "/blog" },
   { label: "Kaynakça", href: "/kaynakca" },
   { label: "Ekip", href: "/team" },

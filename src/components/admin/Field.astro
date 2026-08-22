@@ -41,7 +41,7 @@ const preview = field.type === "image" && str ? imageSrc(str) : "";
 
   {field.type === "boolean" && (
     <div class="flex items-center gap-2.5 pt-1">
-      <input type="checkbox" name={field.name} value="1" checked={num === 1} class="w-4 h-4 accent-violet" />
+      <input type="checkbox" name={field.name} value="1" checked={value == null ? field.default === 1 : num === 1} class="w-4 h-4 accent-violet" />
       <span class="text-sm text-ink-dim">Enabled</span>
     </div>
   )}
@@ -117,6 +117,100 @@ const preview = field.type === "image" && str ? imageSrc(str) : "";
         e.preventDefault();
         files.forEach((f) => upload(ta, f));
       });
+    })();
+  </script>
+)}
+
+{field.type === "image" && (
+  <script is:inline>
+    (() => {
+      if (window.__imgShrink) return;
+      window.__imgShrink = true;
+
+      // Downscale in the browser BEFORE the form is submitted. This is not a
+      // nicety: `uploadImage()` in lib/admin.ts puts the File into R2 with no
+      // size check at all, so without this a 12MB shoot original would be
+      // stored and then served, byte for byte, by /media/<key>. ADR 0002 says
+      // Drive keeps the originals and R2 only ever holds web derivatives —
+      // this is where that rule is actually enforced.
+      const MAX = 2000;      // long edge, px
+      const QUALITY = 0.82;
+      // Left alone on purpose: vectors have no pixels to shrink, and a canvas
+      // round-trip would flatten an animated GIF to its first frame.
+      const PASS = /^image\/(svg\+xml|gif)$/;
+
+      const target = (() => {
+        const c = document.createElement("canvas");
+        return c.toDataURL("image/webp").startsWith("data:image/webp")
+          ? { type: "image/webp", ext: "webp" }
+          : { type: "image/jpeg", ext: "jpg" };
+      })();
+
+      const fmt = (b) => (b > 1048576 ? (b / 1048576).toFixed(1) + "MB" : Math.round(b / 1024) + "KB");
+
+      async function shrink(file) {
+        if (!file.type.startsWith("image/") || PASS.test(file.type)) return null;
+        // `imageOrientation: "from-image"` bakes the EXIF rotation into the
+        // bitmap. Without it every portrait frame off a phone or DSLR uploads
+        // sideways — a canvas ignores the EXIF tag, and the tag is lost on
+        // re-encode, so the mistake is permanent.
+        const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
+        const scale = Math.min(1, MAX / Math.max(bmp.width, bmp.height));
+        const w = Math.round(bmp.width * scale);
+        const h = Math.round(bmp.height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d").drawImage(bmp, 0, 0, w, h);
+        bmp.close();
+        const blob = await new Promise((r) => canvas.toBlob(r, target.type, QUALITY));
+        // Already web-sized and the re-encode bought nothing — keep the original
+        // rather than paying a generation of quality for no bytes.
+        if (!blob || (scale === 1 && blob.size >= file.size)) return null;
+        const base = (file.name || "photo").replace(/\.[^.]+$/, "");
+        return new File([blob], base + "." + target.ext, { type: target.type });
+      }
+
+      const noteFor = (el) => {
+        let n = el.nextElementSibling;
+        if (!n || !n.classList.contains("shrink-note")) {
+          n = document.createElement("span");
+          n.className = "shrink-note block text-xs text-ink-faint mt-1.5";
+          el.after(n);
+        }
+        return n;
+      };
+
+      const bind = () => {
+        document.querySelectorAll('input[type="file"][accept="image/*"]').forEach((el) => {
+          if (el.dataset.shrinkBound) return;
+          el.dataset.shrinkBound = "1";
+          el.addEventListener("change", async () => {
+            const file = el.files && el.files[0];
+            if (!file) return;
+            const note = noteFor(el);
+            note.textContent = "küçültülüyor…";
+            try {
+              const out = await shrink(file);
+              if (out) {
+                const dt = new DataTransfer();
+                dt.items.add(out);
+                el.files = dt.files;
+                note.textContent = fmt(file.size) + " → " + fmt(out.size) + " · " + target.ext;
+              } else {
+                note.textContent = fmt(file.size) + " · olduğu gibi gönderilecek";
+              }
+            } catch {
+              // Never block the upload on a resize failure — an oversized photo
+              // beats no photo, and the note says which one happened.
+              note.textContent = "küçültülemedi — orijinal gönderilecek";
+            }
+          });
+        });
+      };
+
+      document.addEventListener("astro:page-load", bind);
+      bind();
     })();
   </script>
 )}

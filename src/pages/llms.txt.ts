@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { tryEnv } from "@/lib/runtime";
 import { getStats, getSettings } from "@/lib/content";
-import { resolveSite, BRAND, SOCIALS } from "@/lib/site";
+import { resolveSite, BRAND, SOCIALS, GALLERY_PUBLIC } from "@/lib/site";
 
 // GEO: a concise, link-rich map for answer engines (ChatGPT, Claude, Perplexity…).
 // Depth lives in /llms-full.txt — this stays a navigable index with the hard facts
@@ -40,7 +40,10 @@ companies (incl. Google, Trendyol, Hepsiburada, Akbank). Content is in Turkish (
 - [Events](${o}/events): upcoming and past meetups, conferences and workshops. Registration happens on Gathin.
 - [Academy](${o}/academy): MultiAcademy free bootcamps (Modern iOS, Android/Compose, GenAI fundamentals, web). Also at academy.devmultigroup.com.
 - [Recordings](${o}/recordings): YouTube playlists of talks and bootcamp series.
-- [Blog](${o}/blog): articles, guides and event recaps. Feed: ${o}/rss.xml
+- [Blog](${o}/blog): articles, guides and event recaps. Feed: ${o}/rss.xml${
+  GALLERY_PUBLIC ? `
+- [Gallery](${o}/gallery): photographs from past meetups, workshops and conferences.` : ""
+}
 - [Team](${o}/team): organizers and volunteers.
 - [Communities](${o}/communities): partner communities and ecosystems (Google, Huawei, Amazon, IEEE) across Türkiye.
 - [Partnerships](${o}/partnerships): brands and companies the community builds with.

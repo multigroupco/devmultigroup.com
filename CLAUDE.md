@@ -52,7 +52,7 @@ SQLite (D1). Timestamps are **unix epoch seconds (UTC)**; booleans are `0/1`. Ta
 | `hero_slides`   | the photo bands flowing behind the homepage hero (admin-managed)        |
 | `recordings`    | YouTube playlists (talks / bootcamp series)                              |
 | `podcasts`      | podcast **shows** (a series, not an episode) — `/podcasts/<slug>`        |
-| `gallery_items` | photos — `image_url` (external or `/media/<key>`) or `image_key` (R2)    |
+| `gallery_items` | photos — `image_url` (external or `/media/<key>`) or `image_key` (R2). `album` holds an **event slug**, by convention only (no FK) — ADR `0004` |
 | `team_members`  | organizers/volunteers; `socials` is a JSON string, `slug` → `/team/<slug>` |
 | `partners`      | **active collaborations** (`/partnerships`) — long-form, metrics/gallery JSON |
 | `social_posts`  | curated social embeds (no third-party API)                              |
@@ -187,6 +187,7 @@ Keys mirror the old paths — `logos/<f>.png`, `main/main-N.jpg`, `partners/<f>.
 | `POST /admin/events`           | `admin/[resource]/index.astro` (`action=sync-gathin`) | Pulls both Gathin RSS feeds (`src/lib/gathin.ts`) and inserts unseen `guid`s as **draft** events. Create-only; POST, never GET. |
 | `/yt/<id>`                     | `yt/[id].ts`                               | Scrapes a YouTube **playlist** page (no Data API) for its first videoId, caches it in KV **7 days**, then 302s to the `i.ytimg.com` thumbnail. Used as a fallback recording cover. |
 | `/blog/banner/<slug>.svg`      | `blog/banner/[slug].svg.ts`                | Generates a monochrome AMOLED SVG OG/cover banner (radial gradient + dot pattern + wrapped title) for posts with no cover image. |
+| `/gallery`                     | `gallery/index.astro`                      | Public photo river — all active `gallery_items`, newest first, event chips + the KVKK takedown line. Per-event photos render on the event page (`EventDetail.astro`), keyed by `album = event slug`. |
 
 `/yt/<id>` is wired in `RecordingCard.astro` (`/yt/${ytId}` when no cover) and the SVG
 banner in `PostCard.astro` (`/blog/banner/${slug}.svg` when no cover).
@@ -475,6 +476,23 @@ Console, and Access finalisation.
   a user. This already cost us a session-destroying `/auth/logout` (now POST-only) and
   inflated `/go/<id>` click counts (now `data-astro-prefetch="false"` on `LinkButton`).
   Use POST for state changes; add `data-astro-prefetch="false"` to any counted link.
+- **The gallery has three load-bearing rules, all recorded as ADRs.** (1) *Originals never
+  enter R2* — Drive is the archive of record, R2 holds web derivatives only, and the rule is
+  enforced in the browser by the resize script at the bottom of
+  [`Field.astro`](./src/components/admin/Field.astro), because `uploadImage()` in `admin.ts`
+  has **no size check** and would otherwise store a 12MB shoot original verbatim (ADR `0002`).
+  (2) *`gallery_items.album` is an event slug with no foreign key* — a typo silently produces
+  an invisible photo, and renaming an event slug orphans its photos (ADR `0004`). (3) *Event
+  photographs are published under **meşru menfaat with notice**, not consent* — so the
+  aydınlatma metni clause and the visible `kvkk@devmultigroup.com` takedown line on
+  `/gallery` and on every event photo section are **not decoration, they are the legal basis**
+  (ADR `0003`, KVKK `K-018`). Do not remove them. Face recognition / matching / auto-tagging
+  is explicitly out of bounds — it would turn plain photos into biometric data.
+- **The gallery admin form is deliberately five fields.** It is filled by hand, ~10 photos per
+  event, so every field is paid ~50 times over. `width`/`height` were dropped because
+  `GalleryGrid` never read them, `taken_at`/`sort_order` because album order is upload order
+  (see the ordering comment on `listGallery`). Adding a field back is a real cost — check the
+  grill first: [`docs/grills/2026-08-22-dmg-gallery-system.md`](./docs/grills/2026-08-22-dmg-gallery-system.md).
 - Keep copy **Turkish**; keep the **English motto** as-is.
 - **Analytics is dependency-free** — no `@sentry/*` / `posthog-js` npm packages;
   client SDKs load via snippet/loader, server capture speaks the HTTP APIs
