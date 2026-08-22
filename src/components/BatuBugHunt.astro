@@ -1,0 +1,466 @@
+---
+// 404 easter egg — "Batu, avda".
+//
+// Linger on the not-found page for more than five seconds and the lights go
+// down: Batuhan Yalçın (QA, so: bug avcısı) crosses the bottom of the screen
+// left to right in viking guise — hair combed back into a tail, that moustache, an
+// axe over his shoulder and a violet lantern swinging from his
+// fist. The lantern spotlights nothing — it just holds a dim pool of light
+// around him while the rest of the page stays dark, and the bug scuttling
+// ahead glows on its own.
+//
+// Everything is one canvas over the whole viewport. The sprites below are the
+// source of truth: each row is [x, "chars"] spans, one character per pixel,
+// keyed by PAL — so a row can't silently drift out of alignment the way a
+// fixed-width string can. Edit the spans to redraw him.
+//
+// Sits still (no rAF, no timers) until it runs, and never runs at all under
+// prefers-reduced-motion.
+---
+
+<canvas class="batu-hunt" data-batu-hunt aria-hidden="true"></canvas>
+
+<style>
+  .batu-hunt {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    pointer-events: none;
+    z-index: 70; /* over the header so the whole page dims, under modals */
+  }
+  .batu-hunt.is-running {
+    display: block;
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    if (window.__batuHunt) {
+      window.__batuHuntInit && window.__batuHuntInit();
+      return;
+    }
+    window.__batuHunt = true;
+
+    const W = 40, H = 40;    // sprite cell
+    const IDLE_MS = 5000;    // linger this long and the lights go down
+    const REPEAT_MS = 30000; // …and he comes back around if you stay
+    const RUN_MS = 6000;     // one crossing, left edge to right edge
+    const STEP_MS = 110;     // run-cycle frame length
+    const DIM_MAX = 0.74;    // how dark the page goes at his closest
+
+    const PAL = {
+      H: "#1f1722", h: "#493a54",              // hair / strand sheen
+      Z: "#17101a",                            // moustache — darker than the beard, so it reads apart
+      n: "#6a5a78",                            // wrist beads
+      B: "#2b2029", b: "#463850",              // beard / beard edge
+      S: "#e8b189", s: "#c88a60", r: "#a9764f",
+      e: "#120d16",                            // eye
+      T: "#111116", t: "#20202a", u: "#191921", // tunic / sheen / far arm
+      N: "#b9b9c8", c: "#6f6a7d",              // chain, and the dimmer glint of it on the beard
+      O: "#9a9ab0", V: "#e9e9f2",              // pendant / highlight
+      D: "#242430", d: "#191922", K: "#eeeef4", j: "#9b9baa", k: "#8c8c9b",
+      A: "#4a3526", a: "#31221a",              // axe haft
+      M: "#8e8ea0", m: "#55555f", E: "#cfcfdc", // axe blade / socket / edge
+    };
+
+    // row builder: [x, "chars"] spans; "." inside a span leaves the pixel alone
+    const rows = (spec, h) => {
+      const g = [];
+      for (let y = 0; y < h; y++) g.push(new Array(W).fill("."));
+      for (const y in spec) for (const sp of spec[y])
+        for (let i = 0; i < sp[1].length; i++) if (sp[1][i] !== ".") g[+y][sp[0] + i] = sp[1][i];
+      return g;
+    };
+    const merge = (base, over) => base.map((row, y) => row.map((c, x) => (over[y] && over[y][x] !== "." ? over[y][x] : c)));
+
+    // ── bearded axe, slung over the shoulder ────────────────────────────────
+    const AXE = rows({
+      4: [[7, "mm"]], 5: [[6, "EMm"]], 6: [[5, "EMMm"]], 7: [[4, "EMMMm"]], 8: [[3, "EMMMMm"]],
+      9: [[2, "EMMMMMm"]], 10: [[2, "EMMMMMm"]], 11: [[2, "EMMMMMm"]],
+      12: [[3, "EMMMMm"]], 13: [[3, "EMMMm"]], 14: [[3, "EMMm"]], 15: [[4, "EMm"]], 16: [[5, "Em"]],
+      17: [[12, "Aa"]], 18: [[12, "Aa"]], 19: [[13, "Aa"]], 20: [[13, "Aa"]], 21: [[14, "Aa"]],
+      22: [[14, "Aa"]], 23: [[14, "Aa"]], 24: [[15, "Aa"]], 25: [[15, "Aa"]], 26: [[15, "Aa"]],
+    }, H);
+    // the stretch of haft between blade and shoulder, kept apart so the blade rows stay legible
+    const HAFT = rows({
+      9: [[9, "Aa"]], 10: [[9, "Aa"]], 11: [[10, "Aa"]], 12: [[10, "Aa"]],
+      13: [[10, "Aa"]], 14: [[11, "Aa"]], 15: [[11, "Aa"]], 16: [[11, "Aa"]],
+    }, H);
+
+    // ── hair: swept back, nape length, split into strands ───────────────────
+    const MANE = rows({
+      9: [[14, "HHH"]], 10: [[12, "HHHHH"]], 11: [[10, "HHhHHHH"]],
+      12: [[10, "HHhHHHH"]], 13: [[11, "HHhHHH"]], 14: [[13, "HhHH"]],
+    }, H);
+
+    // ── the nape: bare skin between jaw and collar ──────────────────────────
+    const NECK = rows({
+      15: [[19, "sSSSS"]], 16: [[19, "sSSSS"]], 17: [[19, "sSSSS"]], 18: [[19, "sSSSS"]],
+    }, H);
+
+    // ── head, in profile: heavy brow, eye tucked under it, nose furthest forward ─
+    const HEAD = rows({
+      3: [[21, "HHHHHHH"]],
+      4: [[19, "HHhhhhhhhHH"]],          // hair sits tight to the skull, combed back
+      5: [[18, "HHhhhhhhhHHH"]],
+      6: [[17, "HHhhhhhHSSSSS"]],
+      7: [[16, "HHhhhhHSSSSSSSSS"]],
+      8: [[16, "HHhhhHSSSSSSSSSSS"]],
+      9: [[16, "HHhhhSSSSSSBBBBSs"]],    // heavy brow
+      10: [[16, "HHhhSSSSSSSSSeeSss"]],  // eye tucked under it
+      11: [[16, "HHhhSSSSSSSSSSSSSs"]],
+      12: [[17, "HHhSSSSSSSSSSSSSSs"]],  // nose, the frontmost point
+      13: [[17, "HHhSSSSSSSSSSSSSs"]],
+      14: [[17, "HhSSSSSSSSSSSSSs"]],
+      15: [[19, "SSSSSSSSSSSSs"]],
+      16: [[19, "SSSSSSSSSSs"]],
+    }, H);
+
+    // ── moustache: thick, drooping, sitting proud of the beard ──────────────
+    const TASH = rows({
+      13: [[29, "ZZZZ"]], 14: [[27, "ZZZZZ"]], 15: [[27, "ZZZ"]],
+    }, H);
+
+    // ── beard: full over jaw and chin, not a viking wedge ───────────────────
+    const BEARD = rows({
+      13: [[20, "BBB"]],
+      14: [[20, "BBBBB"]],
+      15: [[22, "BBBBBBBB"]],
+      16: [[22, "BBBbBBBB"]],
+      17: [[22, "BBBbBBB"]],
+      18: [[23, "BBBbBB"]],
+      19: [[24, "BBBB"]],
+    }, H);
+
+
+    const TORSO = rows({
+      19: [[19, "TTTTTTTTTTT"]],
+      20: [[17, "TTTTTTTTTTTTTT"]],
+      21: [[16, "TTTTTTTTTTTTTTTT"]],
+      22: [[16, "TtTTTTTTTTTTTTTT"]],
+      23: [[16, "TtTTTTTTTTTTTTTT"]],
+      24: [[16, "TtTTTTTTTTTTTTT"]],
+      25: [[16, "TTTTTTTTTTTTTTT"]],
+      26: [[16, "TTTTTTTTTTTTTT"]],
+      27: [[17, "TTTTTTTTTTTTT"]],
+      28: [[17, "TTTTTTTTTTTT"]],
+      29: [[18, "DDDDDDDDDDD"]],
+      30: [[18, "DDDDDDDDDD"]],
+      31: [[18, "DDDDDDDDDD"]],
+    }, H);
+
+    // ── chain + the chunky square pendant he wears ──────────────────────────
+    const CHAIN = rows({
+      17: [[25, "c"]],   // over the beard the chain only glints
+      18: [[26, "c"]],
+      19: [[26, "N"]],
+      20: [[26, "N"]],
+      21: [[26, "NN"]],
+      22: [[26, "NN"]],
+      23: [[25, "OOOO"]],
+      24: [[25, "OVVO"]],
+      25: [[25, "OVVO"]],
+      26: [[25, "OOOO"]],
+    }, H);
+
+    // ── lead arm, hanging with the lantern ──────────────────────────────────
+    const ARM_FRONT = rows({
+      18: [[29, "TTT"]], 19: [[30, "TTT"]], 20: [[31, "TTT"]], 21: [[31, "TTT"]],
+      22: [[31, "nnn"]], 23: [[32, "SSS"]], 24: [[32, "ss"]],
+    }, H);
+    const HAND = { x: 34, y: 25 }; // where the lantern's ring hangs from
+
+    // ── trailing arm; it carries the axe, so it barely swings ───────────────
+    const ARM_BACK = [
+      { 20: [[16, "uu"]], 21: [[15, "uu"]], 22: [[15, "uu"]], 23: [[14, "uu"]], 24: [[14, "uu"]], 25: [[14, "nn"]], 26: [[14, "rr"]], 27: [[14, "rr"]] },
+      { 20: [[16, "uu"]], 21: [[16, "uu"]], 22: [[15, "uu"]], 23: [[15, "uu"]], 24: [[15, "uu"]], 25: [[15, "nn"]], 26: [[15, "rr"]], 27: [[15, "rr"]] },
+      { 20: [[17, "uu"]], 21: [[16, "uu"]], 22: [[16, "uu"]], 23: [[16, "uu"]], 24: [[16, "uu"]], 25: [[16, "nn"]], 26: [[16, "rr"]], 27: [[16, "rr"]] },
+      { 20: [[16, "uu"]], 21: [[16, "uu"]], 22: [[15, "uu"]], 23: [[15, "uu"]], 24: [[15, "uu"]], 25: [[15, "nn"]], 26: [[15, "rr"]], 27: [[15, "rr"]] },
+    ].map((s) => rows(s, H));
+
+    // ── legs. Two poses; the four-beat cycle comes from swapping which leg is
+    //    the near one (tones + draw order), so the stride alternates. ────────
+    const POSE_CONTACT = {
+      back: rows({
+        32: [[18, "XXXX"]], 33: [[16, "XXXX"]], 34: [[14, "XXXX"]], 35: [[13, "XXX"]],
+        36: [[12, "XXX"]], 37: [[11, "XXX"]], 38: [[9, "YYYYY"]], 39: [[9, "ZZZZZ"]],
+      }, H),
+      front: rows({
+        32: [[22, "XXXX"]], 33: [[23, "XXXX"]], 34: [[24, "XXXX"]], 35: [[25, "XXXX"]],
+        36: [[25, "XXXX"]], 37: [[25, "XXXX"]], 38: [[24, "YYYYYY"]], 39: [[24, "ZZZZZZ"]],
+      }, H),
+    };
+    const POSE_PASS = {
+      back: rows({
+        32: [[18, "XXXX"]], 33: [[19, "XXXXX"]], 34: [[21, "XXXXX"]], 35: [[22, "XXXX"]],
+        36: [[21, "XXXX"]], 37: [[20, "XXXX"]], 38: [[19, "YYYY"]],
+      }, H),
+      front: rows({
+        32: [[21, "XXXX"]], 33: [[21, "XXXX"]], 34: [[21, "XXXX"]], 35: [[21, "XXXX"]],
+        36: [[22, "XXXX"]], 37: [[22, "XXXX"]], 38: [[21, "YYYYYY"]], 39: [[21, "ZZZZZZ"]],
+      }, H),
+    };
+    const NEAR = { X: "D", Y: "K", Z: "j" }, FAR = { X: "d", Y: "k", Z: "k" };
+    const recolour = (g, map) => g.map((row) => row.map((c) => map[c] || c));
+    const LEG_FRAMES = [
+      [recolour(POSE_CONTACT.back, FAR), recolour(POSE_CONTACT.front, NEAR)],
+      [recolour(POSE_PASS.back, FAR), recolour(POSE_PASS.front, NEAR)],
+      [recolour(POSE_CONTACT.front, FAR), recolour(POSE_CONTACT.back, NEAR)],
+      [recolour(POSE_PASS.front, FAR), recolour(POSE_PASS.back, NEAR)],
+    ];
+    // frames 0 and 2 are the airborne beats — the whole body rides a pixel higher
+    const BOB = [-1, 0, -1, 0];
+
+    // He leans into the run by riding the whole upper body forward of the feet
+    // as ONE rigid block. A per-row shear was tried and is wrong here: its step
+    // landed between the sunglasses' top bar and the lens, which read as a
+    // crooked head. Keep any offset uniform across the features.
+    const LEAN_BODY = 2, LEAN_LEGS = 1;
+    const shift = (g, dx) => g.map((row) => {
+      if (!dx) return row.slice();
+      const out = new Array(W).fill(".");
+      for (let x = 0; x < W; x++) if (row[x] !== "." && x + dx < W) out[x + dx] = row[x];
+      return out;
+    });
+
+    function buildFrame(i) {
+      let g = rows({}, H);
+      for (const layer of [MANE, AXE, HAFT, ARM_BACK[i], NECK, TORSO, HEAD, BEARD, TASH, CHAIN, ARM_FRONT]) g = merge(g, shift(layer, LEAN_BODY));
+      for (const legs of LEG_FRAMES[i].map((l) => shift(l, LEAN_LEGS))) g = g.map((r, y) => r.map((c, x) => (c !== "." ? c : legs[y][x])));
+      return g.map((r) => r.join(""));
+    }
+
+    // ── the lantern, hanging from his fist ──────────────────────────────────
+    const LANTERN_PAL = { L: "#6e6e80", l: "#3c3c48", C: "#a95ff0", c: "#7d3fd0", V: "#f4e6ff" };
+    const LANTERN = [
+      ".....LL.....",
+      "....L..L....",
+      "...LLLLLL...",
+      "..LLLLLLLL..",
+      ".LLLLLLLLLL.",
+      ".LcCCCCCCcL.",
+      ".LClCVVClCL.",
+      ".LClCVVClCL.",
+      ".LClCVVClCL.",
+      ".LcCCCCCCcL.",
+      ".LLLLLLLLLL.",
+      "..LLLLLLLL..",
+      "...lLLLLl...",
+      "....l..l....",
+    ];
+    const LANTERN_CORE = { x: 5.5, y: 7.5 }; // the flame, in lantern pixels
+
+    // ── the bug, which glows on its own ─────────────────────────────────────
+    const BUG_PAL = { Q: "#3b3049", q: "#7c65a2", w: "#9d80c4", P: "#f2e0ff" };
+    const BUG = [
+      ["...........q", ".........qq.", "...qqqqqq...", "..qQQwQQQq..", ".qQQQwQQQQP.", ".qQQQwQQQQq.", "..qQQwQQQq..", "...qqqqqq...", "..q.q.q.q..."],
+      ["..........q.", ".........qq.", "...qqqqqq...", "..qQQwQQQq..", ".qQQQwQQQQP.", ".qQQQwQQQQq.", "..qQQwQQQq..", "...qqqqqq...", "...q.q.q.q.."],
+    ];
+
+    // Bake one grid into a 1x offscreen canvas with a violet rim on the empty
+    // pixels that touch the silhouette — with the page dimmed, that outline is
+    // what keeps a near-black sprite readable.
+    function bake(grid, pal, tilt) {
+      const gw = grid[0].length, gh = grid.length, pad = 1;
+      const skew = tilt ? (y) => Math.round((tilt * y) / (gh - 1)) : () => 0;
+      const off = tilt ? Math.abs(tilt) : 0;
+      const c = document.createElement("canvas");
+      c.width = gw + pad * 2 + off * 2;
+      c.height = gh + pad * 2;
+      const x = c.getContext("2d");
+      const px0 = pad + off;
+      const solid = (a, b) => b >= 0 && b < gh && a - skew(b) >= 0 && a - skew(b) < gw && pal[grid[b][a - skew(b)]];
+      for (let y = -1; y <= gh; y++)
+        for (let a = -1; a <= gw + off; a++) {
+          if (solid(a, y)) continue;
+          const l = solid(a - 1, y), rt = solid(a + 1, y), up = solid(a, y - 1), dn = solid(a, y + 1);
+          if (!(l || rt || up || dn)) continue;
+          x.fillStyle = "rgba(172,116,246," + (l ? 0.46 : dn ? 0.32 : 0.22) + ")";
+          x.fillRect(px0 + a, pad + y, 1, 1);
+        }
+      for (let y = 0; y < gh; y++)
+        for (let a = 0; a < gw; a++) {
+          const col = pal[grid[y][a]];
+          if (!col) continue;
+          x.fillStyle = col;
+          x.fillRect(px0 + a + skew(y), pad + y, 1, 1);
+        }
+      return { canvas: c, ox: px0, oy: pad };
+    }
+
+    let sheets = null, bugs = null, lamps = null;
+    function sprites() {
+      if (sheets) return;
+      sheets = [0, 1, 2, 3].map((i) => bake(buildFrame(i), PAL, 0));
+      bugs = BUG.map((g) => bake(g, BUG_PAL, 0));
+      // five pre-sheared lanterns: it hangs from the ring, so the base swings
+      // furthest — picking a variant per frame beats rotating a pixel sprite
+      lamps = [-2, -1, 0, 1, 2].map((t) => bake(LANTERN, LANTERN_PAL, t));
+    }
+
+    const radial = (ctx, x, y, r, stops) => {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      for (const st of stops) g.addColorStop(st[0], st[1]);
+      return g;
+    };
+
+    // ── the run ─────────────────────────────────────────────────────────────
+    let canvas = null, ctx = null, raf = null, idleTimer = null, elapsed = 0, last = 0, cssW = 0, cssH = 0;
+
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      cssW = canvas.clientWidth || window.innerWidth;
+      cssH = canvas.clientHeight || window.innerHeight;
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function stop() {
+      if (raf) cancelAnimationFrame(raf);
+      raf = null;
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = null;
+      if (canvas) canvas.classList.remove("is-running");
+    }
+
+    function frame(now) {
+      if (!canvas || !canvas.isConnected) { stop(); return; }
+      // clamp both ways: the first rAF timestamp can predate the performance.now()
+      // taken in run(), and a backgrounded tab should pause him, not teleport him
+      const dt = Math.min(Math.max(now - last, 0), 60);
+      last = now;
+      elapsed += dt;
+      const p = elapsed / RUN_MS;
+      if (p >= 1) {
+        ctx.clearRect(0, 0, cssW, cssH);
+        canvas.classList.remove("is-running");
+        raf = null;
+        idleTimer = setTimeout(run, REPEAT_MS);
+        return;
+      }
+
+      if (canvas.clientWidth !== cssW || canvas.clientHeight !== cssH) resize();
+      const vw = cssW, vh = cssH;
+      const SC = vw < 640 ? 4 : 5;
+      const fi = Math.floor(elapsed / STEP_MS) % 4;
+
+      // the page darkens as he arrives and lifts as he leaves
+      const edge = 0.16;
+      const t = Math.min(1, Math.min(p, 1 - p) / edge);
+      const flicker = 0.9 + Math.sin(elapsed * 0.017) * 0.05 + Math.sin(elapsed * 0.071) * 0.05;
+      const dim = DIM_MAX * t * t * (3 - 2 * t);
+
+      const span = vw + (W * SC + 40 * SC) * 2;
+      const bx = Math.round(-(W * SC) - 40 * SC + p * span);
+      const by = Math.round(vh - H * SC + BOB[fi]);
+
+      // lantern: swings with the stride, hanging from the fist
+      const swingRaw = Math.sin((elapsed / (STEP_MS * 4)) * Math.PI * 2) * 2;
+      const lamp = lamps[Math.max(0, Math.min(4, Math.round(swingRaw) + 2))];
+      const lx = bx + (HAND.x - 6) * SC;
+      const ly = by + HAND.y * SC;
+      const cx = lx + LANTERN_CORE.x * SC;
+      const cy = ly + LANTERN_CORE.y * SC;
+
+      const gx = Math.round(cx + 34 * SC + Math.sin(elapsed * 0.011) * 5 * SC);
+      const gy = Math.round(vh - 9 * SC - Math.abs(Math.sin(elapsed * 0.022)) * SC);
+
+      ctx.clearRect(0, 0, vw, vh);
+      ctx.imageSmoothingEnabled = false;
+
+      // 1. drop the lights over the whole page
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = "rgba(3,2,6," + dim + ")";
+      ctx.fillRect(0, 0, vw, vh);
+
+      // 2. the lantern holds a pool of that dark back — wide and soft, never
+      //    lifting it completely, so the page stays gloomy even next to him
+      const R = 58 * SC;
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.fillStyle = radial(ctx, cx, cy, R, [
+        [0, "rgba(0,0,0," + 0.72 * flicker + ")"],
+        [0.45, "rgba(0,0,0," + 0.3 * flicker + ")"],
+        [1, "rgba(0,0,0,0)"],
+      ]);
+      ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+
+      // 3. violet wash + the pool it throws on the floor
+      ctx.globalCompositeOperation = "lighter";
+      ctx.fillStyle = radial(ctx, cx, cy, R, [
+        [0, "rgba(150,88,232," + 0.2 * flicker + ")"],
+        [1, "rgba(150,88,232,0)"],
+      ]);
+      ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+      ctx.save();
+      ctx.translate(cx, vh);
+      ctx.scale(1, 0.2);
+      ctx.fillStyle = radial(ctx, 0, 0, 46 * SC, [
+        [0, "rgba(160,100,240," + 0.3 * flicker + ")"],
+        [1, "rgba(160,100,240,0)"],
+      ]);
+      ctx.beginPath();
+      ctx.arc(0, 0, 46 * SC, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // 4. the bug, lit from within so it stays visible out at the dim edge
+      const bugPulse = 0.72 + Math.sin(elapsed * 0.013) * 0.28;
+      const bugR = 16 * SC;
+      ctx.fillStyle = radial(ctx, gx + 6 * SC, gy + 4 * SC, bugR, [
+        [0, "rgba(214,178,255," + 0.5 * bugPulse + ")"],
+        [0.35, "rgba(168,110,246," + 0.3 * bugPulse + ")"],
+        [1, "rgba(168,110,246,0)"],
+      ]);
+      ctx.fillRect(gx + 6 * SC - bugR, gy + 4 * SC - bugR, bugR * 2, bugR * 2);
+      ctx.globalCompositeOperation = "source-over";
+      const bug = bugs[Math.floor(elapsed / 70) % 2];
+      ctx.drawImage(bug.canvas, gx - bug.ox * SC, gy - bug.oy * SC, bug.canvas.width * SC, bug.canvas.height * SC);
+
+      // 5. Batu, then the lantern in front of him
+      const sheet = sheets[fi];
+      ctx.drawImage(sheet.canvas, bx - sheet.ox * SC, by - sheet.oy * SC, sheet.canvas.width * SC, sheet.canvas.height * SC);
+      ctx.drawImage(lamp.canvas, lx - lamp.ox * SC, ly - lamp.oy * SC, lamp.canvas.width * SC, lamp.canvas.height * SC);
+
+      // 6. bloom over the lot, so the light falls on him too
+      ctx.globalCompositeOperation = "lighter";
+      const bloom = 12 * SC;
+      ctx.fillStyle = radial(ctx, cx, cy, bloom, [
+        [0, "rgba(232,208,255," + 0.5 * flicker + ")"],
+        [0.4, "rgba(178,120,250," + 0.24 * flicker + ")"],
+        [1, "rgba(178,120,250,0)"],
+      ]);
+      ctx.fillRect(cx - bloom, cy - bloom, bloom * 2, bloom * 2);
+      ctx.globalCompositeOperation = "source-over";
+
+      raf = requestAnimationFrame(frame);
+    }
+
+    function run() {
+      if (!canvas || !canvas.isConnected) return;
+      if (document.hidden) { idleTimer = setTimeout(run, 4000); return; } // wait until someone's looking
+      sprites();
+      canvas.classList.add("is-running"); // display it first, then measure it
+      ctx = canvas.getContext("2d");
+      resize();
+      elapsed = 0;
+      last = performance.now();
+      raf = requestAnimationFrame(frame);
+    }
+
+    function init() {
+      stop();
+      canvas = document.querySelector("[data-batu-hunt]");
+      if (!canvas) return;
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      idleTimer = setTimeout(run, IDLE_MS);
+    }
+
+    window.__batuHuntInit = init;
+    document.addEventListener("astro:page-load", init);
+    document.addEventListener("astro:before-swap", stop);
+    init();
+  })();
+</script>

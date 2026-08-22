@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import Icon from "@/components/Icon.astro";
+import BatuBugHunt from "@/components/BatuBugHunt.astro";
 ---
 
 <BaseLayout title="Sayfa bulunamadı" noindex hideBanner>
@@ -17,4 +18,7 @@ import Icon from "@/components/Icon.astro";
       <a href="/blog" class="btn btn-ghost">Blog</a>
     </div>
   </section>
+
+  {/* 5 saniyeden fazla oyalanırsan ışıklar kısılır, Batu elinde fenerle bug kovalayarak geçer */}
+  <BatuBugHunt />
 </BaseLayout>
