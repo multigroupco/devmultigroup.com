@@ -441,6 +441,10 @@
     function run() {
       if (!canvas || !canvas.isConnected) return;
       if (document.hidden) { idleTimer = setTimeout(run, 4000); return; } // wait until someone's looking
+      // the cookie banner sits above this canvas and covers the strip he runs
+      // along, so hold off until it has been answered
+      const consent = document.getElementById("dmg-consent");
+      if (consent && !consent.hidden) { idleTimer = setTimeout(run, 4000); return; }
       sprites();
       canvas.classList.add("is-running"); // display it first, then measure it
       ctx = canvas.getContext("2d");
