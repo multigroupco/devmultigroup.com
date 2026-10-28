@@ -2,6 +2,7 @@
 
 import { cached, NS } from "./cache";
 import { all, first } from "./db";
+import { creedPhotos } from "./creed";
 import type {
   AcademyLinkRow,
   EventRow,
@@ -344,37 +345,58 @@ export async function listGallery(
   opts: { album?: string; limit?: number } = {},
 ): Promise<GalleryRow[]> {
   const { album, limit = 60 } = opts;
-  return cached(env, NS.gallery, `a:${album ?? "all"}:${limit}`, () => {
+  return cached(env, NS.gallery, `a:${album ?? "all"}:${limit}`, async () => {
     if (album) {
-      return all<GalleryRow>(
-        env.DB,
-        `SELECT * FROM gallery_items WHERE is_active=1 AND album=?
-         ORDER BY sort_order ASC, COALESCE(taken_at, created_at) ASC LIMIT ?`,
-        [album, limit],
-      );
+      const [local, creed] = await Promise.all([
+        all<GalleryRow>(
+          env.DB,
+          `SELECT * FROM gallery_items WHERE is_active=1 AND album=?
+           ORDER BY sort_order ASC, COALESCE(taken_at, created_at) ASC LIMIT ?`,
+          [album, limit],
+        ),
+        creedPhotos(env, { event: album, limit }),
+      ]);
+      // Creed photos follow the hand-uploaded ones, in capture order.
+      return [...local, ...creed].slice(0, limit);
     }
-    return all<GalleryRow>(
-      env.DB,
-      `SELECT * FROM gallery_items WHERE is_active=1
-       ORDER BY sort_order ASC, COALESCE(taken_at, created_at) DESC LIMIT ?`,
-      [limit],
-    );
+    const [local, creed] = await Promise.all([
+      all<GalleryRow>(
+        env.DB,
+        `SELECT * FROM gallery_items WHERE is_active=1
+         ORDER BY sort_order ASC, COALESCE(taken_at, created_at) DESC LIMIT ?`,
+        [limit],
+      ),
+      creedPhotos(env, { limit }),
+    ]);
+    // The river: newest first by publish/upload time across both sources.
+    return [...local, ...creed]
+      .sort((a, b) => b.created_at - a.created_at)
+      .slice(0, limit);
   });
 }
 
 /**
  * Event slugs that actually have photos, newest album first — used to caption
  * the gallery river and to decide whether an event page shows a photo section
- * without pulling every row twice.
+ * without pulling every row twice. Includes events with photos in Creed.
  */
 export async function listGalleryAlbums(env: Env): Promise<string[]> {
   return cached(env, NS.gallery, "albums", async () => {
-    const rows = await all<{ album: string }>(
-      env.DB,
-      `SELECT album, MAX(created_at) AS newest FROM gallery_items
-       WHERE is_active=1 AND album <> '' GROUP BY album ORDER BY newest DESC`,
-    );
-    return rows.map((r) => r.album);
+    const [rows, creed] = await Promise.all([
+      all<{ album: string; newest: number }>(
+        env.DB,
+        `SELECT album, MAX(created_at) AS newest FROM gallery_items
+         WHERE is_active=1 AND album <> '' GROUP BY album ORDER BY newest DESC`,
+      ),
+      creedPhotos(env, { limit: 1000 }),
+    ]);
+    const newest = new Map<string, number>();
+    for (const r of rows) newest.set(r.album, r.newest);
+    for (const p of creed) {
+      if (p.album.startsWith("creed-")) continue; // not bound to an event
+      newest.set(p.album, Math.max(newest.get(p.album) ?? 0, p.created_at));
+    }
+    return [...newest.entries()].sort((a, b) => b[1] - a[1]).map(([album]) => album);
   });
 }
 

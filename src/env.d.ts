@@ -27,6 +27,8 @@ interface Env {
   VECTORIZE?: VectorizeIndex;
   /** Optional override for the canonical site origin. */
   SITE_URL?: string;
+  /** Creed (media archive) origin; published photos are read from its public API. */
+  CREED_URL?: string;
   /** Shared secret guarding write/admin endpoints behind Cloudflare Access. */
   ADMIN_TOKEN?: string;
   /** AI Gateway id that embedding calls route through (usage/logs/cost tracking). */
