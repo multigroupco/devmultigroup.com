@@ -31,6 +31,8 @@ interface Env {
   CREED_URL?: string;
   /** Shared secret guarding write/admin endpoints behind Cloudflare Access. */
   ADMIN_TOKEN?: string;
+  /** Shared secret for /api/internal/spawn (Spawn, over a service binding). */
+  SPAWN_TOKEN?: string;
   /** AI Gateway id that embedding calls route through (usage/logs/cost tracking). */
   AI_GATEWAY_ID?: string;
   /** Resend API key for contact-form email delivery (set via `wrangler secret`). */
