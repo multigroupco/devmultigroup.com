@@ -1,5 +1,5 @@
 {
-  // Deploy: npx wrangler deploy --config redirect/wrangler.jsonc
+  // Deploy: cd workers/academy-redirect && npx wrangler deploy
   "name": "academy-redirect",
   "main": "worker.js",
   "account_id": "4d41dfaeb65887513d0440c9e42cb0b9",
