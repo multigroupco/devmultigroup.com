@@ -12,7 +12,14 @@
 //   service     -> fetch() to another container on the Docker network
 //   ratelimit   -> in-memory fixed window
 //   analytics engine -> rows in a SQLite table
-//   cron        -> croner, calling the app's scheduled handler
+//   cron        -> croner, calling the app's scheduled handler (cronRoute)
+//
+// Notes learned while moving the apps:
+//   - Astro on Node ignores the Host header unless security.allowedDomains lists
+//     it; set it in the Node build or every URL looks like localhost.
+//   - Tailwind v4 scans server/: add `@source not "<path>/server"` to the CSS.
+//   - Don't open the .sqlite files from the host while a container uses them
+//     (Docker Desktop on macOS): it can drop the WAL. Use `docker compose exec`.
 //
 // Plus serve(): an HTTP server that serves dist/client statically and hands
 // everything else to Astro's Node handler with locals.runtime = { env, ctx, cf }.
@@ -123,7 +130,7 @@ export function d1(file) {
 
 const safeKey = (key) => {
   const k = String(key).replace(/^\/+/, "");
-  if (k.split("/").some((p) => p === "..")) throw new Error("bad key");
+  if (!k || k.split("/").some((p) => p === ".." || p === "")) throw new Error("bad key");
   return k;
 };
 
@@ -215,8 +222,10 @@ export function r2(dir) {
     try {
       return JSON.parse(await fsp.readFile(metaOf(k), "utf8"));
     } catch {
+      // Copied in by hand (no sidecar): guess the type from the extension.
       const st = statSync(f);
-      return { size: st.size, etag: `${st.size}-${st.mtimeMs}`, uploaded: st.mtime.toISOString(), httpMetadata: {}, customMetadata: {} };
+      const contentType = MIME[path.extname(f).toLowerCase()];
+      return { size: st.size, etag: `${st.size}-${st.mtimeMs}`, uploaded: st.mtime.toISOString(), httpMetadata: contentType ? { contentType } : {}, customMetadata: {} };
     }
   }
   return {
@@ -238,7 +247,9 @@ export function r2(dir) {
       const buf = await toBuffer(value);
       const f = fileOf(key);
       await fsp.mkdir(path.dirname(f), { recursive: true });
-      await fsp.writeFile(f, buf);
+      const tmp = `${f}.${process.pid}.${Date.now()}.tmp`;
+      await fsp.writeFile(tmp, buf);
+      await fsp.rename(tmp, f);
       const httpMetadata = opts.httpMetadata instanceof Headers
         ? { contentType: opts.httpMetadata.get("content-type") ?? undefined, cacheControl: opts.httpMetadata.get("cache-control") ?? undefined }
         : opts.httpMetadata ?? {};
@@ -446,6 +457,23 @@ export async function schedule(crons, fn) {
       }
     });
   }
+}
+
+/**
+ * Call an internal route on this server on a cron schedule, with the shared
+ * secret. Sends a JSON content type: Astro's checkOrigin rejects a POST that has
+ * neither an Origin header nor a JSON/other non-form content type.
+ */
+export async function cronRoute(crons, { port, path: route, secret }) {
+  await schedule(crons, (c) =>
+    fetch(`http://127.0.0.1:${port}${route}?cron=${encodeURIComponent(c.cron)}`, {
+      method: "POST",
+      headers: { "x-cron-secret": secret, "content-type": "application/json" },
+      body: "{}",
+    }).then((r) => {
+      if (!r.ok) console.error(`[cron ${c.cron}] ${route} → ${r.status}`);
+    }),
+  );
 }
 
 // ── The HTTP server ────────────────────────────────────────────────────────
