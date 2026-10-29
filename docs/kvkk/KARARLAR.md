@@ -65,6 +65,7 @@
 - **Durum:** Karar verildi → `analytics-server` + mailing capture'da uygulanacak.
 
 ### K-012 — Yurt dışı aktarım zemini (m.9)
+- **Not (2026-10-29):** Bu karar geçersiz: açık rıza 1 Eylül 2024'ten beri sürekli aktarım için dayanak değil. Bkz. K-020.
 - **Karar:** **Açık rıza temelli ilerle**; aydınlatma/rızada yurt dışı aktarımı (GA/Resend → ABD; PostHog/Sentry → AB) açıkça belirt. Nihai zemin (açık rıza vs standart sözleşme + Kurum bildirimi) **AVUKATLA** netleştirilecek; cutover öncesi oturtulmalı.
 - **AVUKAT:** Evet.
 - **Durum:** Geçici karar.
@@ -107,6 +108,19 @@
 - **Durum:** Taslaklar yazıldı (bu turda).
 
 ---
+
+### K-020 — Altyapı sadeleştirme ve izleme servislerinin kaldırılması (2026-10-29)
+- **Karar:** Kişisel veri alıcılarını en aza indir.
+  - **GA4, PostHog, Sentry** siteden ve Argus'tan tamamen kaldırıldı; projeleri ve mülkleri ilgili panellerden silindi. Çerez bandı kalktı: sitede analitik/pazarlama çerezi yok.
+  - **Bülten formu ve iletişim formu** kaldırıldı. İletişim artık doğrudan support@devmultigroup.com'a e-posta (Zoho Mail, AB).
+  - **Resend** hesapları silindi.
+  - **Talaria** (mailing aracı, abone listesi) Cloudflare'den tamamen silindi. Abone, kampanya ve rıza kayıtlarının dökümü veri sorumlusunun bilgisayarına alındı (`~/Desktop/dmg-export-2026-10-29/talaria`).
+  - **Mnemo** (OpenRouter'a arşiv metni gönderiyordu), **Strider**, **Institute** ve eski **academy-web** Cloudflare'den silindi.
+  - **Creed**'in Cloudflare'deki bütün verisi silindi. Fotoğraflar veri sorumlusunun bilgisayarında; katılımcı rıza kayıtlarının dökümü de alındı (`creed-db.sql`). Bu döküm Creed'in KVKK notundaki (önerilen K-019) 10 yıllık rıza ispatı için saklanmalı.
+  - **Warden ve Spawn** kapatıldı. Bugünkü yedekleri alındı; Türkiye'de bir sunucuya (dmg-stack) taşınacaklar.
+- **K-012'ye etkisi:** Açık rıza, 1 Eylül 2024'ten beri sürekli yurt dışı aktarım için geçerli bir dayanak değil (7499 s. Kanun, m.9). Kalan yurt dışı alıcılar: Cloudflare (ana site ve Argus; VPS'e geçişe kadar), Zoho Mail (AB), Pushover/Telegram (yalnızca Argus kesinti uyarıları, kişisel veri içermez). Hedef: kişisel veri tutan her şey Türkiye'deki tek sunucuda (dmg-stack); kalan alıcılar için standart sözleşme + 5 iş günü içinde Kurul'a bildirim.
+- **AVUKAT:** Evet: kalan alıcılar için standart sözleşme; Talaria ve Creed dökümlerinin saklama süresi.
+- **Durum:** Uygulandı (2026-10-29).
 
 ## Kalan İşler (uygulama + avukat)
 - **Uygulama (kod):** opt-in CMP (web), bülten formuna aydınlatma+rıza kutusu+rıza kaydı, mailing erasure endpoint (anonimleştir+hash suppression), PostHog EU'ya taşıma + e-posta SHA-256 hash, GA4 ayrı data stream, mailing analitik motoru (tek proje + tagging).

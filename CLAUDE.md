@@ -252,87 +252,11 @@ banner in `PostCard.astro` (`/blog/banner/${slug}.svg` when no cover).
 
 ## Analytics & observability
 
-Full tracking layer over **GA4 + PostHog + Sentry**, behind an **opt-in** consent
-layer (KVKK K-005: no GA/PostHog before explicit consent; Sentry is essential —
-errors only). Final legal texts are published as DRAFT pending lawyer review; see
-[`docs/kvkk/ANALIZ.md`](./docs/kvkk/ANALIZ.md). See
-[`docs/ANALYTICS.md`](./docs/ANALYTICS.md) for the complete map. Essentials:
-
-- **Apex-only:** the whole layer (client + server) is inert unless the request
-  host is `devmultigroup.com` (`BRAND.domain`). Staging `workers.dev`, CF previews,
-  `www.*`, and localhost send nothing — it self-activates after the apex cutover.
-  Gated in three places: `BaseLayout` (client), `captureServer` (server PostHog),
-  `middleware` (server Sentry). This also retires the old "GA fires on staging" caveat.
-- **One dispatcher:** `window.track(name, props)` (in
-  [`src/components/Analytics.astro`](./src/components/Analytics.astro)) fans out to
-  GA4 **and** PostHog. `window.dmgTrack` is a back-compat alias. Sentry only gets
-  errors, never product events.
-- **Emit via** `data-track="event"` (+ `data-track-props` JSON) on any element —
-  one delegated listener handles it (and the legacy `data-ga`) — **or** call
-  `window.track(...)` from an inline script. Cards (`EventCard`/`PostCard`/
-  `RecordingCard`/`store/ProductCard`/`LinkButton`) self-instrument; pass a `page`
-  (or `group`) context prop, don't add `data-track` to them.
-- **Names** are the canonical `EVENTS` in [`src/lib/events.ts`](./src/lib/events.ts)
-  (stable snake_case English; copy stays Turkish). SPA-aware: one `page_view` per
-  `astro:page-load`.
-- **Server capture** (no client render): `captureServer()` in
-  [`src/lib/analytics-server.ts`](./src/lib/analytics-server.ts) → PostHog `/capture`
-  via `ctx.waitUntil`, from `/go/[id]`, `/api/contact`, `/api/subscribe`,
-  `/api/store/reserve`. Email is **only** a `distinct_id`, **SHA-256 hashed** before
-  egress (K-011); raw IP is not forwarded.
-- **Server errors:** [`src/middleware.ts`](./src/middleware.ts) wraps SSR and sends
-  exceptions to Sentry via the dependency-free envelope sender in
-  [`src/lib/sentry.ts`](./src/lib/sentry.ts) (DSN from `env.SENTRY_DSN`), then
-  re-throws. No `@sentry/*` dependency — intentionally, to avoid wrapping the
-  pinned adapter's generated worker.
-- **Consent:** **opt-in** (K-005) — GA/PostHog load only after explicit consent;
-  banner in [`src/components/ConsentBanner.astro`](./src/components/ConsentBanner.astro)
-  (equal-weight actions + granular panel, default deny). Every decision is logged to
-  D1 `consent_records` via `/api/consent-record` (m.11/m.12); a footer "Çerez
-  Tercihleri" link withdraws consent. Sentry stays (essential, replay off).
-- **Config:** browser keys (`ga_measurement_id`, `posthog_key`, `posthog_host`,
-  `sentry_dsn`, `analytics_enabled`) in D1 `settings` via `resolveSite`; server
-  keys (`SENTRY_DSN`, `POSTHOG_KEY/HOST`) in `wrangler.jsonc` vars (public ingest
-  ids). Seed settings with `npm run analytics:settings:{local,remote}`.
-
-### Staying inside both free tiers
-
-Sentry and PostHog are on free plans whose limits are almost mirror images, so
-each product owns the half the other is stingy about. **Sentry = system health**
-(5k errors, 5 GB logs, 1 uptime + 1 cron monitor). **PostHog = product side**
-(1M events, 5k session replays, 1M flag requests, 1500 survey responses, 100k
-exceptions). Traffic is ~50 pageviews/month, so nothing is close to a limit —
-the only real risk is a misconfiguration, and each one has a guard:
-
-- **Error storms.** `captureServerException` gates every send on two KV counters:
-  a 15-minute per-fingerprint cooldown and a hard monthly budget
-  (`MONTHLY_BUDGET`, 2500). Both fail open — a KV outage must not silence
-  reporting.
-- **Browser errors.** Sentry's own client-key rate limiting is a **Business-plan
-  feature**, so on free it silently does nothing (the API accepts the value and
-  drops it). The equivalent lives in `Analytics.astro`'s `beforeSend`: at most 10
-  events per rolling hour per browser, counted in localStorage.
-- **Session replay.** On at 100% sampling, but recording is bound to the
-  `session-replay` feature flag in PostHog — flip that flag off and recording
-  stops instantly, no deploy. Inputs are masked, `/admin` is on the URL blocklist,
-  sessions under 3s are dropped, retention 30 days.
-- **Deliberately off:** Sentry tracing (would mean wrapping the pinned adapter's
-  generated worker — see the pin warning above) and Sentry session replay (50/mo
-  versus PostHog's 5000).
-
-Reporting helpers in [`src/lib/sentry.ts`](./src/lib/sentry.ts), by call site:
-
-| Helper | Use from | Notes |
-| ------ | -------- | ----- |
-| `reportError(locals, err, {area, request})` | pages / API routes that catch and keep serving | apex-only, `waitUntil` |
-| `reportBackground(env, err, {area})` | library code with an `env` but no request | best-effort, `warning` level |
-| `logEvent(locals, level, msg, attrs)` | audit-shaped moments (admin writes, sign-in) | Sentry Logs via OTLP |
-| `captureServerException` / `captureServerLog` | anywhere holding a raw `Env` | the primitives the above wrap |
-
-**Any `catch` that swallows an error to keep the page working must report.** That
-was the bug class behind a silent OIDC failure, silent 502s on the contact and
-newsletter forms, and a blank homepage during a D1 outage. Debug-level noise
-belongs in Cloudflare Workers Logs (`observability` is on), not Sentry.
+**None, on purpose (2026-10-29).** GA4, PostHog, Sentry and the consent banner were
+removed, along with the newsletter and the contact form (see KVKK K-020). Server errors
+go to the Worker's own logs through `src/lib/sentry.ts`, which is now a console-only
+logger with the old function names. The `data-track*` attributes left in the markup
+are inert: nothing reads them. Don't add a third-party tracker without a KVKK decision.
 
 ## Design system
 
