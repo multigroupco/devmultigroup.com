@@ -98,7 +98,6 @@ export const FOOTER_NAV: { label: string; href: string }[] = [
 export const LEGAL_NAV: { label: string; href: string }[] = [
   { label: "Aydınlatma Metni", href: "/privacy" },
   { label: "Çerez Politikası", href: "/privacy/cerez-politikasi" },
-  { label: "Bülten Onayı", href: "/privacy/bulten-onay" },
 ];
 
 // Community platform pages (event registration routes here).

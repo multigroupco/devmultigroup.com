@@ -79,22 +79,4 @@ const reserveConv = {
     </div>
   </section>
 
-  <script is:inline define:vars={{ conv: reserveConv }}>
-    (function () {
-      var fired = false;
-      function fire() {
-        if (fired) return;
-        try {
-          var k = "dmg_rs_" + conv.order_no;
-          if (sessionStorage.getItem(k)) { fired = true; return; }
-          sessionStorage.setItem(k, "1");
-        } catch (e) {}
-        fired = true;
-        // GA4-only mirror (PostHog has the server-side conversion already).
-        try { if (window.gtag) window.gtag("event", "store_reserve_success", conv); } catch (e) {}
-      }
-      document.addEventListener("astro:page-load", fire);
-      fire();
-    })();
-  </script>
 </BaseLayout>

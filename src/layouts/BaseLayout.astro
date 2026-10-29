@@ -5,8 +5,6 @@ import "@fontsource-variable/jetbrains-mono";
 import "@/styles/global.css";
 
 import Seo from "@/components/Seo.astro";
-import Analytics from "@/components/Analytics.astro";
-import ConsentBanner from "@/components/ConsentBanner.astro";
 import JsonLd from "@/components/JsonLd.astro";
 import SiteBackground from "@/components/SiteBackground.astro";
 import Header from "@/components/Header.astro";
@@ -65,11 +63,6 @@ if (env) {
 const site = resolveSite(settings);
 const desc = description ?? site.description;
 
-// Analytics runs ONLY on the canonical apex (devmultigroup.com). On the
-// workers.dev staging URL, CF previews, www, and localhost the whole tracking
-// layer stays inert — so it activates only once the apex serves this Worker.
-// Mirrors the X-Robots staging guard in src/middleware.ts (BRAND.domain).
-const analyticsActive = site.analyticsEnabled && isApexHost(Astro.url.host);
 
 const orgLd = {
   "@context": "https://schema.org",
@@ -152,14 +145,6 @@ const structured = [orgLd, ...extra, ...(breadcrumbLd ? [breadcrumbLd] : [])];
       gscVerification={site.gscVerification}
     />
     <JsonLd data={structured} />
-    <Analytics
-      measurementId={site.gaMeasurementId}
-      posthogKey={site.posthogKey}
-      posthogHost={site.posthogHost}
-      sentryDsn={site.sentryDsn}
-      environment={import.meta.env.DEV ? "development" : "production"}
-      enabled={analyticsActive}
-    />
     <ClientRouter />
   </head>
   <body>
@@ -173,7 +158,6 @@ const structured = [orgLd, ...extra, ...(breadcrumbLd ? [breadcrumbLd] : [])];
     {!bare && <Footer />}
     {!bare && <ContactModal />}
     {!bare && <SearchPalette />}
-    {!bare && <ConsentBanner />}
 
     {/* `html { scroll-behavior: smooth }` is wanted for the in-page anchors
         (#gecmis, #logolar, #is-birlikleri…) but it also catches ClientRouter's

@@ -19,6 +19,8 @@ import { recheckAuth } from "./lib/recheck";
 // acts as defence-in-depth: in production, no Access header → no admin. It also
 // layers on baseline security headers, the staging-noindex guard, and a
 // conservative edge cache for SSR HTML.
+const ADMIN_CLOSED = true;
+
 export const onRequest = defineMiddleware(async (context, next) => {
   // /admin identity now comes from the Warden session (OIDC), not Cloudflare
   // Access. Resolved lazily in the /admin branch below.
@@ -47,6 +49,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
       throw err;
     }
   };
+
+  // The admin panel, its Warden sign-in and Spawn's publishing endpoint are
+  // closed for now (2026-10-29): Warden and Spawn are off until they move to
+  // the VPS. The code stays; flip ADMIN_CLOSED to bring them back.
+  if (ADMIN_CLOSED && (pathname.startsWith("/admin") || pathname.startsWith("/auth/") || pathname.startsWith("/api/internal/"))) {
+    return new Response("Yönetim paneli şu an kapalı.", {
+      status: 404,
+      headers: { "content-type": "text/plain; charset=utf-8", "x-robots-tag": "noindex", "cache-control": "no-store" },
+    });
+  }
 
   let response: Response;
   if (pathname.startsWith("/admin")) {

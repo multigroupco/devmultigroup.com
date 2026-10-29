@@ -13,8 +13,6 @@ interface Env {
   ASSETS: Fetcher;
   /** Primary content database (blog, events, links, gallery, recordings, team, settings). */
   DB: D1Database;
-  /** Shared email-marketing DB; newsletter sign-ups go to contact_lists id 1. */
-  MAIL_DB: D1Database;
   /** Read-through cache for D1-backed queries, version-stamped for invalidation. */
   CACHE: KVNamespace;
   /** Object storage for gallery / cover image uploads. */
@@ -44,17 +42,6 @@ interface Env {
   /** Better Auth session signing secret — v1 (customer accounts). */
   BETTER_AUTH_SECRET?: string;
 
-  /** Sentry DSN for SERVER-SIDE (Worker SSR) error capture. Read straight from
-   *  env — never D1 — so error reporting survives a database outage. The browser
-   *  DSN lives in D1 settings (`sentry_dsn`). See src/lib/sentry.ts. */
-  SENTRY_DSN?: string;
-  /** Environment tag attached to Sentry events (defaults to production). */
-  SENTRY_ENVIRONMENT?: string;
-  /** Release tag attached to Sentry events (optional). */
-  SENTRY_RELEASE?: string;
-  /** Optional env fallbacks for server-side PostHog capture; D1 settings win. */
-  POSTHOG_KEY?: string;
-  POSTHOG_HOST?: string;
 
   /** Warden (MultiGroup IdP) OIDC client config for /admin login.
    *  ISSUER includes the /api/auth base path (e.g. https://auth.devmultigroup.com/api/auth).

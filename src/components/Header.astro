@@ -95,9 +95,6 @@ const isActive = (href: string) =>
       <button type="button" data-search-open class="hd-icon" aria-label="Ara" title="Ara">
         <Icon name="search" size={17} />
       </button>
-      <button type="button" data-contact="newsletter" class="hd-icon hidden sm:inline-flex" aria-label="Bültene abone ol" title="Bültene abone ol">
-        <Icon name="bell" size={17} />
-      </button>
       <a href={JOIN_FORM} target="_blank" rel="noopener noreferrer" class="btn btn-ghost group hidden sm:inline-flex !rounded-xl !py-2 !px-3.5 text-sm" data-track="join_click" data-track-props={JSON.stringify({ location: "header" })}>
         Aramıza katıl
         <span class="relative inline-flex w-[15px] h-[15px]">
@@ -144,7 +141,6 @@ const isActive = (href: string) =>
       }
       <button type="button" data-search-open class="btn btn-ghost mt-3 justify-center !rounded-xl"><Icon name="search" size={16} /> Ara</button>
       <a href={JOIN_FORM} target="_blank" rel="noopener noreferrer" class="btn btn-ghost mt-2 justify-center !rounded-xl" data-track="join_click" data-track-props={JSON.stringify({ location: "mobile-nav" })}><Icon name="user-check" size={16} /> Aramıza katıl</a>
-      <button type="button" data-contact="newsletter" class="btn btn-ghost mt-2 justify-center !rounded-xl"><Icon name="bell" size={16} /> Bültene abone ol</button>
     </nav>
   </div>
 </header>

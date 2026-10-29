@@ -67,11 +67,6 @@ export const GET: APIRoute = async ({ locals }) => {
       if (r?.ok !== 1) throw new Error("bad result");
     }, "query failed"),
 
-    // Newsletter sign-ups write here; the rest of the site does not read it.
-    timed("d1:mail", false, async () => {
-      const r = await env.MAIL_DB.prepare("SELECT 1 AS ok").first<{ ok: number }>();
-      if (r?.ok !== 1) throw new Error("bad result");
-    }, "query failed"),
 
     timed("kv:cache", true, async () => {
       // A read costs nothing; a write would pollute the namespace every minute.
