@@ -213,6 +213,20 @@ banner in `PostCard.astro` (`/blog/banner/${slug}.svg` when no cover).
   `WARDEN_REDIRECT_URI` as vars; `WARDEN_CLIENT_SECRET` as a `wrangler secret`. The client is
   registered in Warden with `skip_consent` (first-party) + both the `*.workers.dev` and
   `localhost` redirect URIs.
+- **Recheck v2** ([`src/lib/recheck.ts`](./src/lib/recheck.ts)): at most every 5 minutes
+  the `/admin` middleware asks Warden about the signed-in user over the `WARDEN` service
+  binding. It sends `x-client-id` plus the `WARDEN_APP_TOKEN` secret. The session ends if
+  the account is gone or banned, the site's sign-in was closed, or all sign-ins are frozen
+  (except super-admins). If Warden can't be reached, the session is kept. Issue or rotate
+  the token from the Warden repo with
+  `node scripts/app-token.mjs devmultigroup-web IMIRXhakzBoXdIxiRFAkrhpjQutMcWRZ`.
+- **Spawn → site** ([`src/pages/api/internal/spawn.ts`](./src/pages/api/internal/spawn.ts)):
+  Spawn publishes draft events, speaker pages, the /team list and partner communities over
+  its `SITE` service binding, with header `x-internal-token` = the `SPAWN_TOKEN` secret.
+  Every publish is a person's click in Spawn; Spawn never touches this D1.
+- **`workers/academy-redirect/`**: the tiny worker behind `academy.devmultigroup.com`. It
+  301-redirects everything to `/academy` and replaced the archived academy-web. Deploy it
+  with `cd workers/academy-redirect && npx wrangler deploy`.
 - The same middleware also layers SEO/security concerns onto **every** response:
   baseline security headers (HSTS/nosniff/Referrer-Policy/X-Frame-Options/Permissions-Policy),
   a short `Cache-Control` for SSR HTML GETs, and — crucially — an **`X-Robots-Tag:
