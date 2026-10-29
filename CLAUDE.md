@@ -431,6 +431,41 @@ bash scripts/media-sync.sh local    # …and into local R2 for astro dev
 > wrangler deploy`); there is also a `postbuild` npm lifecycle script that runs after
 > `npm run build`. Either way, never deploy without `dist/.assetsignore` present.
 
+## VPS / Docker (dmg-stack)
+
+The same code also runs on a plain Node server for the single-VPS setup (dmg-stack).
+`npm run build` stays the Cloudflare build; `DMG_TARGET=node` switches
+[`astro.config.mjs`](./astro.config.mjs) to `@astrojs/node` (middleware mode).
+
+```bash
+npm run build:node                       # DMG_TARGET=node astro build
+DATA_DIR=./data npm run start:node       # node server/index.mjs, port 8080
+docker build -t devmultigroup-web . && docker run -p 8080:8080 -v dmg-web-data:/data devmultigroup-web
+```
+
+- [`server/index.mjs`](./server/index.mjs) builds `env` from
+  [`server/platform.mjs`](./server/platform.mjs) (copied unchanged from
+  `dmg-stack/platform`; change it there, not here), applies `migrations/` to `DB` and
+  `migrations-store/` to `STORE_DB`, and serves `dist/`.
+- **Env vars:** `DATA_DIR` (default `./data`, `/data` in the image), `PORT` (8080),
+  optional `SITE_URL`, `CREED_URL`, `AI_GATEWAY_ID`. `ADMIN_TOKEN`, `SPAWN_TOKEN`,
+  `BETTER_AUTH_SECRET` and `WARDEN_*` are passed through but only matter once
+  `ADMIN_CLOSED` is turned off.
+- **Files under `DATA_DIR`:** `devmultigroup.sqlite` (DB), `store.sqlite` (STORE_DB),
+  `kv.sqlite` (CACHE and SESSION, one table `kv_cache`), `media/` (MEDIA),
+  `store-media/` (STORE_MEDIA), `sessions/` (Astro sessions, fs-lite driver from
+  [`server/session-driver.mjs`](./server/session-driver.mjs)). R2 objects copied in
+  by hand without a `.meta/` sidecar get their content type from the extension.
+- **Off on Node:** semantic search (no `AI` / `VECTORIZE`; search uses the D1 LIKE
+  scan and `/api/health` reports `degraded`), the `/api/og` card renderer (workers-og
+  is Workers-only; it 302s to `/og-default.png`), image transforms (noop service),
+  and the `WARDEN` service binding.
+- Node-only config: `security.allowedDomains` (devmultigroup.com and subdomains) so
+  Astro trusts `Host` / `X-Forwarded-Proto` from the proxy; any other host is seen as
+  `localhost` and gets `noindex`. Unmatched paths render `404.astro` like on Workers.
+- [`src/styles/global.css`](./src/styles/global.css) excludes `server/` and the Docker
+  files from Tailwind's scan, so both builds ship the same CSS.
+
 ## Cloudflare resources
 
 Account `4d41dfaeb65887513d0440c9e42cb0b9` (config in

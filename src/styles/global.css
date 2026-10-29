@@ -1,4 +1,9 @@
 @import "tailwindcss";
+/* The VPS server code and Docker files are not markup; keep their words (e.g.
+   "container") from turning into utilities, so both builds ship the same CSS. */
+@source not "../../server";
+@source not "../../Dockerfile";
+@source not "../../.dockerignore";
 
 /* Hanken Grotesk — the logo's wordmark typeface (its round, open "G" matches the
    dmg-logo lockup). Self-hosted variable font for the navbar wordmarks

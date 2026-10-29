@@ -24,14 +24,18 @@
     "store:schema:local": "wrangler d1 execute devmultigroup-store-db --local --file=./migrations-store/0001_store_init.sql",
     "store:seed:local": "wrangler d1 execute devmultigroup-store-db --local --file=./scripts/store-seed.sql",
     "store:seed:images:local": "bash scripts/store-seed-images.sh",
-    "store:reset:local": "wrangler d1 execute devmultigroup-store-db --local --command \"SELECT name FROM sqlite_master WHERE type='table'\""
+    "store:reset:local": "wrangler d1 execute devmultigroup-store-db --local --command \"SELECT name FROM sqlite_master WHERE type='table'\"",
+    "build:node": "DMG_TARGET=node astro build",
+    "start:node": "node server/index.mjs"
   },
   "dependencies": {
+    "@astrojs/node": "^9.5.5",
     "@astrojs/rss": "4.0.18",
     "@fontsource-variable/inter": "5.2.8",
     "@fontsource-variable/jetbrains-mono": "5.2.8",
     "@fontsource-variable/space-grotesk": "5.2.10",
     "astro": "5.18.2",
+    "better-sqlite3": "^12.11.1",
     "marked": "18.0.5",
     "oauth4webapi": "^3.8.6",
     "workers-og": "^0.0.27"

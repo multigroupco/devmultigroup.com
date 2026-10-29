@@ -35,3 +35,6 @@ yarn-error.log*
 *.pem
 .vscode/
 .idea/
+
+# VPS (dmg-stack) data folder when DATA_DIR is not set
+data/

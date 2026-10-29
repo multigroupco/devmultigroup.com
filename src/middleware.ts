@@ -100,6 +100,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
     response = await render();
   }
 
+  // Outside Workers (the Node build for the VPS), Response.redirect() and fetch()
+  // responses have immutable headers; copy those so the headers below can be set.
+  // On Workers the headers are mutable, so this never runs there.
+  try {
+    response.headers.set("X-Content-Type-Options", "nosniff");
+  } catch {
+    response = new Response(response.body, response);
+  }
   const h = response.headers;
 
   // Baseline security headers (trust signals; zero functional risk).
