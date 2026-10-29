@@ -63,6 +63,10 @@ interface Env {
   WARDEN_CLIENT_ID?: string;
   WARDEN_CLIENT_SECRET?: string;
   WARDEN_REDIRECT_URI?: string;
+  /** Service binding to the Warden worker; /admin re-checks the account over it. */
+  WARDEN?: Fetcher;
+  /** This app's token for Warden's /api/internal/user-status (wrangler secret). */
+  WARDEN_APP_TOKEN?: string;
 }
 
 type Runtime = import("@astrojs/cloudflare").Runtime<Env>;
@@ -85,6 +89,8 @@ declare namespace App {
       name: string | null;
       role: string | null;
       at: number;
+      /** Last Warden re-check (ms epoch); see lib/recheck.ts. */
+      chk?: number;
     };
     /** In-flight OIDC transaction (PKCE/state/nonce) between login → callback. */
     oidc_tx: {

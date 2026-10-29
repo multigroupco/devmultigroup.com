@@ -1,8 +1,9 @@
 import { defineMiddleware } from "astro:middleware";
 import { tryEnv } from "./lib/runtime";
-import { captureServerException } from "./lib/sentry";
+import { captureServerException, logEvent } from "./lib/sentry";
 import { isApexHost } from "./lib/site";
 import { ADMIN_ROLES } from "./lib/oidc";
+import { recheckAuth } from "./lib/recheck";
 
 // The one host whose pages should be indexable. Every other host that serves
 // this Worker (the workers.dev staging URL, www, CF preview deploys) is kept out
@@ -55,6 +56,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
       authed = await context.session?.get("auth");
     } catch {
       /* no session store / not signed in */
+    }
+    // Warden may have banned, demoted or frozen this account since sign-in;
+    // re-check every few minutes and drop the session if Warden says so.
+    const env = tryEnv(context.locals);
+    if (authed && env && context.session) {
+      authed =
+        (await recheckAuth(env, context.session, authed, (msg, attrs) =>
+          logEvent(context.locals, "info", msg, attrs),
+        )) ?? undefined;
     }
     const role = authed?.role ?? "";
 

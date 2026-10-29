@@ -77,6 +77,9 @@
     "POSTHOG_KEY": "phc_ClVwVt5T7LOptJMI9Wp8FM9bay0s4OFwcIBVVyzzvY7",
     "POSTHOG_HOST": "https://eu.i.posthog.com"
   },
+  // Warden (MultiGroup IdP) over a service binding: /admin re-checks the
+  // signed-in account at /api/internal/user-status (see src/lib/recheck.ts).
+  "services": [{ "binding": "WARDEN", "service": "warden" }],
   // Workers AI — used ONLY to embed text for semantic search (bge-m3). This is
   // the embedding engine, not AI Search/AutoRAG; no managed instance exists.
   "ai": {

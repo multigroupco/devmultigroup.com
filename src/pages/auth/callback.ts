@@ -20,6 +20,8 @@ export const GET: APIRoute = async ({ request, redirect, session, locals }) => {
       name: identity.name ?? null,
       role: identity.role,
       at: Date.now(),
+      // The ID token is a fresh answer from Warden; next re-check in 5 minutes.
+      chk: Date.now(),
     });
     await session?.delete("oidc_tx");
     // Admin sign-ins are rare and worth a permanent record.
