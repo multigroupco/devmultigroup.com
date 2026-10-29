@@ -1,9 +1,0 @@
-{
-  // Deploy: cd workers/academy-redirect && npx wrangler deploy
-  "name": "academy-redirect",
-  "main": "worker.js",
-  "account_id": "4d41dfaeb65887513d0440c9e42cb0b9",
-  "compatibility_date": "2026-10-01",
-  "workers_dev": false,
-  "routes": [{ "pattern": "academy.devmultigroup.com", "custom_domain": true }]
-}

@@ -224,9 +224,9 @@ banner in `PostCard.astro` (`/blog/banner/${slug}.svg` when no cover).
   Spawn publishes draft events, speaker pages, the /team list and partner communities over
   its `SITE` service binding, with header `x-internal-token` = the `SPAWN_TOKEN` secret.
   Every publish is a person's click in Spawn; Spawn never touches this D1.
-- **`workers/academy-redirect/`**: the tiny worker behind `academy.devmultigroup.com`. It
-  301-redirects everything to `/academy` and replaced the archived academy-web. Deploy it
-  with `cd workers/academy-redirect && npx wrangler deploy`.
+- **academy.devmultigroup.com** 301-redirects to `/academy` with a Cloudflare Redirect Rule
+  on the zone (plus a proxied `AAAA 100::` record); no worker. On the VPS, dmg-stack's
+  Caddyfile does the same redirect.
 - The same middleware also layers SEO/security concerns onto **every** response:
   baseline security headers (HSTS/nosniff/Referrer-Policy/X-Frame-Options/Permissions-Policy),
   a short `Cache-Control` for SSR HTML GETs, and — crucially — an **`X-Robots-Tag:
